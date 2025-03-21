@@ -44,7 +44,7 @@ const FCFSVisualizer = () => {
     
     toast({
       title: "Simulation started",
-      description: "First Come First Serve (FCFS) scheduling algorithm is running",
+      description: "First Come First Serve scheduling algorithm is running",
     });
   };
   
@@ -54,6 +54,12 @@ const FCFSVisualizer = () => {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+  };
+
+  const resumeSimulation = () => {
+    if (currentTime < totalTime) {
+      setIsSimulating(true);
     }
   };
   
@@ -107,7 +113,7 @@ const FCFSVisualizer = () => {
           <div className="arena-chip mb-4">CPU Scheduling Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">First Come First Serve (FCFS)</h1>
           <p className="text-arena-gray">
-            Visualize the First Come First Serve scheduling algorithm. The process that arrives first is executed first.
+            Visualize the First Come First Serve scheduling algorithm. Processes are executed in the order they arrive.
           </p>
         </div>
         
@@ -131,10 +137,19 @@ const FCFSVisualizer = () => {
               <Button 
                 onClick={pauseSimulation} 
                 variant="outline" 
-                disabled={!ganttChart.length}
+                disabled={!ganttChart.length || !isSimulating}
               >
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
+              </Button>
+
+              <Button 
+                onClick={resumeSimulation} 
+                variant="outline" 
+                disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Resume
               </Button>
               
               <Button 
@@ -219,7 +234,7 @@ const FCFSVisualizer = () => {
           <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
             <h2 className="text-xl font-semibold mb-2">About First Come First Serve</h2>
             <p className="text-arena-gray mb-4">
-              First Come First Serve (FCFS) is the simplest CPU scheduling algorithm. In this algorithm, the process that arrives first is executed first. FCFS is a non-preemptive algorithm.
+              First Come First Serve (FCFS) is the simplest CPU scheduling algorithm. In this scheme, the process that requests the CPU first is allocated the CPU first.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <Card className="bg-arena-light">
@@ -228,23 +243,23 @@ const FCFSVisualizer = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc pl-5 text-arena-gray space-y-1">
-                    <li>Non-preemptive scheduling</li>
-                    <li>Simple to implement</li>
-                    <li>First-in, first-out (FIFO) queue for ready processes</li>
-                    <li>No starvation as every process gets a chance to execute</li>
+                    <li>Non-preemptive scheduling algorithm</li>
+                    <li>Easy to understand and implement</li>
+                    <li>Processes are executed in the order they arrive</li>
+                    <li>CPU scheduler simply picks the first process from the ready queue</li>
                   </ul>
                 </CardContent>
               </Card>
               <Card className="bg-arena-light">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Performance</CardTitle>
+                  <CardTitle className="text-sm font-medium">Limitations</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc pl-5 text-arena-gray space-y-1">
-                    <li>Not optimal for turnaround time</li>
-                    <li>Subject to convoy effect when a CPU-intensive process blocks I/O-bound processes</li>
-                    <li>Average waiting time can be high if short processes wait behind long ones</li>
-                    <li>Response time can be poor</li>
+                    <li>Not optimal for minimizing average waiting time</li>
+                    <li>Suffers from "convoy effect": short processes wait for long processes</li>
+                    <li>Not suitable for interactive systems</li>
+                    <li>Does not take advantage of process priorities</li>
                   </ul>
                 </CardContent>
               </Card>

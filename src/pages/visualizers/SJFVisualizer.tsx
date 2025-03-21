@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { Play, Pause, SkipBack, SkipForward, Timer } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 const SJFVisualizer = () => {
@@ -59,6 +59,12 @@ const SJFVisualizer = () => {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+  };
+
+  const resumeSimulation = () => {
+    if (currentTime < totalTime) {
+      setIsSimulating(true);
     }
   };
   
@@ -132,10 +138,10 @@ const SJFVisualizer = () => {
             <h2 className="text-xl font-semibold mb-4">Simulation Controls</h2>
             
             <div className="mb-4 flex items-center space-x-2">
-              <Checkbox
+              <Switch
                 id="isPreemptive"
                 checked={isPreemptive}
-                onCheckedChange={(checked) => setIsPreemptive(checked === true)}
+                onCheckedChange={setIsPreemptive}
               />
               <Label
                 htmlFor="isPreemptive"
@@ -157,10 +163,19 @@ const SJFVisualizer = () => {
               <Button 
                 onClick={pauseSimulation} 
                 variant="outline" 
-                disabled={!ganttChart.length}
+                disabled={!ganttChart.length || !isSimulating}
               >
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
+              </Button>
+
+              <Button 
+                onClick={resumeSimulation} 
+                variant="outline" 
+                disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Resume
               </Button>
               
               <Button 

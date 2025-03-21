@@ -2,31 +2,31 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { Timer } from 'lucide-react';
+import { Timer, Clock, ListOrdered, RefreshCw } from 'lucide-react';
 
 const cpuSchedulingAlgorithms = [
   {
     title: 'First Come First Serve (FCFS)',
     description: 'Non-preemptive scheduling algorithm that executes processes in order of arrival.',
-    icon: <Timer size={24} />,
+    icon: <Clock size={24} />,
     to: '/cpu-scheduling/fcfs',
   },
   {
     title: 'Shortest Job First (SJF)',
-    description: 'Scheduling algorithm that executes the process with the shortest burst time first.',
+    description: 'Scheduling algorithm that executes the process with the shortest burst time first. Supports both preemptive and non-preemptive modes.',
     icon: <Timer size={24} />,
     to: '/cpu-scheduling/sjf',
   },
   {
     title: 'Priority Scheduling',
-    description: 'Scheduling algorithm that executes processes based on priority values.',
-    icon: <Timer size={24} />,
+    description: 'Scheduling algorithm that executes processes based on priority values. Supports both preemptive and non-preemptive modes.',
+    icon: <ListOrdered size={24} />,
     to: '/cpu-scheduling/priority',
   },
   {
     title: 'Round Robin (RR)',
-    description: 'Time-sliced scheduling algorithm that allocates CPU time in turns.',
-    icon: <Timer size={24} />,
+    description: 'Time-sliced scheduling algorithm that allocates CPU time in turns. Inherently preemptive with configurable time quantum.',
+    icon: <RefreshCw size={24} />,
     to: '/cpu-scheduling/round-robin',
   },
 ];

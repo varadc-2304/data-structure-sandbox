@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { Play, Pause, SkipBack, SkipForward, Timer } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
 const PriorityVisualizer = () => {
@@ -59,6 +59,12 @@ const PriorityVisualizer = () => {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+  };
+
+  const resumeSimulation = () => {
+    if (currentTime < totalTime) {
+      setIsSimulating(true);
     }
   };
   
@@ -119,7 +125,7 @@ const PriorityVisualizer = () => {
           <div className="arena-chip mb-4">CPU Scheduling Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Priority Scheduling</h1>
           <p className="text-arena-gray">
-            Visualize the Priority scheduling algorithm. The process with the highest priority (lowest priority number) is executed first.
+            Visualize the Priority scheduling algorithm. Processes are executed based on priority values (lower number = higher priority).
           </p>
         </div>
         
@@ -132,16 +138,16 @@ const PriorityVisualizer = () => {
             <h2 className="text-xl font-semibold mb-4">Simulation Controls</h2>
             
             <div className="mb-4 flex items-center space-x-2">
-              <Checkbox
+              <Switch
                 id="isPreemptive"
                 checked={isPreemptive}
-                onCheckedChange={(checked) => setIsPreemptive(checked === true)}
+                onCheckedChange={setIsPreemptive}
               />
               <Label
                 htmlFor="isPreemptive"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Enable Preemption (Higher priority processes can interrupt lower priority ones)
+                Enable Preemption (Higher priority processes can preempt lower priority ones)
               </Label>
             </div>
             
@@ -157,10 +163,19 @@ const PriorityVisualizer = () => {
               <Button 
                 onClick={pauseSimulation} 
                 variant="outline" 
-                disabled={!ganttChart.length}
+                disabled={!ganttChart.length || !isSimulating}
               >
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
+              </Button>
+
+              <Button 
+                onClick={resumeSimulation} 
+                variant="outline" 
+                disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Resume
               </Button>
               
               <Button 
@@ -247,7 +262,7 @@ const PriorityVisualizer = () => {
           <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
             <h2 className="text-xl font-semibold mb-2">About Priority Scheduling</h2>
             <p className="text-arena-gray mb-4">
-              Priority Scheduling is an algorithm where each process is assigned a priority. The process with the highest priority (lowest priority number) is executed first. It can be both preemptive and non-preemptive.
+              Priority Scheduling is a scheduling algorithm that selects the process with the highest priority for execution. Lower priority number indicates higher priority.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <Card className="bg-arena-light">
@@ -257,9 +272,9 @@ const PriorityVisualizer = () => {
                 <CardContent>
                   <ul className="list-disc pl-5 text-arena-gray space-y-1">
                     <li>Once a process starts executing, it continues until completion</li>
-                    <li>Processes are selected based on priority values</li>
-                    <li>Lower priority value means higher priority</li>
-                    <li>May cause starvation for low-priority processes</li>
+                    <li>Higher priority processes that arrive later must wait</li>
+                    <li>Can lead to "priority inversion" - lower priority process holds resource needed by high priority process</li>
+                    <li>Simple to implement but less responsive</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -269,10 +284,10 @@ const PriorityVisualizer = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc pl-5 text-arena-gray space-y-1">
-                    <li>Running process can be interrupted by a higher priority process</li>
-                    <li>Reduces waiting time for high-priority processes</li>
-                    <li>Can lead to increased context switching overhead</li>
-                    <li>Aging can be implemented to prevent starvation</li>
+                    <li>Running process is preempted when a higher priority process arrives</li>
+                    <li>More responsive for high priority processes</li>
+                    <li>Can lead to starvation of low priority processes</li>
+                    <li>Requires more context switching, leading to more overhead</li>
                   </ul>
                 </CardContent>
               </Card>

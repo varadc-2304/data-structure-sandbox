@@ -69,6 +69,12 @@ const RoundRobinVisualizer = () => {
       timerRef.current = null;
     }
   };
+
+  const resumeSimulation = () => {
+    if (currentTime < totalTime) {
+      setIsSimulating(true);
+    }
+  };
   
   const resetSimulation = () => {
     pauseSimulation();
@@ -168,10 +174,19 @@ const RoundRobinVisualizer = () => {
               <Button 
                 onClick={pauseSimulation} 
                 variant="outline" 
-                disabled={!ganttChart.length}
+                disabled={!ganttChart.length || !isSimulating}
               >
                 <Pause className="mr-2 h-4 w-4" />
                 Pause
+              </Button>
+
+              <Button 
+                onClick={resumeSimulation} 
+                variant="outline" 
+                disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Resume
               </Button>
               
               <Button 
