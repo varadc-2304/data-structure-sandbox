@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
@@ -205,16 +204,6 @@ const BinaryTreeVisualizer = () => {
         </div>
         {(node.left !== null || node.right !== null) && (
           <div className="flex items-start space-x-4 relative">
-            {/* Left branch */}
-            {node.left && (
-              <div className="absolute top-0 left-1/3 w-[50px] h-[20px] border-l-2 border-b-2 border-arena-red/70 -translate-x-1/2"></div>
-            )}
-            
-            {/* Right branch */}
-            {node.right && (
-              <div className="absolute top-0 right-1/3 w-[50px] h-[20px] border-r-2 border-b-2 border-arena-red/70 translate-x-1/2"></div>
-            )}
-            
             {renderTree(node.left, level + 1, 'left')}
             {renderTree(node.right, level + 1, 'right')}
           </div>
