@@ -194,7 +194,7 @@ const BinaryTreeVisualizer = () => {
       <div className="flex flex-col items-center">
         <div
           className={cn(
-            "w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-300 mb-2 transition-all duration-300",
+            "w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-300 mb-2 transition-all duration-300 relative",
             {
               "border-arena-red bg-arena-red/10 shadow-md": isHighlighted,
               "border-gray-300 bg-white": !isHighlighted,
@@ -204,7 +204,17 @@ const BinaryTreeVisualizer = () => {
           {node.value}
         </div>
         {(node.left !== null || node.right !== null) && (
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-4 relative">
+            {/* Left branch */}
+            {node.left && (
+              <div className="absolute top-0 left-1/3 w-[50px] h-[20px] border-l-2 border-b-2 border-arena-red/70 -translate-x-1/2"></div>
+            )}
+            
+            {/* Right branch */}
+            {node.right && (
+              <div className="absolute top-0 right-1/3 w-[50px] h-[20px] border-r-2 border-b-2 border-arena-red/70 translate-x-1/2"></div>
+            )}
+            
             {renderTree(node.left, level + 1, 'left')}
             {renderTree(node.right, level + 1, 'right')}
           </div>

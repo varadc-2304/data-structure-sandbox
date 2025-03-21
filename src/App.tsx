@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DataStructures from "./pages/DataStructures";
+import CPUScheduling from "./pages/CPUScheduling";
 import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
 import LinkedListVisualizer from "./pages/visualizers/LinkedListVisualizer";
 import StackVisualizer from "./pages/visualizers/StackVisualizer";
@@ -15,6 +16,10 @@ import DequeVisualizer from "./pages/visualizers/DequeVisualizer";
 import BinaryTreeVisualizer from "./pages/visualizers/BinaryTreeVisualizer";
 import BSTVisualizer from "./pages/visualizers/BSTVisualizer";
 import GraphVisualizer from "./pages/visualizers/GraphVisualizer";
+import FCFSVisualizer from "./pages/visualizers/FCFSVisualizer";
+import SJFVisualizer from "./pages/visualizers/SJFVisualizer";
+import PriorityVisualizer from "./pages/visualizers/PriorityVisualizer";
+import RoundRobinVisualizer from "./pages/visualizers/RoundRobinVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +31,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          
+          {/* Data Structures */}
           <Route path="/data-structures" element={<DataStructures />} />
           <Route path="/data-structures/array" element={<ArrayVisualizer />} />
           <Route path="/data-structures/linked-list" element={<LinkedListVisualizer />} />
@@ -35,6 +42,14 @@ const App = () => (
           <Route path="/data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
           <Route path="/data-structures/bst" element={<BSTVisualizer />} />
           <Route path="/data-structures/graph" element={<GraphVisualizer />} />
+          
+          {/* CPU Scheduling */}
+          <Route path="/cpu-scheduling" element={<CPUScheduling />} />
+          <Route path="/cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
+          <Route path="/cpu-scheduling/sjf" element={<SJFVisualizer />} />
+          <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
+          <Route path="/cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
