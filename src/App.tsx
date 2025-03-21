@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import DataStructures from "./pages/DataStructures";
+import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +18,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/data-structures" element={<DataStructures />} />
+          <Route path="/data-structures/array" element={<ArrayVisualizer />} />
+          {/* Other routes will be added as we build more visualizers */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
