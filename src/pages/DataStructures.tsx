@@ -10,8 +10,7 @@ import {
   LayoutGrid, 
   GitBranch, 
   Trees, 
-  Network,
-  Timer
+  Network
 } from 'lucide-react';
 
 const dataStructures = [
@@ -65,49 +64,21 @@ const dataStructures = [
   },
 ];
 
-const cpuSchedulingAlgorithms = [
-  {
-    title: 'First Come First Serve (FCFS)',
-    description: 'Non-preemptive scheduling algorithm that executes processes in order of arrival.',
-    icon: <Timer size={24} />,
-    to: '/cpu-scheduling/fcfs',
-  },
-  {
-    title: 'Shortest Job First (SJF)',
-    description: 'Scheduling algorithm that executes the process with the shortest burst time first.',
-    icon: <Timer size={24} />,
-    to: '/cpu-scheduling/sjf',
-  },
-  {
-    title: 'Priority Scheduling',
-    description: 'Scheduling algorithm that executes processes based on priority values.',
-    icon: <Timer size={24} />,
-    to: '/cpu-scheduling/priority',
-  },
-  {
-    title: 'Round Robin (RR)',
-    description: 'Time-sliced scheduling algorithm that allocates CPU time in turns.',
-    icon: <Timer size={24} />,
-    to: '/cpu-scheduling/round-robin',
-  },
-];
-
 const DataStructures = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="page-container pt-32">
-        <div className="mb-16 text-center">
-          <div className="arena-chip mb-4 animate-fade-in">Interactive Visualizers</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-4 animate-slide-in">Data Structures</h1>
+      <div className="page-container pt-24">
+        <div className="mb-10 text-center">
+          <div className="arena-chip mb-3 animate-fade-in">Interactive Visualizers</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-3 animate-slide-in">Data Structures</h1>
           <p className="max-w-2xl mx-auto text-arena-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Select a data structure to visualize and explore its operations.
-            Perfect for learning how data structures work under the hood.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
           {dataStructures.map((ds, index) => (
             <CategoryCard
               key={ds.title}
@@ -119,30 +90,9 @@ const DataStructures = () => {
             />
           ))}
         </div>
-
-        <div className="mb-16 text-center">
-          <div className="arena-chip mb-4 animate-fade-in">CPU Scheduling</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-4 animate-slide-in">Scheduling Algorithms</h1>
-          <p className="max-w-2xl mx-auto text-arena-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Visualize how different CPU scheduling algorithms work with interactive simulations.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {cpuSchedulingAlgorithms.map((algo, index) => (
-            <CategoryCard
-              key={algo.title}
-              title={algo.title}
-              description={algo.description}
-              icon={algo.icon}
-              to={algo.to}
-              delay={index * 50 + 300}
-            />
-          ))}
-        </div>
       </div>
       
-      <footer className="bg-arena-light py-8 mt-16">
+      <footer className="bg-arena-light py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-arena-gray">
             <p>© {new Date().getFullYear()} ArenaTools. All rights reserved.</p>

@@ -12,7 +12,7 @@ const Index = () => {
       <Hero />
       
       <div className="page-container py-16">
-        <div className="mb-16 text-center">
+        <div className="mb-12 text-center">
           <div className="arena-chip mb-4">Choose a Category</div>
           <h2 className="section-title text-center">Explore Our Tools</h2>
           <p className="max-w-2xl mx-auto text-arena-gray">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Process, GanttChartItem, runPriorityNonPreemptive, runPriorityPreemptive } from '@/utils/cpuSchedulingUtils';
@@ -120,177 +119,185 @@ const PriorityVisualizer = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="page-container pt-32">
-        <div className="mb-10 animate-slide-in">
-          <div className="arena-chip mb-4">CPU Scheduling Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Priority Scheduling</h1>
-          <p className="text-arena-gray">
+      <div className="page-container pt-20">
+        <div className="mb-6 animate-slide-in">
+          <div className="arena-chip mb-2">CPU Scheduling Visualization</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-2">Priority Scheduling</h1>
+          <p className="text-arena-gray text-sm">
             Visualize the Priority scheduling algorithm. Processes are executed based on priority values (lower number = higher priority).
           </p>
         </div>
         
-        <div className="grid grid-cols-1 gap-8">
-          {/* Process Input Section */}
-          <ProcessInput processes={processes} setProcesses={setProcesses} includePriority={true} />
-          
-          {/* Visualization Controls */}
-          <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-            <h2 className="text-xl font-semibold mb-4">Simulation Controls</h2>
-            
-            <div className="mb-4 flex items-center space-x-2">
-              <Switch
-                id="isPreemptive"
-                checked={isPreemptive}
-                onCheckedChange={setIsPreemptive}
-              />
-              <Label
-                htmlFor="isPreemptive"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Enable Preemption (Higher priority processes can preempt lower priority ones)
-              </Label>
-            </div>
-            
-            <div className="flex flex-wrap gap-4 mb-6">
-              <Button 
-                onClick={runSimulation} 
-                className="bg-arena-red hover:bg-arena-red/90"
-              >
-                <Play className="mr-2 h-4 w-4" />
-                Run Simulation
-              </Button>
-              
-              <Button 
-                onClick={pauseSimulation} 
-                variant="outline" 
-                disabled={!ganttChart.length || !isSimulating}
-              >
-                <Pause className="mr-2 h-4 w-4" />
-                Pause
-              </Button>
-
-              <Button 
-                onClick={resumeSimulation} 
-                variant="outline" 
-                disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
-              >
-                <Play className="mr-2 h-4 w-4" />
-                Resume
-              </Button>
-              
-              <Button 
-                onClick={resetSimulation} 
-                variant="outline" 
-                disabled={!ganttChart.length}
-              >
-                <SkipBack className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-              
-              <Button 
-                onClick={stepBackward} 
-                variant="outline" 
-                disabled={!ganttChart.length || currentTime <= 0}
-              >
-                <SkipBack className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                onClick={stepForward} 
-                variant="outline" 
-                disabled={!ganttChart.length || currentTime >= totalTime}
-              >
-                <SkipForward className="h-4 w-4" />
-              </Button>
-              
-              <div className="ml-auto flex items-center bg-arena-light px-3 py-2 rounded-md">
-                <Timer className="mr-2 h-4 w-4 text-arena-red" />
-                <span className="text-arena-dark font-medium">Time: {currentTime} / {totalTime}</span>
-              </div>
-            </div>
-            
-            {/* Gantt Chart */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-3">Gantt Chart</h3>
-              <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
-            </div>
-            
-            {/* Scheduled Processes */}
-            {scheduledProcesses.length > 0 && (
-              <div>
-                <h3 className="text-lg font-medium mb-3">Scheduled Processes</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-arena-light">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {scheduledProcesses.map((process) => (
-                        <tr key={process.id} className={currentTime >= process.startTime! ? "bg-green-50" : "bg-white"}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: process.color }}></div>
-                              {process.id}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.arrivalTime}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.burstTime}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.priority}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.startTime}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.finishTime}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.waitingTime}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{process.turnaroundTime}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Process Input Section - Takes 1/3 of the screen */}
+          <div className="md:col-span-1">
+            <ProcessInput processes={processes} setProcesses={setProcesses} includePriority={true} />
           </div>
           
-          {/* Algorithm Info */}
-          <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
-            <h2 className="text-xl font-semibold mb-2">About Priority Scheduling</h2>
-            <p className="text-arena-gray mb-4">
-              Priority Scheduling is a scheduling algorithm that selects the process with the highest priority for execution. Lower priority number indicates higher priority.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <Card className="bg-arena-light">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Non-preemptive Priority</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc pl-5 text-arena-gray space-y-1">
-                    <li>Once a process starts executing, it continues until completion</li>
-                    <li>Higher priority processes that arrive later must wait</li>
-                    <li>Can lead to "priority inversion" - lower priority process holds resource needed by high priority process</li>
-                    <li>Simple to implement but less responsive</li>
-                  </ul>
-                </CardContent>
-              </Card>
-              <Card className="bg-arena-light">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Preemptive Priority</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc pl-5 text-arena-gray space-y-1">
-                    <li>Running process is preempted when a higher priority process arrives</li>
-                    <li>More responsive for high priority processes</li>
-                    <li>Can lead to starvation of low priority processes</li>
-                    <li>Requires more context switching, leading to more overhead</li>
-                  </ul>
-                </CardContent>
-              </Card>
+          {/* Visualization Controls and Gantt Chart - Takes 2/3 of the screen */}
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+              <div className="mb-3 flex items-center space-x-2">
+                <Switch
+                  id="isPreemptive"
+                  checked={isPreemptive}
+                  onCheckedChange={setIsPreemptive}
+                />
+                <Label
+                  htmlFor="isPreemptive"
+                  className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Enable Preemption (Higher priority processes can interrupt lower priority ones)
+                </Label>
+              </div>
+              
+              <div className="flex flex-wrap gap-3 mb-4">
+                <Button 
+                  onClick={runSimulation} 
+                  className="bg-arena-red hover:bg-arena-red/90"
+                  size="sm"
+                >
+                  <Play className="mr-2 h-3 w-3" />
+                  Run
+                </Button>
+                
+                <Button 
+                  onClick={pauseSimulation} 
+                  variant="outline" 
+                  disabled={!ganttChart.length || !isSimulating}
+                  size="sm"
+                >
+                  <Pause className="mr-2 h-3 w-3" />
+                  Pause
+                </Button>
+
+                <Button 
+                  onClick={resumeSimulation} 
+                  variant="outline" 
+                  disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
+                  size="sm"
+                >
+                  <Play className="mr-2 h-3 w-3" />
+                  Resume
+                </Button>
+                
+                <Button 
+                  onClick={resetSimulation} 
+                  variant="outline" 
+                  disabled={!ganttChart.length}
+                  size="sm"
+                >
+                  <SkipBack className="mr-2 h-3 w-3" />
+                  Reset
+                </Button>
+                
+                <Button 
+                  onClick={stepBackward} 
+                  variant="outline" 
+                  disabled={!ganttChart.length || currentTime <= 0}
+                  size="sm"
+                >
+                  <SkipBack className="h-3 w-3" />
+                </Button>
+                
+                <Button 
+                  onClick={stepForward} 
+                  variant="outline" 
+                  disabled={!ganttChart.length || currentTime >= totalTime}
+                  size="sm"
+                >
+                  <SkipForward className="h-3 w-3" />
+                </Button>
+                
+                <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
+                  <Timer className="mr-2 h-3 w-3 text-arena-red" />
+                  <span className="text-arena-dark font-medium text-sm">Time: {currentTime} / {totalTime}</span>
+                </div>
+              </div>
+              
+              {/* Gantt Chart */}
+              <div className="mb-4">
+                <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
+                <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
+              </div>
+              
+              {/* Scheduled Processes */}
+              {scheduledProcesses.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Scheduled Processes</h3>
+                  <div className="overflow-x-auto max-h-[150px]">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-arena-light">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {scheduledProcesses.map((process) => (
+                          <tr key={process.id} className={currentTime >= process.startTime! ? "bg-green-50" : "bg-white"}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: process.color }}></div>
+                                {process.id}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.arrivalTime}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.burstTime}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.priority}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.startTime}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.finishTime}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.waitingTime}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{process.turnaroundTime}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Algorithm Info - Takes full width at the bottom but smaller */}
+          <div className="md:col-span-3">
+            <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
+              <h2 className="text-lg font-semibold mb-2">About Priority Scheduling</h2>
+              <p className="text-arena-gray mb-3 text-sm">
+                Priority Scheduling is a scheduling algorithm that selects the process with the highest priority for execution. Lower priority number indicates higher priority.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <Card className="bg-arena-light">
+                  <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-xs font-medium">Non-preemptive Priority</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 px-3">
+                    <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                      <li>Once a process starts executing, it continues until completion</li>
+                      <li>Higher priority processes that arrive later must wait</li>
+                      <li>Simple to implement but less responsive</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card className="bg-arena-light">
+                  <CardHeader className="py-2 px-3">
+                    <CardTitle className="text-xs font-medium">Preemptive Priority</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 px-3">
+                    <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                      <li>Running process is preempted when a higher priority process arrives</li>
+                      <li>More responsive for high priority processes</li>
+                      <li>Requires more context switching, leading to more overhead</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>

@@ -36,17 +36,16 @@ const CPUScheduling = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="page-container pt-32">
-        <div className="mb-16 text-center">
-          <div className="arena-chip mb-4 animate-fade-in">Interactive Visualizers</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-4 animate-slide-in">CPU Scheduling Algorithms</h1>
+      <div className="page-container pt-24">
+        <div className="mb-10 text-center">
+          <div className="arena-chip mb-3 animate-fade-in">Interactive Visualizers</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-3 animate-slide-in">CPU Scheduling Algorithms</h1>
           <p className="max-w-2xl mx-auto text-arena-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Select a CPU scheduling algorithm to visualize how processes are scheduled and executed.
-            Perfect for understanding how operating systems manage process execution.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {cpuSchedulingAlgorithms.map((algo, index) => (
             <CategoryCard
               key={algo.title}
@@ -60,7 +59,7 @@ const CPUScheduling = () => {
         </div>
       </div>
       
-      <footer className="bg-arena-light py-8 mt-16">
+      <footer className="bg-arena-light py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-arena-gray">
             <p>© {new Date().getFullYear()} ArenaTools. All rights reserved.</p>

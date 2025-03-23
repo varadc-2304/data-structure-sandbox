@@ -11,18 +11,17 @@ const Hero = () => {
       <div className="absolute top-1/2 -left-48 w-96 h-96 bg-arena-red/10 rounded-full blur-3xl" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="pt-32 pb-16 md:pt-40 md:pb-20">
+        <div className="pt-24 pb-10 md:pt-28 md:pb-12">
           <div className="text-center">
-            <div className="arena-chip mb-4 animate-fade-in">Interactive Visualizations</div>
-            <h1 className="text-4xl font-bold tracking-tight text-arena-dark sm:text-5xl md:text-6xl animate-slide-in">
+            <div className="arena-chip mb-3 animate-fade-in">Interactive Visualizations</div>
+            <h1 className="text-3xl font-bold tracking-tight text-arena-dark sm:text-4xl md:text-5xl animate-slide-in">
               Visualize &amp; Learn
-              <span className="block text-arena-red mt-2">Computer Science Concepts</span>
+              <span className="block text-arena-red mt-1">Computer Science Concepts</span>
             </h1>
-            <p className="mt-3 max-w-md mx-auto text-base text-arena-gray sm:text-lg md:mt-5 md:text-xl md:max-w-3xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <p className="mt-3 max-w-md mx-auto text-base text-arena-gray sm:text-lg md:mt-3 md:text-xl md:max-w-3xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
               Understand data structures and algorithms through interactive visualizations.
-              Perfect for students, developers, and anyone interested in computer science.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Link
                 to="/data-structures"
                 className="arena-button inline-flex items-center"
