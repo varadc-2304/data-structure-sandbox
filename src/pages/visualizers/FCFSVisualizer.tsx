@@ -17,6 +17,8 @@ const FCFSVisualizer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isSimulating, setIsSimulating] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
+  const [avgWaitingTime, setAvgWaitingTime] = useState(0);
+  const [avgTurnaroundTime, setAvgTurnaroundTime] = useState(0);
   
   const { toast } = useToast();
   const timerRef = useRef<number | null>(null);
@@ -41,6 +43,15 @@ const FCFSVisualizer = () => {
       setTotalTime(newGanttChart[newGanttChart.length - 1].endTime);
       setCurrentTime(0);
       setIsSimulating(true);
+      
+      // Calculate average waiting and turnaround times
+      if (newScheduledProcesses.length > 0) {
+        const totalWaiting = newScheduledProcesses.reduce((sum, p) => sum + (p.waitingTime || 0), 0);
+        const totalTurnaround = newScheduledProcesses.reduce((sum, p) => sum + (p.turnaroundTime || 0), 0);
+        
+        setAvgWaitingTime(totalWaiting / newScheduledProcesses.length);
+        setAvgTurnaroundTime(totalTurnaround / newScheduledProcesses.length);
+      }
     }
     
     toast({
@@ -207,6 +218,24 @@ const FCFSVisualizer = () => {
                     <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
                     <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
                   </div>
+                  
+                  {/* Performance Metrics */}
+                  {scheduledProcesses.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <Card className="bg-arena-light">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-arena-gray">Average Waiting Time</p>
+                          <p className="text-xl font-bold text-arena-dark">{avgWaitingTime.toFixed(2)}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-arena-light">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-arena-gray">Average Turnaround Time</p>
+                          <p className="text-xl font-bold text-arena-dark">{avgTurnaroundTime.toFixed(2)}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
                   
                   {/* Scheduled Processes */}
                   {scheduledProcesses.length > 0 && (
