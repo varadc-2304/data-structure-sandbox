@@ -209,7 +209,7 @@ const FCFSVisualizer = () => {
                     
                     <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
                       <Timer className="mr-2 h-3 w-3 text-arena-red" />
-                      <span className="text-arena-dark font-medium text-sm">Time: {currentTime} / {totalTime}</span>
+                      <span className="text-arena-dark font-medium text-sm">Time: {currentTime}s / {totalTime}s</span>
                     </div>
                   </div>
                   
@@ -225,13 +225,13 @@ const FCFSVisualizer = () => {
                       <Card className="bg-arena-light">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
                           <p className="text-sm text-arena-gray">Average Waiting Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgWaitingTime.toFixed(2)}</p>
+                          <p className="text-xl font-bold text-arena-dark">{avgWaitingTime.toFixed(2)}s</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-arena-light">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
                           <p className="text-sm text-arena-gray">Average Turnaround Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgTurnaroundTime.toFixed(2)}</p>
+                          <p className="text-xl font-bold text-arena-dark">{avgTurnaroundTime.toFixed(2)}s</p>
                         </CardContent>
                       </Card>
                     </div>
@@ -246,12 +246,12 @@ const FCFSVisualizer = () => {
                           <thead className="bg-arena-light">
                             <tr>
                               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround (s)</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">

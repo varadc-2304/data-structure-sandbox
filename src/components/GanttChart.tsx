@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { GanttChartItem } from '@/utils/cpuSchedulingUtils';
 
@@ -10,6 +10,28 @@ interface GanttChartProps {
 }
 
 const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className }) => {
+  const [animatedCurrentTime, setAnimatedCurrentTime] = useState(0);
+  
+  // Smooth animation for the current time
+  useEffect(() => {
+    // Immediately set to 0 if current time is 0
+    if (currentTime === 0) {
+      setAnimatedCurrentTime(0);
+      return;
+    }
+    
+    // Gradually animate to the current time
+    const interval = setInterval(() => {
+      setAnimatedCurrentTime((prev) => {
+        if (prev < currentTime) return prev + 0.1;
+        if (prev > currentTime) return currentTime; // Jump immediately if we need to go backward
+        return prev;
+      });
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [currentTime]);
+
   if (!data.length) {
     return (
       <div className={cn("p-4 border border-dashed border-gray-300 rounded-lg bg-white", className)}>
@@ -18,7 +40,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
     );
   }
 
-  const totalTime = data[data.length - 1].endTime;
+  const totalTime = Math.max(...data.map(item => item.endTime));
   
   return (
     <div className={cn("rounded-lg overflow-hidden bg-white", className)}>
@@ -29,7 +51,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
             {/* Timeline */}
             <div className="flex text-xs text-arena-gray mb-1">
               {Array.from({ length: totalTime + 1 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-10 text-center">{i}</div>
+                <div key={i} className="flex-shrink-0 w-10 text-center">{i} s</div>
               ))}
             </div>
             
@@ -37,38 +59,52 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
             <div className="flex h-12 mb-4 relative">
               {data.map((item, index) => {
                 const width = (item.endTime - item.startTime) * 40; // 40px per time unit
+                const leftPosition = item.startTime * 40; // Calculate absolute position
+                const visibleWidth = Math.min(
+                  width,
+                  Math.max(0, animatedCurrentTime - item.startTime) * 40
+                );
                 
                 return (
                   <div
                     key={index}
-                    className={cn(
-                      "h-full flex items-center justify-center text-white font-medium rounded-md relative overflow-hidden",
-                      currentTime >= item.startTime && currentTime < item.endTime ? "ring-2 ring-white ring-offset-2" : ""
-                    )}
+                    className="absolute h-full"
                     style={{
+                      left: `${leftPosition}px`,
                       width: `${width}px`,
-                      backgroundColor: item.color,
-                      marginLeft: index === 0 ? `${item.startTime * 40}px` : '0',
-                      opacity: currentTime >= item.endTime ? 0.7 : 1,
                     }}
                   >
-                    {item.process}
+                    <div
+                      className={cn(
+                        "h-full flex items-center justify-center text-white font-medium rounded-md relative overflow-hidden",
+                        animatedCurrentTime >= item.startTime && animatedCurrentTime < item.endTime ? "ring-2 ring-white ring-offset-2" : ""
+                      )}
+                      style={{
+                        width: `${Math.max(0, visibleWidth)}px`,
+                        backgroundColor: item.color,
+                        opacity: animatedCurrentTime >= item.endTime ? 0.7 : 1,
+                        transition: "width 0.3s ease-out"
+                      }}
+                    >
+                      {item.process}
+                    </div>
                   </div>
                 );
               })}
               
               {/* Current Time Indicator */}
-              {currentTime <= totalTime && (
+              {animatedCurrentTime <= totalTime && (
                 <div 
                   className="absolute top-0 h-full border-l-2 border-arena-red z-10 pointer-events-none"
                   style={{ 
-                    left: `${currentTime * 40}px`,
+                    left: `${animatedCurrentTime * 40}px`,
                     height: '200%',
                     borderLeftWidth: '2px',
+                    transition: "left 0.3s ease-out"
                   }}
                 >
                   <div className="bg-arena-red text-white text-xs rounded px-1 absolute -top-6 -translate-x-1/2">
-                    {currentTime}s
+                    {Math.floor(animatedCurrentTime * 10) / 10}s
                   </div>
                 </div>
               )}
