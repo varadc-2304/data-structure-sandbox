@@ -10,6 +10,7 @@ import DataStructures from "./pages/DataStructures";
 import CPUScheduling from "./pages/CPUScheduling";
 import PageReplacement from "./pages/PageReplacement";
 import DiskScheduling from "./pages/DiskScheduling";
+import Algorithms from "./pages/Algorithms";
 import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
 import LinkedListVisualizer from "./pages/visualizers/LinkedListVisualizer";
 import StackVisualizer from "./pages/visualizers/StackVisualizer";
@@ -31,6 +32,18 @@ import SCANVisualizer from "./pages/visualizers/SCANVisualizer";
 import CSCANVisualizer from "./pages/visualizers/CSCANVisualizer";
 import LOOKVisualizer from "./pages/visualizers/LOOKVisualizer";
 import CLOOKVisualizer from "./pages/visualizers/CLOOKVisualizer";
+import LinearSearchVisualizer from "./pages/visualizers/LinearSearchVisualizer";
+import BinarySearchVisualizer from "./pages/visualizers/BinarySearchVisualizer";
+import BubbleSortVisualizer from "./pages/visualizers/BubbleSortVisualizer";
+import SelectionSortVisualizer from "./pages/visualizers/SelectionSortVisualizer";
+import InsertionSortVisualizer from "./pages/visualizers/InsertionSortVisualizer";
+import MergeSortVisualizer from "./pages/visualizers/MergeSortVisualizer";
+import QuickSortVisualizer from "./pages/visualizers/QuickSortVisualizer";
+import TowerOfHanoiVisualizer from "./pages/visualizers/TowerOfHanoiVisualizer";
+import NQueensVisualizer from "./pages/visualizers/NQueensVisualizer";
+import FractionalKnapsackVisualizer from "./pages/visualizers/FractionalKnapsackVisualizer";
+import JobSequencingVisualizer from "./pages/visualizers/JobSequencingVisualizer";
+import ZeroOneKnapsackVisualizer from "./pages/visualizers/ZeroOneKnapsackVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +88,21 @@ const App = () => (
           <Route path="/disk-scheduling/c-scan" element={<CSCANVisualizer />} />
           <Route path="/disk-scheduling/look" element={<LOOKVisualizer />} />
           <Route path="/disk-scheduling/c-look" element={<CLOOKVisualizer />} />
+          
+          {/* Algorithms */}
+          <Route path="/algorithms" element={<Algorithms />} />
+          <Route path="/algorithms/linear-search" element={<LinearSearchVisualizer />} />
+          <Route path="/algorithms/binary-search" element={<BinarySearchVisualizer />} />
+          <Route path="/algorithms/bubble-sort" element={<BubbleSortVisualizer />} />
+          <Route path="/algorithms/selection-sort" element={<SelectionSortVisualizer />} />
+          <Route path="/algorithms/insertion-sort" element={<InsertionSortVisualizer />} />
+          <Route path="/algorithms/merge-sort" element={<MergeSortVisualizer />} />
+          <Route path="/algorithms/quick-sort" element={<QuickSortVisualizer />} />
+          <Route path="/algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
+          <Route path="/algorithms/n-queens" element={<NQueensVisualizer />} />
+          <Route path="/algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
+          <Route path="/algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
+          <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

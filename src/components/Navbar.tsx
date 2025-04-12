@@ -78,6 +78,15 @@ const Navbar = () => {
             >
               Disk Scheduling
             </Link>
+            <Link
+              to="/algorithms"
+              className={cn(
+                "font-medium transition-colors hover:text-drona-green", 
+                location.pathname.includes('/algorithms') ? 'text-drona-green' : 'text-drona-dark'
+              )}
+            >
+              Algorithms
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -140,6 +149,16 @@ const Navbar = () => {
             onClick={() => setIsMenuOpen(false)}
           >
             Disk Scheduling
+          </Link>
+          <Link
+            to="/algorithms"
+            className={cn(
+              "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+              location.pathname.includes('/algorithms') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
+            )}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Algorithms
           </Link>
         </div>
       </div>
