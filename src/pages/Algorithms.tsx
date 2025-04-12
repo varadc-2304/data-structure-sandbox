@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Search, SortAsc, CircleStack, Network } from 'lucide-react';
+import { ArrowRight, Search, SortAsc, Layers, Network } from 'lucide-react';
 
 const Algorithms = () => {
   return (
@@ -88,7 +88,7 @@ const Algorithms = () => {
             <Card className="shadow-md hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <CircleStack className="w-5 h-5 mr-2 text-drona-green" />
+                  <Layers className="w-5 h-5 mr-2 text-drona-green" />
                   Dynamic Programming
                 </CardTitle>
                 <CardDescription>
@@ -137,7 +137,7 @@ const Algorithms = () => {
             <Card className="shadow-md hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <CircleStack className="w-5 h-5 mr-2 text-drona-green" />
+                  <Layers className="w-5 h-5 mr-2 text-drona-green" />
                   Classic Problems
                 </CardTitle>
                 <CardDescription>
