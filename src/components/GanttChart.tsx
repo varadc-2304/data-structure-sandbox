@@ -49,7 +49,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
           {/* Gantt Chart */}
           <div className="relative">
             {/* Timeline */}
-            <div className="flex text-xs text-arena-gray mb-1">
+            <div className="flex text-xs text-drona-gray mb-1">
               {Array.from({ length: totalTime + 1 }).map((_, i) => (
                 <div key={i} className="flex-shrink-0 w-10 text-center">{i} s</div>
               ))}
@@ -95,7 +95,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
               {/* Current Time Indicator */}
               {animatedCurrentTime <= totalTime && (
                 <div 
-                  className="absolute top-0 h-full border-l-2 border-arena-red z-10 pointer-events-none"
+                  className="absolute top-0 h-full border-l-2 border-drona-green z-10 pointer-events-none"
                   style={{ 
                     left: `${animatedCurrentTime * 40}px`,
                     height: '200%',
@@ -103,7 +103,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
                     transition: "left 0.3s ease-out"
                   }}
                 >
-                  <div className="bg-arena-red text-white text-xs rounded px-1 absolute -top-6 -translate-x-1/2">
+                  <div className="bg-drona-green text-white text-xs rounded px-1 absolute -top-6 -translate-x-1/2">
                     {Math.floor(animatedCurrentTime * 10) / 10}s
                   </div>
                 </div>

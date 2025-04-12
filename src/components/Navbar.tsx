@@ -36,7 +36,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold text-arena-red">Arena<span className="text-arena-dark">Tools</span></span>
+              <span className="text-xl font-bold text-drona-green">Drona</span>
             </Link>
           </div>
 
@@ -45,8 +45,8 @@ const Navbar = () => {
             <Link
               to="/data-structures"
               className={cn(
-                "font-medium transition-colors hover:text-arena-red", 
-                location.pathname.includes('/data-structures') ? 'text-arena-red' : 'text-arena-dark'
+                "font-medium transition-colors hover:text-drona-green", 
+                location.pathname.includes('/data-structures') ? 'text-drona-green' : 'text-drona-dark'
               )}
             >
               Data Structures
@@ -54,11 +54,29 @@ const Navbar = () => {
             <Link
               to="/cpu-scheduling"
               className={cn(
-                "font-medium transition-colors hover:text-arena-red", 
-                location.pathname.includes('/cpu-scheduling') ? 'text-arena-red' : 'text-arena-dark'
+                "font-medium transition-colors hover:text-drona-green", 
+                location.pathname.includes('/cpu-scheduling') ? 'text-drona-green' : 'text-drona-dark'
               )}
             >
               CPU Scheduling
+            </Link>
+            <Link
+              to="/page-replacement"
+              className={cn(
+                "font-medium transition-colors hover:text-drona-green", 
+                location.pathname.includes('/page-replacement') ? 'text-drona-green' : 'text-drona-dark'
+              )}
+            >
+              Page Replacement
+            </Link>
+            <Link
+              to="/disk-scheduling"
+              className={cn(
+                "font-medium transition-colors hover:text-drona-green", 
+                location.pathname.includes('/disk-scheduling') ? 'text-drona-green' : 'text-drona-dark'
+              )}
+            >
+              Disk Scheduling
             </Link>
           </div>
 
@@ -66,7 +84,7 @@ const Navbar = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-arena-dark hover:text-arena-red focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-md text-drona-dark hover:text-drona-green focus:outline-none"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -86,8 +104,8 @@ const Navbar = () => {
           <Link
             to="/data-structures"
             className={cn(
-              "block px-3 py-2 rounded-md text-base font-medium hover:bg-arena-red/10", 
-              location.pathname.includes('/data-structures') ? 'text-arena-red bg-arena-red/5' : 'text-arena-dark'
+              "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+              location.pathname.includes('/data-structures') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
             )}
             onClick={() => setIsMenuOpen(false)}
           >
@@ -96,12 +114,32 @@ const Navbar = () => {
           <Link
             to="/cpu-scheduling"
             className={cn(
-              "block px-3 py-2 rounded-md text-base font-medium hover:bg-arena-red/10", 
-              location.pathname.includes('/cpu-scheduling') ? 'text-arena-red bg-arena-red/5' : 'text-arena-dark'
+              "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+              location.pathname.includes('/cpu-scheduling') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
             )}
             onClick={() => setIsMenuOpen(false)}
           >
             CPU Scheduling
+          </Link>
+          <Link
+            to="/page-replacement"
+            className={cn(
+              "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+              location.pathname.includes('/page-replacement') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
+            )}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Page Replacement
+          </Link>
+          <Link
+            to="/disk-scheduling"
+            className={cn(
+              "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+              location.pathname.includes('/disk-scheduling') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
+            )}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Disk Scheduling
           </Link>
         </div>
       </div>

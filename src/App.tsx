@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DataStructures from "./pages/DataStructures";
 import CPUScheduling from "./pages/CPUScheduling";
+import PageReplacement from "./pages/PageReplacement";
+import DiskScheduling from "./pages/DiskScheduling";
 import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
 import LinkedListVisualizer from "./pages/visualizers/LinkedListVisualizer";
 import StackVisualizer from "./pages/visualizers/StackVisualizer";
@@ -20,6 +22,8 @@ import FCFSVisualizer from "./pages/visualizers/FCFSVisualizer";
 import SJFVisualizer from "./pages/visualizers/SJFVisualizer";
 import PriorityVisualizer from "./pages/visualizers/PriorityVisualizer";
 import RoundRobinVisualizer from "./pages/visualizers/RoundRobinVisualizer";
+import FIFOVisualizer from "./pages/visualizers/FIFOVisualizer";
+import FCFSDiskVisualizer from "./pages/visualizers/FCFSDiskVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +53,14 @@ const App = () => (
           <Route path="/cpu-scheduling/sjf" element={<SJFVisualizer />} />
           <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
           <Route path="/cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
+          
+          {/* Page Replacement */}
+          <Route path="/page-replacement" element={<PageReplacement />} />
+          <Route path="/page-replacement/fifo" element={<FIFOVisualizer />} />
+          
+          {/* Disk Scheduling */}
+          <Route path="/disk-scheduling" element={<DiskScheduling />} />
+          <Route path="/disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

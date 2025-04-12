@@ -53,10 +53,10 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				arena: {
-					red: '#FF3B30',
+				drona: {
+					green: '#2E8B57',
 					white: '#FFFFFF',
-					light: '#F5F5F7',
+					light: '#F5F7F5',
 					dark: '#1D1D1F',
 					gray: '#86868B'
 				}

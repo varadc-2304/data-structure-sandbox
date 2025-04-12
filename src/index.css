@@ -14,24 +14,24 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 12%;
 
-    --primary: 357 100% 59%;
+    --primary: 150 49% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 96%;
+    --secondary: 120 10% 96%;
     --secondary-foreground: 0 0% 12%;
 
-    --muted: 0 0% 96%;
+    --muted: 120 10% 96%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 96%;
+    --accent: 120 10% 96%;
     --accent-foreground: 0 0% 12%;
 
-    --destructive: 357 100% 59%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 357 100% 59%;
+    --ring: 150 49% 36%;
 
     --radius: 0.75rem;
   }
@@ -50,12 +50,12 @@
     @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg rounded-2xl transition-all duration-300 hover:shadow-xl;
   }
   
-  .arena-button {
-    @apply px-6 py-3 bg-arena-red text-white rounded-full font-medium shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95;
+  .drona-button {
+    @apply px-6 py-3 bg-drona-green text-white rounded-full font-medium shadow-md transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95;
   }
   
-  .arena-card {
-    @apply p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-arena-red/20;
+  .drona-card {
+    @apply p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-drona-green/20;
   }
   
   .page-container {
@@ -63,11 +63,11 @@
   }
   
   .section-title {
-    @apply text-3xl font-bold mb-6 text-arena-dark;
+    @apply text-3xl font-bold mb-6 text-drona-dark;
   }
   
-  .arena-chip {
-    @apply inline-block px-3 py-1 text-xs font-medium rounded-full bg-arena-red/10 text-arena-red;
+  .drona-chip {
+    @apply inline-block px-3 py-1 text-xs font-medium rounded-full bg-drona-green/10 text-drona-green;
   }
 }
 
@@ -107,9 +107,9 @@
 }
 
 @keyframes element-highlight {
-  0% { background-color: rgba(255, 59, 48, 0.1); }
-  50% { background-color: rgba(255, 59, 48, 0.4); }
-  100% { background-color: rgba(255, 59, 48, 0.1); }
+  0% { background-color: rgba(46, 139, 87, 0.1); }
+  50% { background-color: rgba(46, 139, 87, 0.4); }
+  100% { background-color: rgba(46, 139, 87, 0.1); }
 }
 
 .array-element-add {
