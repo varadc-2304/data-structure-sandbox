@@ -23,7 +23,14 @@ import SJFVisualizer from "./pages/visualizers/SJFVisualizer";
 import PriorityVisualizer from "./pages/visualizers/PriorityVisualizer";
 import RoundRobinVisualizer from "./pages/visualizers/RoundRobinVisualizer";
 import FIFOVisualizer from "./pages/visualizers/FIFOVisualizer";
+import LRUVisualizer from "./pages/visualizers/LRUVisualizer";
+import MRUVisualizer from "./pages/visualizers/MRUVisualizer";
 import FCFSDiskVisualizer from "./pages/visualizers/FCFSDiskVisualizer";
+import SSTFVisualizer from "./pages/visualizers/SSTFVisualizer";
+import SCANVisualizer from "./pages/visualizers/SCANVisualizer";
+import CSCANVisualizer from "./pages/visualizers/CSCANVisualizer";
+import LOOKVisualizer from "./pages/visualizers/LOOKVisualizer";
+import CLOOKVisualizer from "./pages/visualizers/CLOOKVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -57,10 +64,17 @@ const App = () => (
           {/* Page Replacement */}
           <Route path="/page-replacement" element={<PageReplacement />} />
           <Route path="/page-replacement/fifo" element={<FIFOVisualizer />} />
+          <Route path="/page-replacement/lru" element={<LRUVisualizer />} />
+          <Route path="/page-replacement/mru" element={<MRUVisualizer />} />
           
           {/* Disk Scheduling */}
           <Route path="/disk-scheduling" element={<DiskScheduling />} />
           <Route path="/disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
+          <Route path="/disk-scheduling/sstf" element={<SSTFVisualizer />} />
+          <Route path="/disk-scheduling/scan" element={<SCANVisualizer />} />
+          <Route path="/disk-scheduling/c-scan" element={<CSCANVisualizer />} />
+          <Route path="/disk-scheduling/look" element={<LOOKVisualizer />} />
+          <Route path="/disk-scheduling/c-look" element={<CLOOKVisualizer />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
