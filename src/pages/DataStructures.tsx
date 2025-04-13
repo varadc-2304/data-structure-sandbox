@@ -71,9 +71,9 @@ const DataStructures = () => {
       
       <div className="page-container pt-24">
         <div className="mb-10 text-center">
-          <div className="arena-chip mb-3 animate-fade-in">Interactive Visualizers</div>
-          <h1 className="text-3xl font-bold text-arena-dark mb-3 animate-slide-in">Data Structures</h1>
-          <p className="max-w-2xl mx-auto text-arena-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="drona-chip mb-3 animate-fade-in">Interactive Visualizers</div>
+          <h1 className="text-3xl font-bold text-drona-dark mb-3 animate-slide-in">Data Structures</h1>
+          <p className="max-w-2xl mx-auto text-drona-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Select a data structure to visualize and explore its operations.
           </p>
         </div>
@@ -92,9 +92,9 @@ const DataStructures = () => {
         </div>
       </div>
       
-      <footer className="bg-arena-light py-6 mt-12">
+      <footer className="bg-drona-light py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center text-arena-gray">
+          <div className="text-center text-drona-gray">
             <p>© {new Date().getFullYear()} ArenaTools. All rights reserved.</p>
           </div>
         </div>
