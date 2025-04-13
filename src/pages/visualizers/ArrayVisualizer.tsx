@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Plus, Trash, Eye, AlertCircle } from 'lucide-react';
+import { ArrowRight, Plus, Trash, Eye, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ArrayVisualizer = () => {
   const [array, setArray] = useState<(number | string)[]>([]);
@@ -11,9 +13,14 @@ const ArrayVisualizer = () => {
   const [position, setPosition] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const arrayRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const addLog = (message: string) => {
+    setLogs(prevLogs => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
 
   const resetHighlights = () => {
     setLastOperation(null);
@@ -35,6 +42,8 @@ const ArrayVisualizer = () => {
     setLastOperation('append');
     setOperationTarget(array.length);
     setNewElement('');
+    
+    addLog(`Appended "${newValue}" to the end of the array`);
     
     toast({
       title: "Element appended",
@@ -73,7 +82,18 @@ const ArrayVisualizer = () => {
     }
 
     const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
-    const newArray = [...array.slice(0, pos), newValue, ...array.slice(pos)];
+    const newArray = [...array];
+    
+    // Replace at position instead of inserting
+    if (pos < array.length) {
+      newArray[pos] = newValue;
+      addLog(`Replaced element at position ${pos} with "${newValue}"`);
+    } else {
+      // If position is at the end, append
+      newArray.push(newValue);
+      addLog(`Inserted "${newValue}" at position ${pos}`);
+    }
+    
     setArray(newArray);
     setLastOperation('insert');
     setOperationTarget(pos);
@@ -81,8 +101,10 @@ const ArrayVisualizer = () => {
     setPosition('');
     
     toast({
-      title: "Element inserted",
-      description: `Inserted "${newValue}" at position ${pos}`,
+      title: pos < array.length ? "Element replaced" : "Element inserted",
+      description: pos < array.length 
+        ? `Replaced element at position ${pos} with "${newValue}"`
+        : `Inserted "${newValue}" at position ${pos}`,
     });
   };
 
@@ -114,6 +136,8 @@ const ArrayVisualizer = () => {
     setOperationTarget(pos);
     setPosition('');
     
+    addLog(`Deleted "${deletedValue}" from position ${pos}`);
+    
     toast({
       title: "Element deleted",
       description: `Removed "${deletedValue}" from position ${pos}`,
@@ -144,9 +168,22 @@ const ArrayVisualizer = () => {
     setLastOperation('view');
     setOperationTarget(pos);
     
+    addLog(`Viewed element at position ${pos}: "${array[pos]}"`);
+    
     toast({
       title: "Element viewed",
       description: `Element at position ${pos} is "${array[pos]}"`,
+    });
+  };
+  
+  const generateRandomArray = () => {
+    const size = Math.floor(Math.random() * 5) + 5; // Random size between 5-10
+    const randomArray = Array(size).fill(0).map(() => Math.floor(Math.random() * 100));
+    setArray(randomArray);
+    addLog(`Generated random array of size ${size}`);
+    toast({
+      title: "Random array generated",
+      description: `Created new array with ${size} elements`,
     });
   };
 
@@ -204,7 +241,7 @@ const ArrayVisualizer = () => {
                       {
                         "border-arena-red bg-arena-red/10 shadow-md": operationTarget === index,
                         "animate-scale-in": lastOperation === 'append' && operationTarget === index,
-                        "array-element-highlight": lastOperation === 'view' && operationTarget === index,
+                        "array-element-highlight shadow-lg ring-2 ring-arena-red": lastOperation === 'view' && operationTarget === index,
                       }
                     )}
                   >
@@ -216,7 +253,7 @@ const ArrayVisualizer = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Append element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
@@ -231,13 +268,13 @@ const ArrayVisualizer = () => {
                   placeholder="Enter value"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={appendElement}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-red text-white rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
                 >
                   Append
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -262,12 +299,12 @@ const ArrayVisualizer = () => {
                   placeholder="Position"
                   className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={insertAtPosition}
                   className="bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300"
                 >
                   Insert
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -285,13 +322,13 @@ const ArrayVisualizer = () => {
                   placeholder="Enter position"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={deleteAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-red text-white rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -309,15 +346,46 @@ const ArrayVisualizer = () => {
                   placeholder="Enter position"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={viewAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-red text-white rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
                 >
                   View
                   <Eye className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
+          </div>
+          
+          {/* Random array generation */}
+          <div className="flex justify-center mb-6">
+            <Button 
+              onClick={generateRandomArray} 
+              className="bg-arena-red text-white hover:bg-arena-red/90 transition-colors flex items-center"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Generate Random Array
+            </Button>
+          </div>
+          
+          {/* Log box */}
+          <div className="bg-arena-light rounded-lg p-4">
+            <h3 className="text-sm font-medium text-arena-dark mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" /> Operation Log
+            </h3>
+            <ScrollArea className="h-32 w-full rounded border border-gray-200">
+              {logs.length === 0 ? (
+                <div className="p-2 text-center text-sm text-arena-gray">No operations performed yet.</div>
+              ) : (
+                <div className="p-2">
+                  {logs.map((log, index) => (
+                    <div key={index} className="text-sm py-1 border-b border-gray-100 last:border-0">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
         

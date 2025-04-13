@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -32,11 +33,16 @@ const LOOKVisualizer = () => {
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
   const [direction, setDirection] = useState<'up' | 'down'>('up');
   const [initialDirection, setInitialDirection] = useState<'up' | 'down'>('up');
+  const [logs, setLogs] = useState<string[]>([]);
 
   // Initialize simulation
   useEffect(() => {
     resetSimulation();
   }, [initialHeadPosition, initialDirection]);
+
+  const addLog = (message: string) => {
+    setLogs(prevLogs => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
 
   // Handle play/pause
   useEffect(() => {
@@ -73,8 +79,10 @@ const LOOKVisualizer = () => {
       
       setRequestQueue([...requestQueue, ...newRequests]);
       setInputPosition("");
+      addLog(`Added ${newPositions.length} requests: ${newPositions.join(', ')}`);
     } catch (error) {
       console.error("Invalid position format or out of range");
+      addLog("Error: Invalid position format or out of range");
     }
   };
 
@@ -93,6 +101,7 @@ const LOOKVisualizer = () => {
       current: false
     }));
     setRequestQueue(resetRequests);
+    addLog("Simulation reset");
   };
 
   const nextStep = () => {
@@ -124,6 +133,7 @@ const LOOKVisualizer = () => {
       } else {
         // No requests ahead, change direction to 'down'
         setDirection('down');
+        addLog(`Changed direction to downward`);
         
         // Find the closest request that is < current head position
         const requestsBehind = unprocessedRequests.filter(req => req.position < currentHeadPosition);
@@ -145,6 +155,7 @@ const LOOKVisualizer = () => {
       } else {
         // No requests behind, change direction to 'up'
         setDirection('up');
+        addLog(`Changed direction to upward`);
         
         // Find the closest request that is > current head position
         const requestsAhead = unprocessedRequests.filter(req => req.position > currentHeadPosition);
@@ -194,6 +205,45 @@ const LOOKVisualizer = () => {
     
     // Update current step
     setCurrentStep(prev => prev + 1);
+    
+    addLog(`Disk head moved from ${currentHeadPosition} to ${nextRequest.position} (distance: ${seekDistance})`);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= 0) {
+      return;
+    }
+    
+    const prevStepIndex = currentStep - 1;
+    const lastProcessed = processedOrder[processedOrder.length - 1];
+    
+    // Get the previous seek operation
+    const prevSeek = seekHistory[seekHistory.length - 1];
+    
+    // Update total seek time
+    setTotalSeekTime(prev => prev - prevSeek.distance);
+    
+    // Update head position to previous position
+    setCurrentHeadPosition(prevSeek.from);
+    
+    // Update request queue
+    const updatedRequests = requestQueue.map(req => ({
+      ...req,
+      processed: req.position !== lastProcessed.position && req.processed,
+      current: false
+    }));
+    setRequestQueue(updatedRequests);
+    
+    // Update processed order
+    setProcessedOrder(processedOrder.slice(0, -1));
+    
+    // Update history
+    setSeekHistory(seekHistory.slice(0, -1));
+    
+    // Update current step
+    setCurrentStep(prevStepIndex);
+    
+    addLog(`Reversed: Disk head moved back from ${prevSeek.to} to ${prevSeek.from}`);
   };
 
   const togglePlayPause = () => {
@@ -202,6 +252,7 @@ const LOOKVisualizer = () => {
       setIsPlaying(true);
     } else {
       setIsPlaying(!isPlaying);
+      addLog(isPlaying ? "Simulation paused" : "Simulation started");
     }
   };
 
@@ -285,7 +336,7 @@ const LOOKVisualizer = () => {
                         onKeyDown={(e) => e.key === 'Enter' && handleAddRequest()}
                         className="rounded-r-none"
                       />
-                      <Button onClick={handleAddRequest} className="rounded-l-none">Add</Button>
+                      <Button onClick={handleAddRequest} className="bg-drona-green hover:bg-drona-green/90 rounded-l-none">Add</Button>
                     </div>
                   </div>
                   
@@ -305,17 +356,17 @@ const LOOKVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button 
-                      variant="outline" 
-                      className="flex-1" 
+                      variant="outline"
                       onClick={resetSimulation}
+                      className="flex items-center justify-center"
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
                     <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                      className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       onClick={togglePlayPause}
                       disabled={requestQueue.length === 0}
                     >
@@ -324,6 +375,27 @@ const LOOKVisualizer = () => {
                       ) : (
                         <><Play className="mr-2 h-4 w-4" /> {requestQueue.every(req => req.processed) ? 'Restart' : 'Play'}</>
                       )}
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={prevStep}
+                      disabled={currentStep <= 0}
+                      className="flex items-center justify-center"
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={nextStep}
+                      disabled={requestQueue.every(req => req.processed)}
+                      className="flex items-center justify-center"
+                    >
+                      Next
+                      <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -380,7 +452,7 @@ const LOOKVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Disk Visualization</h3>
-                      <div className="relative h-16 bg-drona-light rounded-lg overflow-hidden mb-2">
+                      <div className="relative h-16 bg-drona-light rounded-lg overflow-hidden mb-4">
                         {/* Disk track representation */}
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400"></div>
                         
@@ -399,7 +471,7 @@ const LOOKVisualizer = () => {
                           className="absolute top-0 h-full w-1 bg-drona-green transition-all duration-500"
                           style={{ left: `${(currentHeadPosition / diskSize) * 100}%` }}
                         >
-                          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-drona-green">
+                          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -415,13 +487,13 @@ const LOOKVisualizer = () => {
                             )}
                             style={{ left: `${(req.position / diskSize) * 100}%` }}
                           >
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs">
+                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs whitespace-nowrap">
                               {req.position}
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-between text-xs text-drona-gray">
+                      <div className="flex justify-between text-xs text-drona-gray mt-6">
                         <span>0</span>
                         <span>{Math.floor(diskSize / 4)}</span>
                         <span>{Math.floor(diskSize / 2)}</span>
@@ -445,7 +517,7 @@ const LOOKVisualizer = () => {
                       </div>
                     </div>
                     
-                    <div>
+                    <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Seek Operations</h3>
                       <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
                         {seekHistory.length === 0 ? (
@@ -463,7 +535,7 @@ const LOOKVisualizer = () => {
                             </thead>
                             <tbody>
                               {seekHistory.map((seek, idx) => (
-                                <tr key={idx} className={idx % 2 === 0 ? '5g-white' : 'bg-gray-50'}>
+                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                   <td className="px-4 py-2 text-sm">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
                                   <td className="px-4 py-2 text-sm">{seek.to}</td>
@@ -477,6 +549,24 @@ const LOOKVisualizer = () => {
                           </table>
                         )}
                       </div>
+                    </div>
+                    
+                    {/* Log box */}
+                    <div>
+                      <h3 className="text-sm font-medium text-drona-gray mb-2">Operation Log</h3>
+                      <ScrollArea className="h-32 w-full border border-gray-200 rounded-lg">
+                        {logs.length === 0 ? (
+                          <div className="p-4 text-center text-gray-400">No logs yet</div>
+                        ) : (
+                          <div className="p-2">
+                            {logs.map((log, idx) => (
+                              <div key={idx} className="py-1 px-2 text-sm border-b border-gray-100 last:border-b-0">
+                                {log}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
                     </div>
                   </CardContent>
                 </Card>

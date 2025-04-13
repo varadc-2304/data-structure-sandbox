@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, Search } from 'lucide-react';
+import { Plus, Search, AlertCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 interface TreeNode {
   value: number;
@@ -18,8 +21,13 @@ const BinaryTreeVisualizer = () => {
   const [searchValue, setSearchValue] = useState('');
   const [highlightedNode, setHighlightedNode] = useState<number | null>(null);
   const [lastOperation, setLastOperation] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
+
+  const addLog = (message: string) => {
+    setLogs(prevLogs => [...prevLogs, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
 
   const resetHighlights = () => {
     setHighlightedNode(null);
@@ -79,6 +87,8 @@ const BinaryTreeVisualizer = () => {
     setRoot({ value: val, left: null, right: null });
     setNewValue('');
     
+    addLog(`Created root node with value ${val}`);
+    
     toast({
       title: "Root created",
       description: `Created root node with value ${val}`,
@@ -134,6 +144,8 @@ const BinaryTreeVisualizer = () => {
     setLastOperation('insert');
     setHighlightedNode(newVal);
     
+    addLog(`Added node with value ${newVal} as ${direction} child of node ${parentVal}`);
+    
     toast({
       title: "Node inserted",
       description: `Added node with value ${newVal} as ${direction} child of ${parentVal}`,
@@ -166,11 +178,15 @@ const BinaryTreeVisualizer = () => {
       setLastOperation('search');
       setHighlightedNode(val);
       
+      addLog(`Found node with value ${val} in the tree`);
+      
       toast({
         title: "Node found",
         description: `Node with value ${val} exists in the tree`,
       });
     } else {
+      addLog(`Node with value ${val} does not exist in the tree`);
+      
       toast({
         title: "Node not found",
         description: `Node with value ${val} does not exist in the tree`,
@@ -181,34 +197,101 @@ const BinaryTreeVisualizer = () => {
     setSearchValue('');
   };
 
-  // Function to render the binary tree recursively
-  const renderTree = (node: TreeNode | null, level: number = 0, position: string = 'root'): JSX.Element => {
-    if (node === null) {
-      return <div className="invisible w-16 h-16"></div>;
-    }
+  // Function to recursively calculate the positions of nodes
+  const calculateNodePositions = (
+    node: TreeNode | null,
+    level: number = 0,
+    position: number = 0,
+    positions: Map<string, { x: number, y: number, node: TreeNode }> = new Map()
+  ): Map<string, { x: number, y: number, node: TreeNode }> => {
+    if (node === null) return positions;
+    
+    // Calculate the horizontal position
+    const horizontalSpacing = 120 / (Math.pow(2, level) + 1);
+    const x = position * horizontalSpacing;
+    const y = level * 80;
+    
+    positions.set(`${node.value}`, { x, y, node });
+    
+    // Calculate for left child
+    calculateNodePositions(node.left, level + 1, position * 2, positions);
+    
+    // Calculate for right child
+    calculateNodePositions(node.right, level + 1, position * 2 + 1, positions);
+    
+    return positions;
+  };
 
-    const isHighlighted = highlightedNode === node.value;
-
-    return (
-      <div className="flex flex-col items-center">
-        <div
-          className={cn(
-            "w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-300 mb-2 transition-all duration-300 relative",
-            {
-              "border-arena-red bg-arena-red/10 shadow-md": isHighlighted,
-              "border-gray-300 bg-white": !isHighlighted,
-            }
-          )}
-        >
-          {node.value}
+  // Function to render the binary tree with edges
+  const renderTree = () => {
+    if (root === null) {
+      return (
+        <div className="flex items-center justify-center w-full py-8 text-arena-gray">
+          <AlertCircle className="mr-2 h-5 w-5" />
+          <span>Tree is empty. Create a root node using the controls below.</span>
         </div>
-        {(node.left !== null || node.right !== null) && (
-          <div className="flex items-start space-x-4 relative">
-            {renderTree(node.left, level + 1, 'left')}
-            {renderTree(node.right, level + 1, 'right')}
-          </div>
-        )}
-      </div>
+      );
+    }
+    
+    // Calculate positions for all nodes
+    const nodePositions = calculateNodePositions(root);
+    
+    return (
+      <svg width="600" height="400" viewBox="0 0 600 400" className="mx-auto">
+        {/* Draw edges first so they appear behind nodes */}
+        {Array.from(nodePositions.entries()).map(([key, { x, y, node }]) => {
+          return (
+            <React.Fragment key={`edges-${key}`}>
+              {node.left && (
+                <line
+                  x1={x + 300}
+                  y1={y + 20}
+                  x2={nodePositions.get(`${node.left.value}`)!.x + 300}
+                  y2={nodePositions.get(`${node.left.value}`)!.y}
+                  stroke="#888"
+                  strokeWidth="2"
+                />
+              )}
+              {node.right && (
+                <line
+                  x1={x + 300}
+                  y1={y + 20}
+                  x2={nodePositions.get(`${node.right.value}`)!.x + 300}
+                  y2={nodePositions.get(`${node.right.value}`)!.y}
+                  stroke="#888"
+                  strokeWidth="2"
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+        
+        {/* Then draw the nodes */}
+        {Array.from(nodePositions.entries()).map(([key, { x, y, node }]) => {
+          const isHighlighted = highlightedNode === node.value;
+          return (
+            <g key={`node-${key}`}>
+              <circle
+                cx={x + 300}
+                cy={y + 20}
+                r="20"
+                fill={isHighlighted ? "rgba(249, 115, 22, 0.2)" : "white"}
+                stroke={isHighlighted ? "#f97316" : "#888"}
+                strokeWidth={isHighlighted ? "3" : "2"}
+              />
+              <text
+                x={x + 300}
+                y={y + 25}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight={isHighlighted ? "bold" : "normal"}
+              >
+                {node.value}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     );
   };
 
@@ -240,21 +323,12 @@ const BinaryTreeVisualizer = () => {
           
           {/* Binary Tree visualization */}
           <div className="mb-6 relative overflow-auto">
-            <div className="flex justify-center p-4 bg-arena-light rounded-lg min-h-[300px]">
-              {root === null ? (
-                <div className="flex items-center justify-center w-full py-8 text-arena-gray">
-                  <AlertCircle className="mr-2 h-5 w-5" />
-                  <span>Tree is empty. Create a root node using the controls below.</span>
-                </div>
-              ) : (
-                <div className="transform scale-90 origin-top">
-                  {renderTree(root)}
-                </div>
-              )}
+            <div className="p-4 bg-arena-light rounded-lg min-h-[300px]">
+              {renderTree()}
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Create root node */}
             {!root && (
               <div className="bg-arena-light rounded-xl p-4 col-span-1 md:col-span-2">
@@ -270,13 +344,13 @@ const BinaryTreeVisualizer = () => {
                     placeholder="Enter value"
                     className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={createRoot}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    className="bg-arena-red text-white rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
                   >
                     Create Root
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -329,13 +403,13 @@ const BinaryTreeVisualizer = () => {
                       <span className="ml-2">Right Child</span>
                     </label>
                   </div>
-                  <button
+                  <Button
                     onClick={insertNode}
-                    className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    className="w-full bg-arena-red text-white rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
                   >
                     Insert Node
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -355,16 +429,36 @@ const BinaryTreeVisualizer = () => {
                     placeholder="Search value"
                     className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={searchNode}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    className="bg-arena-red text-white rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
                   >
                     Search
                     <Search className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
+          </div>
+          
+          {/* Log box */}
+          <div className="bg-arena-light rounded-lg p-4">
+            <h3 className="text-sm font-medium text-arena-dark mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" /> Operation Log
+            </h3>
+            <ScrollArea className="h-32 w-full rounded border border-gray-200">
+              {logs.length === 0 ? (
+                <div className="p-2 text-center text-sm text-arena-gray">No operations performed yet.</div>
+              ) : (
+                <div className="p-2">
+                  {logs.map((log, index) => (
+                    <div key={index} className="text-sm py-1 border-b border-gray-100 last:border-0">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
         
