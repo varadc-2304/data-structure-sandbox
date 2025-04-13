@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Plus, Trash, Eye, AlertCircle } from 'lucide-react';
+import { ArrowRight, Plus, Trash, Eye, AlertCircle, Shuffle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 const ArrayVisualizer = () => {
   const [array, setArray] = useState<(number | string)[]>([]);
@@ -11,14 +12,29 @@ const ArrayVisualizer = () => {
   const [position, setPosition] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const arrayRef = useRef<HTMLDivElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
   };
+
+  const addToLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  };
+
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [logs]);
 
   const appendElement = () => {
     if (newElement.trim() === '') {
@@ -36,9 +52,12 @@ const ArrayVisualizer = () => {
     setOperationTarget(array.length);
     setNewElement('');
     
+    const message = `Appended "${newValue}" to the end of the array`;
+    addToLog(message);
+    
     toast({
       title: "Element appended",
-      description: `Added "${newValue}" to the end of the array`,
+      description: message,
     });
   };
 
@@ -80,9 +99,12 @@ const ArrayVisualizer = () => {
     setNewElement('');
     setPosition('');
     
+    const message = `Inserted "${newValue}" at position ${pos}`;
+    addToLog(message);
+    
     toast({
       title: "Element inserted",
-      description: `Inserted "${newValue}" at position ${pos}`,
+      description: message,
     });
   };
 
@@ -114,9 +136,12 @@ const ArrayVisualizer = () => {
     setOperationTarget(pos);
     setPosition('');
     
+    const message = `Removed "${deletedValue}" from position ${pos}`;
+    addToLog(message);
+    
     toast({
       title: "Element deleted",
-      description: `Removed "${deletedValue}" from position ${pos}`,
+      description: message,
     });
   };
 
@@ -144,9 +169,28 @@ const ArrayVisualizer = () => {
     setLastOperation('view');
     setOperationTarget(pos);
     
+    const message = `Viewed element at position ${pos}: "${array[pos]}"`;
+    addToLog(message);
+    
     toast({
       title: "Element viewed",
       description: `Element at position ${pos} is "${array[pos]}"`,
+    });
+  };
+
+  const generateRandomArray = () => {
+    const size = 5 + Math.floor(Math.random() * 6); // Random size between 5 and 10
+    const randomArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    setArray(randomArray);
+    setLastOperation(null);
+    setOperationTarget(null);
+    
+    const message = `Generated random array with ${size} elements`;
+    addToLog(message);
+    
+    toast({
+      title: "Random array generated",
+      description: message,
     });
   };
 
@@ -171,27 +215,37 @@ const ArrayVisualizer = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="page-container pt-32">
-        <div className="mb-10 animate-slide-in">
-          <div className="arena-chip mb-4">Data Structure Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Array Visualizer</h1>
-          <p className="text-arena-gray">
+      <div className="page-container pt-28">
+        <div className="mb-8 animate-slide-in">
+          <div className="drona-chip mb-4">Data Structure Visualization</div>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">Array Visualizer</h1>
+          <p className="text-drona-gray">
             Visualize and perform operations on arrays. Add, insert, view, or delete elements to see how arrays work.
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-semibold mb-4">Array Visualization</h2>
+        <div className="mb-6 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Array Visualization</h2>
+            <Button 
+              onClick={generateRandomArray} 
+              variant="outline"
+              className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+            >
+              <Shuffle className="h-4 w-4" />
+              Generate Random Array
+            </Button>
+          </div>
           
           {/* Array visualization */}
           <div className="mb-6 relative">
             <div 
               ref={arrayRef}
-              className="flex overflow-x-auto pb-4 pt-2 px-2 bg-arena-light rounded-lg"
+              className="flex overflow-x-auto pb-4 pt-2 px-2 bg-drona-light rounded-lg"
               style={{ minHeight: "80px" }}
             >
               {array.length === 0 ? (
-                <div className="flex items-center justify-center w-full py-8 text-arena-gray">
+                <div className="flex items-center justify-center w-full py-8 text-drona-gray">
                   <AlertCircle className="mr-2 h-5 w-5" />
                   <span>Array is empty. Add elements using the controls below.</span>
                 </div>
@@ -202,14 +256,14 @@ const ArrayVisualizer = () => {
                     className={cn(
                       "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                       {
-                        "border-arena-red bg-arena-red/10 shadow-md": operationTarget === index,
+                        "border-drona-green bg-drona-green/10 shadow-md": operationTarget === index,
                         "animate-scale-in": lastOperation === 'append' && operationTarget === index,
                         "array-element-highlight": lastOperation === 'view' && operationTarget === index,
                       }
                     )}
                   >
                     <div className="text-lg font-medium">{item.toString()}</div>
-                    <div className="text-xs text-arena-gray">[{index}]</div>
+                    <div className="text-xs text-drona-gray">[{index}]</div>
                   </div>
                 ))
               )}
@@ -218,9 +272,9 @@ const ArrayVisualizer = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Append element */}
-            <div className="bg-arena-light rounded-xl p-4">
+            <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-drona-green mr-2" />
                 Append Element
               </h3>
               <div className="flex">
@@ -229,22 +283,22 @@ const ArrayVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={appendElement}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Append
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Insert at position */}
-            <div className="bg-arena-light rounded-xl p-4">
+            <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-drona-green mr-2" />
                 Insert at Position
               </h3>
               <div className="grid grid-cols-5 gap-2">
@@ -253,28 +307,28 @@ const ArrayVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Value"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
                 <input
                   type="number"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Position"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={insertAtPosition}
-                  className="bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300"
+                  className="bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Insert
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Delete at position */}
-            <div className="bg-arena-light rounded-xl p-4">
+            <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-arena-red mr-2" />
+                <Trash className="h-5 w-5 text-drona-green mr-2" />
                 Delete at Position
               </h3>
               <div className="flex">
@@ -283,22 +337,22 @@ const ArrayVisualizer = () => {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={deleteAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* View at position */}
-            <div className="bg-arena-light rounded-xl p-4">
+            <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-red mr-2" />
+                <Eye className="h-5 w-5 text-drona-green mr-2" />
                 View at Position
               </h3>
               <div className="flex">
@@ -307,38 +361,57 @@ const ArrayVisualizer = () => {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={viewAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   View
                   <Eye className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Operation Logs */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-drona-gray">
+                  No operations performed yet
+                </div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
+                    {log}
+                  </div>
+                ))
+              )}
+              <div ref={logsEndRef} />
             </div>
           </div>
         </div>
         
         <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
           <h2 className="text-xl font-semibold mb-2">About Arrays</h2>
-          <p className="text-arena-gray mb-4">
+          <p className="text-drona-gray mb-4">
             An array is a collection of elements stored at contiguous memory locations. It is the simplest data structure where each element can be accessed using an index.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div className="bg-arena-light p-3 rounded-lg">
+            <div className="bg-drona-light p-3 rounded-lg">
               <span className="font-medium">Time Complexity:</span>
-              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+              <ul className="list-disc pl-5 mt-1 text-drona-gray">
                 <li>Access: O(1)</li>
                 <li>Search: O(n)</li>
                 <li>Insertion: O(n)</li>
                 <li>Deletion: O(n)</li>
               </ul>
             </div>
-            <div className="bg-arena-light p-3 rounded-lg">
+            <div className="bg-drona-light p-3 rounded-lg">
               <span className="font-medium">Common Operations:</span>
-              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+              <ul className="list-disc pl-5 mt-1 text-drona-gray">
                 <li>Accessing elements by index</li>
                 <li>Inserting elements</li>
                 <li>Deleting elements</li>
