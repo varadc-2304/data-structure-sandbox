@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, Search } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, Search, RefreshCw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface TreeNode {
   value: number;
@@ -19,6 +21,7 @@ const BSTVisualizer = () => {
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [traversalPath, setTraversalPath] = useState<number[]>([]);
   const [currentTraversalType, setCurrentTraversalType] = useState<string | null>(null);
+  const [operationLogs, setOperationLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
 
@@ -27,6 +30,10 @@ const BSTVisualizer = () => {
     setLastOperation(null);
     setTraversalPath([]);
     setCurrentTraversalType(null);
+  };
+
+  const addOperationLog = (message: string) => {
+    setOperationLogs(prev => [message, ...prev.slice(0, 9)]);
   };
 
   // Helper function to insert a node in BST
@@ -106,6 +113,34 @@ const BSTVisualizer = () => {
     return node;
   };
 
+  // Generate random BST
+  const generateRandomBST = () => {
+    setRoot(null);
+    resetHighlights();
+    
+    const count = Math.floor(Math.random() * 5) + 5; // 5-10 nodes
+    const newRoot = null;
+    const usedValues = new Set<number>();
+    
+    for (let i = 0; i < count; i++) {
+      let randomValue: number;
+      do {
+        randomValue = Math.floor(Math.random() * 100) + 1;
+      } while (usedValues.has(randomValue));
+      
+      usedValues.add(randomValue);
+      const updatedRoot = insertNodeBST(newRoot || null, randomValue);
+      setRoot(updatedRoot);
+    }
+    
+    addOperationLog(`Generated a random BST with ${count} nodes`);
+    
+    toast({
+      title: "BST Generated",
+      description: `Created a random Binary Search Tree with ${count} nodes`,
+    });
+  };
+
   // Traverse the BST in different orders
   const traverseInOrder = (node: TreeNode | null, result: number[] = []): number[] => {
     if (node !== null) {
@@ -167,6 +202,7 @@ const BSTVisualizer = () => {
     setNewValue('');
     setLastOperation('insert');
     setHighlightedNode(val);
+    addOperationLog(`Inserted node with value ${val}`);
     
     toast({
       title: "Node inserted",
@@ -200,12 +236,14 @@ const BSTVisualizer = () => {
       setLastOperation('search');
       setHighlightedNode(val);
       setTraversalPath(path);
+      addOperationLog(`Searched and found node with value ${val}`);
       
       toast({
         title: "Node found",
         description: `Node with value ${val} exists in the BST`,
       });
     } else {
+      addOperationLog(`Searched for node with value ${val} - not found`);
       toast({
         title: "Node not found",
         description: `Node with value ${val} does not exist in the BST`,
@@ -249,6 +287,7 @@ const BSTVisualizer = () => {
 
     setHighlightedNode(val);
     setLastOperation('delete');
+    addOperationLog(`Deleted node with value ${val}`);
     
     // Wait a short time to show the node before deleting
     setTimeout(() => {
@@ -281,14 +320,17 @@ const BSTVisualizer = () => {
       case 'inorder':
         path = traverseInOrder(root);
         description = 'In-order traversal (Left-Root-Right)';
+        addOperationLog(`Performed in-order traversal: [${path.join(', ')}]`);
         break;
       case 'preorder':
         path = traversePreOrder(root);
         description = 'Pre-order traversal (Root-Left-Right)';
+        addOperationLog(`Performed pre-order traversal: [${path.join(', ')}]`);
         break;
       case 'postorder':
         path = traversePostOrder(root);
         description = 'Post-order traversal (Left-Right-Root)';
+        addOperationLog(`Performed post-order traversal: [${path.join(', ')}]`);
         break;
     }
 
@@ -318,7 +360,7 @@ const BSTVisualizer = () => {
             "w-16 h-16 rounded-full flex items-center justify-center border-2 mb-2 transition-all duration-300",
             {
               "border-arena-red bg-arena-red/10 shadow-md": isHighlighted,
-              "border-green-500 bg-green-100": isInPath && !isHighlighted,
+              "border-drona-green bg-drona-green/10": isInPath && !isHighlighted,
               "border-gray-300 bg-white": !isHighlighted && !isInPath,
             }
           )}
@@ -359,7 +401,17 @@ const BSTVisualizer = () => {
         </div>
         
         <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-semibold mb-4">BST Visualization</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">BST Visualization</h2>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={generateRandomBST}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Generate Random BST
+            </Button>
+          </div>
           
           {/* BST visualization */}
           <div className="mb-6 relative overflow-auto">
@@ -381,7 +433,7 @@ const BSTVisualizer = () => {
             {/* Insert node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-drona-green mr-2" />
                 Insert Node
               </h3>
               <div className="flex">
@@ -390,22 +442,22 @@ const BSTVisualizer = () => {
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={handleInsert}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Insert
                   <Plus className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Search node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-red mr-2" />
+                <Search className="h-5 w-5 text-drona-green mr-2" />
                 Search Node
               </h3>
               <div className="flex">
@@ -414,22 +466,22 @@ const BSTVisualizer = () => {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   placeholder="Search value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={handleSearch}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Search
                   <Search className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Delete node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-arena-red mr-2" />
+                <Trash className="h-5 w-5 text-drona-green mr-2" />
                 Delete Node
               </h3>
               <div className="flex">
@@ -438,54 +490,70 @@ const BSTVisualizer = () => {
                   value={deleteValue}
                   onChange={(e) => setDeleteValue(e.target.value)}
                   placeholder="Delete value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={handleDelete}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Traversals */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-red mr-2" />
+                <Eye className="h-5 w-5 text-drona-green mr-2" />
                 Tree Traversals
               </h3>
               <div className="grid grid-cols-3 gap-2">
-                <button
+                <Button
                   onClick={() => handleTraversal('inorder')}
                   className={cn(
-                    "bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300",
-                    { "ring-2 ring-offset-2 ring-arena-red": currentTraversalType === 'inorder' }
+                    { "ring-2 ring-offset-2 ring-drona-green": currentTraversalType === 'inorder' }
                   )}
+                  size="sm"
                 >
                   In-Order
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleTraversal('preorder')}
                   className={cn(
-                    "bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300",
-                    { "ring-2 ring-offset-2 ring-arena-red": currentTraversalType === 'preorder' }
+                    { "ring-2 ring-offset-2 ring-drona-green": currentTraversalType === 'preorder' }
                   )}
+                  size="sm"
                 >
                   Pre-Order
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleTraversal('postorder')}
                   className={cn(
-                    "bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300",
-                    { "ring-2 ring-offset-2 ring-arena-red": currentTraversalType === 'postorder' }
+                    { "ring-2 ring-offset-2 ring-drona-green": currentTraversalType === 'postorder' }
                   )}
+                  size="sm"
                 >
                   Post-Order
-                </button>
+                </Button>
               </div>
             </div>
+          </div>
+          
+          {/* Operation Logs */}
+          <div className="mt-6 p-4 bg-arena-light rounded-xl">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            {operationLogs.length === 0 ? (
+              <p className="text-arena-gray text-sm italic">No operations performed yet</p>
+            ) : (
+              <div className="max-h-32 overflow-y-auto">
+                {operationLogs.map((log, index) => (
+                  <div key={index} className="text-sm py-1 border-b border-gray-200 last:border-0">
+                    {log}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         
