@@ -4,17 +4,33 @@ import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, ArrowDown, ArrowUp } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 const StackVisualizer = () => {
   const [stack, setStack] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
+  const logsEndRef = React.useRef<HTMLDivElement>(null);
 
   const resetHighlights = () => {
     setLastOperation(null);
   };
+
+  const addToLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  };
+
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [logs]);
 
   const pushElement = () => {
     if (newElement.trim() === '') {
@@ -31,9 +47,12 @@ const StackVisualizer = () => {
     setLastOperation('push');
     setNewElement('');
     
+    const message = `Pushed "${newValue}" to the top of the stack`;
+    addToLog(message);
+    
     toast({
       title: "Element pushed",
-      description: `Pushed "${newValue}" to the top of the stack`,
+      description: message,
     });
   };
 
@@ -51,9 +70,12 @@ const StackVisualizer = () => {
     setStack(stack.slice(0, -1));
     setLastOperation('pop');
     
+    const message = `Popped "${poppedValue}" from the top of the stack`;
+    addToLog(message);
+    
     toast({
       title: "Element popped",
-      description: `Popped "${poppedValue}" from the top of the stack`,
+      description: message,
     });
   };
 
@@ -70,9 +92,27 @@ const StackVisualizer = () => {
     const topValue = stack[stack.length - 1];
     setLastOperation('peek');
     
+    const message = `Peeked at top element: "${topValue}"`;
+    addToLog(message);
+    
     toast({
       title: "Top element",
       description: `Top element is "${topValue}"`,
+    });
+  };
+
+  const generateRandomStack = () => {
+    const size = 3 + Math.floor(Math.random() * 4); // Random size between 3 and 6
+    const randomStack = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    setStack(randomStack);
+    setLastOperation(null);
+    
+    const message = `Generated random stack with ${size} elements`;
+    addToLog(message);
+    
+    toast({
+      title: "Random stack generated",
+      description: message,
     });
   };
 
@@ -100,7 +140,16 @@ const StackVisualizer = () => {
         </div>
         
         <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-semibold mb-4">Stack Visualization</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Stack Visualization</h2>
+            <Button 
+              onClick={generateRandomStack} 
+              variant="outline"
+              className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+            >
+              Generate Random Stack
+            </Button>
+          </div>
           
           {/* Stack visualization */}
           <div className="mb-6 relative">
@@ -120,7 +169,7 @@ const StackVisualizer = () => {
                     className={cn(
                       "w-full max-w-xs p-4 m-1 rounded-lg border-2 border-gray-200 flex justify-between items-center transition-all duration-300",
                       {
-                        "border-arena-red bg-arena-red/10 shadow-md": 
+                        "border-drona-green bg-drona-green/10 shadow-md": 
                           (lastOperation === 'push' && index === stack.length - 1) ||
                           (lastOperation === 'pop' && index === stack.length - 1) ||
                           (lastOperation === 'peek' && index === stack.length - 1),
@@ -136,7 +185,7 @@ const StackVisualizer = () => {
                 ))
               )}
               {/* Base of the stack */}
-              <div className="w-full max-w-xs h-2 bg-arena-red rounded-b-lg mt-1"></div>
+              <div className="w-full max-w-xs h-2 bg-drona-green rounded-b-lg mt-1"></div>
             </div>
           </div>
           
@@ -144,7 +193,7 @@ const StackVisualizer = () => {
             {/* Push element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-drona-green mr-2" />
                 Push Element
               </h3>
               <div className="flex">
@@ -153,46 +202,65 @@ const StackVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={pushElement}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center"
                 >
                   Push
                   <ArrowUp className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Pop element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-arena-red mr-2" />
+                <Trash className="h-5 w-5 text-drona-green mr-2" />
                 Pop Element
               </h3>
-              <button
+              <Button
                 onClick={popElement}
-                className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Pop
                 <ArrowDown className="ml-2 h-4 w-4" />
-              </button>
+              </Button>
             </div>
             
             {/* Peek element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-red mr-2" />
+                <Eye className="h-5 w-5 text-drona-green mr-2" />
                 Peek Element
               </h3>
-              <button
+              <Button
                 onClick={peekElement}
-                className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Peek
                 <Eye className="ml-2 h-4 w-4" />
-              </button>
+              </Button>
+            </div>
+          </div>
+
+          {/* Operation Logs */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  No operations performed yet
+                </div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
+                    {log}
+                  </div>
+                ))
+              )}
+              <div ref={logsEndRef} />
             </div>
           </div>
         </div>
@@ -202,4 +270,3 @@ const StackVisualizer = () => {
 };
 
 export default StackVisualizer;
-
