@@ -151,7 +151,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
         
         <Button 
           onClick={handleAddProcess} 
-          className="mt-4 bg-arena-red hover:bg-arena-red/90"
+          className="mt-4 text-arena-green hover:text-arena-green/90"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Process
