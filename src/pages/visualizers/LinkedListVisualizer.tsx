@@ -272,7 +272,7 @@ const LinkedListVisualizer = () => {
                       className={cn(
                         "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                         {
-                          "border-arena-red bg-arena-red/10 shadow-md": operationTarget === index,
+                          "border-arena-green bg-arena-green/10 shadow-md": operationTarget === index,
                           "animate-scale-in": lastOperation === 'append' && operationTarget === index,
                           "array-element-highlight": lastOperation === 'view' && operationTarget === index,
                         }
@@ -282,7 +282,7 @@ const LinkedListVisualizer = () => {
                       <div className="text-xs text-arena-gray">[{index}]</div>
                     </div>
                     {index < getLinkedListArray().length - 1 && (
-                      <ArrowRightCircle className="h-5 w-5 text-arena-red mx-1" />
+                      <ArrowRightCircle className="h-5 w-5 text-arena-green mx-1" />
                     )}
                   </div>
                 ))
@@ -294,7 +294,7 @@ const LinkedListVisualizer = () => {
             {/* Append node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Append Node
               </h3>
               <div className="flex">
@@ -303,11 +303,11 @@ const LinkedListVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <button
                   onClick={appendNode}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Append
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -318,7 +318,7 @@ const LinkedListVisualizer = () => {
             {/* Insert at position */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Insert at Position
               </h3>
               <div className="grid grid-cols-5 gap-2">
@@ -327,18 +327,18 @@ const LinkedListVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Value"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <input
                   type="number"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Position"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <button
                   onClick={insertAtPosition}
-                  className="bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300"
+                  className="bg-arena-green text-white px-2 py-2 rounded-lg hover:bg-arena-green/90 transition-colors duration-300"
                 >
                   Insert
                 </button>
@@ -348,7 +348,7 @@ const LinkedListVisualizer = () => {
             {/* Delete at position */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-arena-red mr-2" />
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
                 Delete at Position
               </h3>
               <div className="flex">
@@ -357,11 +357,11 @@ const LinkedListVisualizer = () => {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <button
                   onClick={deleteAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
@@ -372,7 +372,7 @@ const LinkedListVisualizer = () => {
             {/* View at position */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-red mr-2" />
+                <Eye className="h-5 w-5 text-arena-green mr-2" />
                 View at Position
               </h3>
               <div className="flex">
@@ -381,11 +381,11 @@ const LinkedListVisualizer = () => {
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <button
                   onClick={viewAtPosition}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   View
                   <Eye className="ml-2 h-4 w-4" />

@@ -61,8 +61,7 @@ export default {
 					gray: '#86868B'
 				},
 				arena: {
-					red: '#F06060',
-					green: '#2E8B57',
+					green: '#2E8B57',  // Changed from red to green
 					blue: '#5D87E6',
 					light: '#F5F7F5',
 					dark: '#1D1D1F',
