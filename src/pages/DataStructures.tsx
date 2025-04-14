@@ -1,7 +1,8 @@
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
-import CategoryCard from '@/components/CategoryCard';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { 
   ListOrdered, 
   Link as LinkIcon, 
@@ -80,14 +81,28 @@ const DataStructures = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
           {dataStructures.map((ds, index) => (
-            <CategoryCard
+            <div 
               key={ds.title}
-              title={ds.title}
-              description={ds.description}
-              icon={ds.icon}
-              to={ds.to}
-              delay={index * 50}
-            />
+              className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow animate-fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex items-center mb-3">
+                  <div className="bg-drona-green/10 p-2 rounded-lg text-drona-green mr-3">
+                    {ds.icon}
+                  </div>
+                  <h3 className="font-semibold text-drona-dark">{ds.title}</h3>
+                </div>
+                <p className="text-sm text-drona-gray mb-4 flex-grow">
+                  {ds.description}
+                </p>
+                <Link to={ds.to}>
+                  <Button className="w-full" variant="default">
+                    Explore
+                  </Button>
+                </Link>
+              </div>
+            </div>
           ))}
         </div>
       </div>

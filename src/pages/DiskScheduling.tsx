@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HardDrive, ArrowRight } from 'lucide-react';
+import { HardDrive, Play } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import CategoryCard from '@/components/CategoryCard';
+import { Button } from '@/components/ui/button';
 
 const DiskScheduling = () => {
   const algorithms = [
@@ -77,9 +77,8 @@ const DiskScheduling = () => {
           
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {algorithms.map((algorithm) => (
-              <Link 
+              <div 
                 key={algorithm.id} 
-                to={`/disk-scheduling/${algorithm.id}`} 
                 className="drona-card block"
               >
                 <div className="flex flex-col h-full">
@@ -93,11 +92,19 @@ const DiskScheduling = () => {
                     </div>
                   </div>
                   <p className="text-sm text-drona-gray flex-grow">{algorithm.description}</p>
-                  <div className="mt-4 flex items-center text-drona-green font-medium text-sm">
-                    Visualize <ArrowRight className="ml-1 h-4 w-4" />
+                  <div className="mt-4">
+                    <Link to={`/disk-scheduling/${algorithm.id}`}>
+                      <Button
+                        variant="default"
+                        className="w-full"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Visualize Algorithm
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from '@/components/ui/button';
 
 const QueueVisualizer = () => {
   const [queue, setQueue] = useState<(number | string)[]>([]);
@@ -125,7 +126,7 @@ const QueueVisualizer = () => {
                         className={cn(
                           "min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300",
                           {
-                            "border-arena-red bg-arena-red/10 shadow-md": 
+                            "border-arena-green bg-arena-green/10 shadow-md": 
                               (lastOperation === 'enqueue' && index === queue.length - 1) ||
                               (lastOperation === 'dequeue' && index === 0) ||
                               (lastOperation === 'peek' && index === 0),
@@ -137,7 +138,7 @@ const QueueVisualizer = () => {
                         <div className="text-xs text-arena-gray">[{index}]</div>
                       </div>
                       {index < queue.length - 1 && (
-                        <ArrowRight className="h-5 w-5 text-arena-red mx-1" />
+                        <ArrowRight className="h-5 w-5 text-arena-green mx-1" />
                       )}
                     </div>
                   ))
@@ -150,7 +151,7 @@ const QueueVisualizer = () => {
             {/* Enqueue element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Enqueue Element
               </h3>
               <div className="flex">
@@ -159,46 +160,49 @@ const QueueVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={enqueueElement}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  variant="default"
+                  className="rounded-l-none rounded-r-lg"
                 >
                   Enqueue
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Dequeue element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-arena-red mr-2" />
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
                 Dequeue Element
               </h3>
-              <button
+              <Button
                 onClick={dequeueElement}
-                className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                variant="default"
+                className="w-full"
               >
                 Dequeue
                 <ArrowLeft className="ml-2 h-4 w-4" />
-              </button>
+              </Button>
             </div>
             
             {/* Peek element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-red mr-2" />
+                <Eye className="h-5 w-5 text-arena-green mr-2" />
                 Peek Element
               </h3>
-              <button
+              <Button
                 onClick={peekElement}
-                className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                variant="default"
+                className="w-full"
               >
                 Peek
                 <Eye className="ml-2 h-4 w-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

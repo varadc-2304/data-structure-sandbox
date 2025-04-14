@@ -3,6 +3,8 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
 import { Timer, Clock, ListOrdered, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const cpuSchedulingAlgorithms = [
   {
@@ -47,14 +49,22 @@ const CPUScheduling = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {cpuSchedulingAlgorithms.map((algo, index) => (
-            <CategoryCard
-              key={algo.title}
-              title={algo.title}
-              description={algo.description}
-              icon={algo.icon}
-              to={algo.to}
-              delay={index * 50}
-            />
+            <div key={algo.title} className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div className="flex items-start mb-4">
+                <div className="bg-drona-green/10 p-3 rounded-lg text-drona-green mr-4">
+                  {algo.icon}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-drona-dark">{algo.title}</h3>
+                </div>
+              </div>
+              <p className="text-drona-gray text-sm mb-5">{algo.description}</p>
+              <Link to={algo.to}>
+                <Button className="w-full" variant="default">
+                  Visualize Algorithm
+                </Button>
+              </Link>
+            </div>
           ))}
         </div>
       </div>

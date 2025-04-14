@@ -178,7 +178,7 @@ const PriorityVisualizer = () => {
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button 
                       onClick={runSimulation} 
-                      className="bg-arena-red hover:bg-arena-red/90"
+                      variant="default"
                       size="sm"
                     >
                       <Play className="mr-2 h-3 w-3" />
@@ -234,7 +234,7 @@ const PriorityVisualizer = () => {
                     </Button>
                     
                     <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
-                      <Timer className="mr-2 h-3 w-3 text-arena-red" />
+                      <Timer className="mr-2 h-3 w-3 text-arena-green" />
                       <span className="text-arena-dark font-medium text-sm">Time: {currentTime} / {totalTime}</span>
                     </div>
                   </div>
