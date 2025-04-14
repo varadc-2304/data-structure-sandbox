@@ -186,7 +186,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={pauseSimulation} 
-                      variant="default" 
+                      variant="outline" 
                       disabled={!ganttChart.length || !isSimulating}
                       size="sm"
                     >
@@ -196,7 +196,7 @@ const PriorityVisualizer = () => {
 
                     <Button 
                       onClick={resumeSimulation} 
-                      variant="default" 
+                      variant="outline" 
                       disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
                       size="sm"
                     >
@@ -206,7 +206,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={resetSimulation} 
-                      variant="default" 
+                      variant="outline" 
                       disabled={!ganttChart.length}
                       size="sm"
                     >
@@ -216,7 +216,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={stepBackward} 
-                      variant="default" 
+                      variant="outline" 
                       disabled={!ganttChart.length || currentTime <= 0}
                       size="sm"
                     >
@@ -225,7 +225,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={stepForward} 
-                      variant="default" 
+                      variant="outline" 
                       disabled={!ganttChart.length || currentTime >= totalTime}
                       size="sm"
                     >
