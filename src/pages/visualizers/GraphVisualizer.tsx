@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, AlertCircle, Search, Share2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from '@/components/ui/button';
 
 interface Node {
   id: string;
