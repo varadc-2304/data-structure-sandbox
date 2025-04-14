@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from '@/components/ui/button';
 
 const DequeVisualizer = () => {
   const [deque, setDeque] = useState<(number | string)[]>([]);
@@ -193,7 +194,7 @@ const DequeVisualizer = () => {
                         className={cn(
                           "min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300",
                           {
-                            "border-arena-red bg-arena-red/10 shadow-md": 
+                            "border-arena-green bg-arena-green/10 shadow-md": 
                               (lastOperation === 'add' && operationEnd === 'front' && index === 0) ||
                               (lastOperation === 'add' && operationEnd === 'rear' && index === deque.length - 1) ||
                               (lastOperation === 'remove' && operationEnd === 'front' && index === 0) ||
@@ -210,7 +211,7 @@ const DequeVisualizer = () => {
                         <div className="text-xs text-arena-gray">[{index}]</div>
                       </div>
                       {index < deque.length - 1 && (
-                        <ArrowRight className="h-5 w-5 text-arena-red mx-1" />
+                        <ArrowRight className="h-5 w-5 text-arena-green mx-1" />
                       )}
                     </div>
                   ))
@@ -223,7 +224,7 @@ const DequeVisualizer = () => {
             {/* Front operations */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <ArrowLeft className="h-5 w-5 text-arena-red mr-2" />
+                <ArrowLeft className="h-5 w-5 text-arena-green mr-2" />
                 Front Operations
               </h3>
               <div className="space-y-3">
@@ -233,31 +234,34 @@ const DequeVisualizer = () => {
                     value={newElement}
                     onChange={(e) => setNewElement(e.target.value)}
                     placeholder="Enter value"
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={addFront}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    variant="default"
+                    className="rounded-r-lg rounded-l-none"
                   >
                     Add Front
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
+                  <Button
                     onClick={removeFront}
-                    className="bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    variant="default"
+                    className="flex items-center justify-center"
                   >
                     Remove Front
                     <Trash className="ml-2 h-4 w-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={peekFront}
-                    className="bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    variant="default"
+                    className="flex items-center justify-center"
                   >
                     Peek Front
                     <Eye className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -265,7 +269,7 @@ const DequeVisualizer = () => {
             {/* Rear operations */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <ArrowRight className="h-5 w-5 text-arena-red mr-2" />
+                <ArrowRight className="h-5 w-5 text-arena-green mr-2" />
                 Rear Operations
               </h3>
               <div className="space-y-3">
@@ -275,31 +279,34 @@ const DequeVisualizer = () => {
                     value={newElement}
                     onChange={(e) => setNewElement(e.target.value)}
                     placeholder="Enter value"
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={addRear}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    variant="default"
+                    className="rounded-r-lg rounded-l-none"
                   >
                     Add Rear
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
+                  <Button
                     onClick={removeRear}
-                    className="bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    variant="default"
+                    className="flex items-center justify-center"
                   >
                     Remove Rear
                     <Trash className="ml-2 h-4 w-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={peekRear}
-                    className="bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    variant="default"
+                    className="flex items-center justify-center"
                   >
                     Peek Rear
                     <Eye className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

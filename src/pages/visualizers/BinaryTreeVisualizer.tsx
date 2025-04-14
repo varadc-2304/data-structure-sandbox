@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from '@/components/ui/button';
 
 interface TreeNode {
   value: number;
@@ -195,7 +197,7 @@ const BinaryTreeVisualizer = () => {
           className={cn(
             "w-16 h-16 rounded-full flex items-center justify-center border-2 border-gray-300 mb-2 transition-all duration-300 relative",
             {
-              "border-arena-red bg-arena-red/10 shadow-md": isHighlighted,
+              "border-arena-green bg-arena-green/10 shadow-md": isHighlighted,
               "border-gray-300 bg-white": !isHighlighted,
             }
           )}
@@ -259,7 +261,7 @@ const BinaryTreeVisualizer = () => {
             {!root && (
               <div className="bg-arena-light rounded-xl p-4 col-span-1 md:col-span-2">
                 <h3 className="text-lg font-medium mb-3 flex items-center">
-                  <Plus className="h-5 w-5 text-arena-red mr-2" />
+                  <Plus className="h-5 w-5 text-arena-green mr-2" />
                   Create Root Node
                 </h3>
                 <div className="flex">
@@ -268,15 +270,16 @@ const BinaryTreeVisualizer = () => {
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
                     placeholder="Enter value"
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={createRoot}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    variant="default"
+                    className="rounded-r-lg rounded-l-none"
                   >
                     Create Root
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -285,7 +288,7 @@ const BinaryTreeVisualizer = () => {
             {root && (
               <div className="bg-arena-light rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-3 flex items-center">
-                  <Plus className="h-5 w-5 text-arena-red mr-2" />
+                  <Plus className="h-5 w-5 text-arena-green mr-2" />
                   Insert Node
                 </h3>
                 <div className="space-y-3">
@@ -295,7 +298,7 @@ const BinaryTreeVisualizer = () => {
                       value={newValue}
                       onChange={(e) => setNewValue(e.target.value)}
                       placeholder="New value"
-                      className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                      className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                     />
                   </div>
                   <div className="flex">
@@ -304,14 +307,14 @@ const BinaryTreeVisualizer = () => {
                       value={parentValue}
                       onChange={(e) => setParentValue(e.target.value)}
                       placeholder="Parent value"
-                      className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                      className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                     />
                   </div>
                   <div className="flex items-center space-x-4">
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio text-arena-red"
+                        className="form-radio text-arena-green"
                         name="direction"
                         checked={direction === 'left'}
                         onChange={() => setDirection('left')}
@@ -321,7 +324,7 @@ const BinaryTreeVisualizer = () => {
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio text-arena-red"
+                        className="form-radio text-arena-green"
                         name="direction"
                         checked={direction === 'right'}
                         onChange={() => setDirection('right')}
@@ -329,13 +332,14 @@ const BinaryTreeVisualizer = () => {
                       <span className="ml-2">Right Child</span>
                     </label>
                   </div>
-                  <button
+                  <Button
                     onClick={insertNode}
-                    className="w-full bg-arena-red text-white px-4 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center justify-center"
+                    variant="default"
+                    className="w-full flex items-center justify-center"
                   >
                     Insert Node
                     <Plus className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -344,7 +348,7 @@ const BinaryTreeVisualizer = () => {
             {root && (
               <div className="bg-arena-light rounded-xl p-4">
                 <h3 className="text-lg font-medium mb-3 flex items-center">
-                  <Search className="h-5 w-5 text-arena-red mr-2" />
+                  <Search className="h-5 w-5 text-arena-green mr-2" />
                   Search Node
                 </h3>
                 <div className="flex">
@@ -353,15 +357,16 @@ const BinaryTreeVisualizer = () => {
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     placeholder="Search value"
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
-                  <button
+                  <Button
                     onClick={searchNode}
-                    className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                    variant="default"
+                    className="rounded-r-lg rounded-l-none"
                   >
                     Search
                     <Search className="ml-2 h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
