@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Process, GanttChartItem, runRoundRobin } from '@/utils/cpuSchedulingUtils';
@@ -189,7 +188,7 @@ const RoundRobinVisualizer = () => {
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button 
                       onClick={runSimulation} 
-                      className="bg-arena-red hover:bg-arena-red/90"
+                      variant="default"
                       size="sm"
                     >
                       <Play className="mr-2 h-3 w-3" />
@@ -198,7 +197,7 @@ const RoundRobinVisualizer = () => {
                     
                     <Button 
                       onClick={pauseSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || !isSimulating}
                       size="sm"
                     >
@@ -208,7 +207,7 @@ const RoundRobinVisualizer = () => {
 
                     <Button 
                       onClick={resumeSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
                       size="sm"
                     >
@@ -218,7 +217,7 @@ const RoundRobinVisualizer = () => {
                     
                     <Button 
                       onClick={resetSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length}
                       size="sm"
                     >
@@ -228,7 +227,7 @@ const RoundRobinVisualizer = () => {
                     
                     <Button 
                       onClick={stepBackward} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || currentTime <= 0}
                       size="sm"
                     >
@@ -237,7 +236,7 @@ const RoundRobinVisualizer = () => {
                     
                     <Button 
                       onClick={stepForward} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || currentTime >= totalTime}
                       size="sm"
                     >

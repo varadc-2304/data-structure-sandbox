@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Process, GanttChartItem, runPriorityNonPreemptive, runPriorityPreemptive } from '@/utils/cpuSchedulingUtils';
@@ -187,7 +186,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={pauseSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || !isSimulating}
                       size="sm"
                     >
@@ -197,7 +196,7 @@ const PriorityVisualizer = () => {
 
                     <Button 
                       onClick={resumeSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
                       size="sm"
                     >
@@ -207,7 +206,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={resetSimulation} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length}
                       size="sm"
                     >
@@ -217,7 +216,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={stepBackward} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || currentTime <= 0}
                       size="sm"
                     >
@@ -226,7 +225,7 @@ const PriorityVisualizer = () => {
                     
                     <Button 
                       onClick={stepForward} 
-                      variant="outline" 
+                      variant="default" 
                       disabled={!ganttChart.length || currentTime >= totalTime}
                       size="sm"
                     >

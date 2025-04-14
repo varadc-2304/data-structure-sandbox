@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Process, GanttChartItem, runSJFNonPreemptive, runSJFPreemptive } from '@/utils/cpuSchedulingUtils';
@@ -178,7 +177,7 @@ const SJFVisualizer = () => {
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button 
                       onClick={runSimulation} 
-                      className="bg-arena-red hover:bg-arena-red/90"
+                      variant="default"
                       size="sm"
                     >
                       <Play className="mr-2 h-3 w-3" />

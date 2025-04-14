@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
@@ -463,7 +462,7 @@ const GraphVisualizer = () => {
             {/* Add node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-red mr-2" />
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Add Node
               </h3>
               <div className="flex">
@@ -472,29 +471,30 @@ const GraphVisualizer = () => {
                   value={nodeName}
                   onChange={(e) => setNodeName(e.target.value)}
                   placeholder="Enter node name"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button 
+                  variant="default" 
                   onClick={addNode}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Add Node
                   <Plus className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Add edge */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Share2 className="h-5 w-5 text-arena-red mr-2" />
+                <Share2 className="h-5 w-5 text-arena-green mr-2" />
                 Add Edge
               </h3>
               <div className="grid grid-cols-5 gap-2">
                 <select
                   value={fromNode}
                   onChange={(e) => setFromNode(e.target.value)}
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 >
                   <option value="">From Node</option>
                   {nodes.map(node => (
@@ -504,73 +504,76 @@ const GraphVisualizer = () => {
                 <select
                   value={toNode}
                   onChange={(e) => setToNode(e.target.value)}
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 >
                   <option value="">To Node</option>
                   {nodes.map(node => (
                     <option key={`to-${node.id}`} value={node.id}>{node.id}</option>
                   ))}
                 </select>
-                <button
+                <Button 
+                  variant="default" 
                   onClick={addEdge}
-                  className="bg-arena-red text-white px-2 py-2 rounded-lg hover:bg-arena-red/90 transition-colors duration-300"
+                  className="col-span-1"
                 >
                   Add
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Run BFS */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-red mr-2" />
+                <Search className="h-5 w-5 text-arena-green mr-2" />
                 Run BFS
               </h3>
               <div className="flex">
                 <select
                   value={sourceNode}
                   onChange={(e) => setSourceNode(e.target.value)}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 >
                   <option value="">Select Source Node</option>
                   {nodes.map(node => (
                     <option key={`bfs-${node.id}`} value={node.id}>{node.id}</option>
                   ))}
                 </select>
-                <button
+                <Button 
+                  variant="default" 
                   onClick={runBFS}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Run BFS
                   <Search className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
             {/* Run DFS */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-red mr-2" />
+                <Search className="h-5 w-5 text-arena-green mr-2" />
                 Run DFS
               </h3>
               <div className="flex">
                 <select
                   value={sourceNode}
                   onChange={(e) => setSourceNode(e.target.value)}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-red focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 >
                   <option value="">Select Source Node</option>
                   {nodes.map(node => (
                     <option key={`dfs-${node.id}`} value={node.id}>{node.id}</option>
                   ))}
                 </select>
-                <button
+                <Button 
+                  variant="default" 
                   onClick={runDFS}
-                  className="bg-arena-red text-white px-4 py-2 rounded-r-lg hover:bg-arena-red/90 transition-colors duration-300 flex items-center"
+                  className="rounded-r-lg"
                 >
                   Run DFS
                   <Search className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
