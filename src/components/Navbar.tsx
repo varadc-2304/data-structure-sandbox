@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Menu, X } from 'lucide-react';
+import UserMenu from './UserMenu';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -88,6 +89,11 @@ const Navbar = () => {
               Algorithms
             </Link>
           </div>
+          
+          {/* User menu */}
+          <div className="hidden md:flex items-center ml-4">
+            <UserMenu />
+          </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
@@ -160,6 +166,9 @@ const Navbar = () => {
           >
             Algorithms
           </Link>
+          <div className="px-3 py-2">
+            <UserMenu />
+          </div>
         </div>
       </div>
     </nav>

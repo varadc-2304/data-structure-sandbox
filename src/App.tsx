@@ -4,7 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DataStructures from "./pages/DataStructures";
 import CPUScheduling from "./pages/CPUScheduling";
@@ -53,59 +55,62 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          
-          {/* Data Structures */}
-          <Route path="/data-structures" element={<DataStructures />} />
-          <Route path="/data-structures/array" element={<ArrayVisualizer />} />
-          <Route path="/data-structures/linked-list" element={<LinkedListVisualizer />} />
-          <Route path="/data-structures/stack" element={<StackVisualizer />} />
-          <Route path="/data-structures/queue" element={<QueueVisualizer />} />
-          <Route path="/data-structures/deque" element={<DequeVisualizer />} />
-          <Route path="/data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
-          <Route path="/data-structures/bst" element={<BSTVisualizer />} />
-          <Route path="/data-structures/graph" element={<GraphVisualizer />} />
-          
-          {/* CPU Scheduling */}
-          <Route path="/cpu-scheduling" element={<CPUScheduling />} />
-          <Route path="/cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
-          <Route path="/cpu-scheduling/sjf" element={<SJFVisualizer />} />
-          <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
-          <Route path="/cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
-          
-          {/* Page Replacement */}
-          <Route path="/page-replacement" element={<PageReplacement />} />
-          <Route path="/page-replacement/fifo" element={<FIFOVisualizer />} />
-          <Route path="/page-replacement/lru" element={<LRUVisualizer />} />
-          <Route path="/page-replacement/mru" element={<MRUVisualizer />} />
-          
-          {/* Disk Scheduling */}
-          <Route path="/disk-scheduling" element={<DiskScheduling />} />
-          <Route path="/disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
-          <Route path="/disk-scheduling/sstf" element={<SSTFVisualizer />} />
-          <Route path="/disk-scheduling/scan" element={<SCANVisualizer />} />
-          <Route path="/disk-scheduling/c-scan" element={<CSCANVisualizer />} />
-          <Route path="/disk-scheduling/look" element={<LOOKVisualizer />} />
-          <Route path="/disk-scheduling/c-look" element={<CLOOKVisualizer />} />
-          
-          {/* Algorithms */}
-          <Route path="/algorithms" element={<Algorithms />} />
-          <Route path="/algorithms/linear-search" element={<LinearSearchVisualizer />} />
-          <Route path="/algorithms/binary-search" element={<BinarySearchVisualizer />} />
-          <Route path="/algorithms/bubble-sort" element={<BubbleSortVisualizer />} />
-          <Route path="/algorithms/selection-sort" element={<SelectionSortVisualizer />} />
-          <Route path="/algorithms/insertion-sort" element={<InsertionSortVisualizer />} />
-          <Route path="/algorithms/merge-sort" element={<MergeSortVisualizer />} />
-          <Route path="/algorithms/quick-sort" element={<QuickSortVisualizer />} />
-          <Route path="/algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
-          <Route path="/algorithms/n-queens" element={<NQueensVisualizer />} />
-          <Route path="/algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
-          <Route path="/algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
-          <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<Index />} />
+            
+            {/* Data Structures */}
+            <Route path="/data-structures" element={<DataStructures />} />
+            <Route path="/data-structures/array" element={<ArrayVisualizer />} />
+            <Route path="/data-structures/linked-list" element={<LinkedListVisualizer />} />
+            <Route path="/data-structures/stack" element={<StackVisualizer />} />
+            <Route path="/data-structures/queue" element={<QueueVisualizer />} />
+            <Route path="/data-structures/deque" element={<DequeVisualizer />} />
+            <Route path="/data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
+            <Route path="/data-structures/bst" element={<BSTVisualizer />} />
+            <Route path="/data-structures/graph" element={<GraphVisualizer />} />
+            
+            {/* CPU Scheduling */}
+            <Route path="/cpu-scheduling" element={<CPUScheduling />} />
+            <Route path="/cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
+            <Route path="/cpu-scheduling/sjf" element={<SJFVisualizer />} />
+            <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
+            <Route path="/cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
+            
+            {/* Page Replacement */}
+            <Route path="/page-replacement" element={<PageReplacement />} />
+            <Route path="/page-replacement/fifo" element={<FIFOVisualizer />} />
+            <Route path="/page-replacement/lru" element={<LRUVisualizer />} />
+            <Route path="/page-replacement/mru" element={<MRUVisualizer />} />
+            
+            {/* Disk Scheduling */}
+            <Route path="/disk-scheduling" element={<DiskScheduling />} />
+            <Route path="/disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
+            <Route path="/disk-scheduling/sstf" element={<SSTFVisualizer />} />
+            <Route path="/disk-scheduling/scan" element={<SCANVisualizer />} />
+            <Route path="/disk-scheduling/c-scan" element={<CSCANVisualizer />} />
+            <Route path="/disk-scheduling/look" element={<LOOKVisualizer />} />
+            <Route path="/disk-scheduling/c-look" element={<CLOOKVisualizer />} />
+            
+            {/* Algorithms */}
+            <Route path="/algorithms" element={<Algorithms />} />
+            <Route path="/algorithms/linear-search" element={<LinearSearchVisualizer />} />
+            <Route path="/algorithms/binary-search" element={<BinarySearchVisualizer />} />
+            <Route path="/algorithms/bubble-sort" element={<BubbleSortVisualizer />} />
+            <Route path="/algorithms/selection-sort" element={<SelectionSortVisualizer />} />
+            <Route path="/algorithms/insertion-sort" element={<InsertionSortVisualizer />} />
+            <Route path="/algorithms/merge-sort" element={<MergeSortVisualizer />} />
+            <Route path="/algorithms/quick-sort" element={<QuickSortVisualizer />} />
+            <Route path="/algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
+            <Route path="/algorithms/n-queens" element={<NQueensVisualizer />} />
+            <Route path="/algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
+            <Route path="/algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
+            <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
