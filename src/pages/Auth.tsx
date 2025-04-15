@@ -68,7 +68,7 @@ const Auth = () => {
       }
       
       toast.success('Logged in successfully!');
-      navigate('/');
+      navigate('/Index');
     } catch (error: any) {
       console.error('Login process error:', error);
       toast.error(error.message || 'Authentication failed');
