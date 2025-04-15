@@ -32,35 +32,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Create demo user if it doesn't exist yet
-    const createDemoUserIfNeeded = async () => {
+    const createDemoUser = async () => {
       try {
-        // First try to sign in with demo credentials
-        const { error } = await supabase.auth.signInWithPassword({
-          email: 'demo@drona.com',
-          password: 'password123',
-        });
-        
-        // If login fails, create the user
-        if (error && error.message.includes('Invalid login credentials')) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: 'demo@drona.com',
-            password: 'password123',
-          });
+        // Try to insert a demo user into our custom users table
+        const { error } = await supabase
+          .from('users')
+          .insert([
+            { email: 'demo@drona.com', password: 'password123' }
+          ])
+          .select();
           
-          if (signUpError) {
-            console.error('Error creating demo user:', signUpError);
-          } else {
-            console.log('Demo user created successfully');
-            toast.success('Demo user created. You can now login.');
-          }
+        if (error) {
+          console.error('Error inserting demo user:', error);
+        } else {
+          console.log('Demo user created in users table');
         }
       } catch (error) {
-        console.error('Error checking/creating demo user:', error);
+        console.error('Error creating demo user in users table:', error);
       }
     };
 
-    createDemoUserIfNeeded();
+    createDemoUser();
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -71,6 +63,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (event === 'SIGNED_OUT') {
           navigate('/auth');
+        } else if (event === 'SIGNED_IN') {
+          navigate('/');
         }
       }
     );

@@ -21,6 +21,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Auth = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -39,18 +40,65 @@ const Auth = () => {
 
   const handleLogin = async (values: LoginFormValues) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (error) throw error;
+      setIsLoggingIn(true);
       
-      toast.success('Logged in successfully!');
-      navigate('/');
+      // First, check our custom users table
+      const { data: users, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', values.email)
+        .eq('password', values.password)
+        .single();
+      
+      if (userError) {
+        throw new Error('Invalid credentials');
+      }
+      
+      if (users) {
+        // User exists in our table, try to create a session
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+
+        if (error) {
+          // If login fails, try to create the user in auth
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: values.email,
+            password: values.password,
+          });
+          
+          if (signUpError) {
+            throw signUpError;
+          } else {
+            // If signup succeeds, try to login again
+            const { error: secondLoginError } = await supabase.auth.signInWithPassword({
+              email: values.email,
+              password: values.password,
+            });
+            
+            if (secondLoginError) {
+              throw secondLoginError;
+            }
+          }
+        }
+        
+        // Update last_login in our users table
+        await supabase
+          .from('users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', users.id);
+        
+        toast.success('Logged in successfully!');
+        navigate('/');
+      } else {
+        throw new Error('User not found');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Authentication failed');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -103,8 +151,12 @@ const Auth = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full h-11 mt-6">
-              Login
+            <Button 
+              type="submit" 
+              className="w-full h-11 mt-6"
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? 'Logging in...' : 'Login'}
             </Button>
           </form>
         </Form>
