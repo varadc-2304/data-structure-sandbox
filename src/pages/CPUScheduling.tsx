@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
-import { Timer, Clock, ListOrdered, RefreshCw, Cpu } from 'lucide-react';
+import { Timer, Clock, ListOrdered, RefreshCw, Cpu, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
