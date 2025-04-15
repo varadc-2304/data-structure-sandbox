@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HardDrive, Play } from 'lucide-react';
+import { HardDrive, Play, Disc } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 
@@ -52,34 +52,42 @@ const DiskScheduling = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       
       <div className="page-container pt-24">
-        <div className="mb-8 text-center">
-          <div className="drona-chip mb-3">Operating Systems</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-drona-dark">Disk Scheduling Algorithms</h1>
-          <p className="mt-3 max-w-2xl mx-auto text-drona-gray">
+        <div className="mb-10 text-center">
+          <div className="drona-chip mb-3 animate-fade-in">Operating Systems</div>
+          <h1 className="text-3xl md:text-5xl font-bold text-drona-dark mb-4 animate-slide-in bg-clip-text text-transparent bg-gradient-to-r from-drona-green to-blue-600">
+            Disk Scheduling Algorithms
+          </h1>
+          <p className="mt-3 max-w-2xl mx-auto text-drona-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Understand how operating systems optimize disk access with different scheduling algorithms.
           </p>
         </div>
         
         <div className="max-w-4xl mx-auto">
-          <div className="bg-drona-light rounded-xl p-6 mb-10">
-            <h2 className="text-xl font-semibold text-drona-dark mb-3">What are Disk Scheduling Algorithms?</h2>
-            <p className="text-drona-gray mb-3">
-              Disk scheduling algorithms determine the order in which disk I/O requests are serviced. Their main goal is to minimize disk head movement and reduce the total time required to serve requests.
-            </p>
-            <p className="text-drona-gray">
-              These algorithms are crucial for improving the overall performance of secondary storage devices like hard drives.
-            </p>
+          <div className="bg-gradient-to-r from-drona-light to-blue-50 rounded-xl p-8 mb-10 shadow-sm border border-gray-100">
+            <div className="flex items-start">
+              <Disc className="h-8 w-8 text-drona-green mr-4 flex-shrink-0 mt-1" />
+              <div>
+                <h2 className="text-xl font-semibold text-drona-dark mb-3">What are Disk Scheduling Algorithms?</h2>
+                <p className="text-drona-gray mb-3">
+                  Disk scheduling algorithms determine the order in which disk I/O requests are serviced. Their main goal is to minimize disk head movement and reduce the total time required to serve requests.
+                </p>
+                <p className="text-drona-gray">
+                  These algorithms are crucial for improving the overall performance of secondary storage devices like hard drives.
+                </p>
+              </div>
+            </div>
           </div>
           
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {algorithms.map((algorithm) => (
+            {algorithms.map((algorithm, index) => (
               <div 
                 key={algorithm.id} 
-                className="drona-card block"
+                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-drona-green/40 animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-center mb-3">
@@ -96,9 +104,9 @@ const DiskScheduling = () => {
                     <Link to={`/disk-scheduling/${algorithm.id}`}>
                       <Button
                         variant="default"
-                        className="w-full"
+                        className="w-full group hover:bg-drona-green"
                       >
-                        <Play className="w-4 h-4 mr-2" />
+                        <Play className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
                         Visualize Algorithm
                       </Button>
                     </Link>
