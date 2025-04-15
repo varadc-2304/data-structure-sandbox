@@ -42,7 +42,16 @@ const Auth = () => {
     try {
       setIsLoggingIn(true);
       
+      // Directly attempt to login with Supabase auth
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
 
+      if (error) {
+        console.error('Login error:', error);
+        throw new Error('Invalid credentials. Please try again.');
+      }
       
       // If successful, update last_login in users table
       const { data: userData } = await supabase
