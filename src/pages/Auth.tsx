@@ -42,60 +42,35 @@ const Auth = () => {
     try {
       setIsLoggingIn(true);
       
-      // First, check our custom users table
-      const { data: users, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', values.email)
-        .eq('password', values.password)
-        .single();
-      
-      if (userError) {
-        throw new Error('Invalid credentials');
+      // Directly attempt to login with Supabase auth
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        throw new Error('Invalid credentials. Please try again.');
       }
       
-      if (users) {
-        // User exists in our table, try to create a session
-        const { error } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
-
-        if (error) {
-          // If login fails, try to create the user in auth
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: values.email,
-            password: values.password,
-          });
-          
-          if (signUpError) {
-            throw signUpError;
-          } else {
-            // If signup succeeds, try to login again
-            const { error: secondLoginError } = await supabase.auth.signInWithPassword({
-              email: values.email,
-              password: values.password,
-            });
-            
-            if (secondLoginError) {
-              throw secondLoginError;
-            }
-          }
-        }
-        
-        // Update last_login in our users table
+      // If successful, update last_login in users table
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', values.email)
+        .maybeSingle();
+      
+      if (userData) {
         await supabase
           .from('users')
           .update({ last_login: new Date().toISOString() })
-          .eq('id', users.id);
-        
-        toast.success('Logged in successfully!');
-        navigate('/');
-      } else {
-        throw new Error('User not found');
+          .eq('email', values.email);
       }
+      
+      toast.success('Logged in successfully!');
+      navigate('/');
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login process error:', error);
       toast.error(error.message || 'Authentication failed');
     } finally {
       setIsLoggingIn(false);

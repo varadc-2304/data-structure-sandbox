@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
 import { Search, Play, Pause, SkipBack, SkipForward, RefreshCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 const BinarySearchVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
@@ -14,7 +15,7 @@ const BinarySearchVisualizer = () => {
   const [found, setFound] = useState<boolean | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1000); // Default slower speed (1000ms)
   const [currentStep, setCurrentStep] = useState(0);
   const [searchHistory, setSearchHistory] = useState<Array<{
     left: number | null,
@@ -232,18 +233,21 @@ const BinarySearchVisualizer = () => {
                       placeholder="Value"
                     />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Speed:</label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="1000"
-                      step="100"
-                      value={speed}
-                      onChange={(e) => setSpeed(parseInt(e.target.value))}
-                      className="w-32"
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-2">
+                  <label className="text-sm font-medium w-16">Speed:</label>
+                  <div className="flex-1 max-w-xs">
+                    <Slider
+                      value={[speed]}
+                      min={500}
+                      max={3000}
+                      step={100}
+                      onValueChange={(value) => setSpeed(value[0])}
+                      className="w-full"
                     />
                   </div>
+                  <span className="text-xs text-gray-500">{(speed / 1000).toFixed(1)}s</span>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 mt-4">

@@ -32,23 +32,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Create demo user in both tables to ensure login works
     const createDemoUser = async () => {
       try {
-        // Try to insert a demo user into our custom users table
-        const { error } = await supabase
+        // First, ensure user exists in the custom users table
+        const { data: existingUsers, error: checkError } = await supabase
           .from('users')
-          .insert([
-            { email: 'demo@drona.com', password: 'password123' }
-          ])
-          .select();
+          .select('*')
+          .eq('email', 'demo@drona.com')
+          .maybeSingle();
           
-        if (error) {
-          console.error('Error inserting demo user:', error);
-        } else {
-          console.log('Demo user created in users table');
+        if (!existingUsers && !checkError) {
+          // Insert into custom users table if doesn't exist
+          const { error } = await supabase
+            .from('users')
+            .insert([
+              { email: 'demo@drona.com', password: 'password123' }
+            ]);
+            
+          if (error) {
+            console.error('Error inserting demo user:', error);
+          } else {
+            console.log('Demo user created in users table');
+          }
+        }
+        
+        // Then try to sign in with demo credentials to check if user exists in auth
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'demo@drona.com',
+          password: 'password123',
+        });
+        
+        // If login fails, create the user in auth
+        if (signInError) {
+          console.log('Creating demo user in auth');
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: 'demo@drona.com',
+            password: 'password123',
+          });
+          
+          if (signUpError) {
+            console.error('Error creating auth user:', signUpError);
+          } else {
+            console.log('Demo user created in auth');
+          }
         }
       } catch (error) {
-        console.error('Error creating demo user in users table:', error);
+        console.error('Error in demo user creation:', error);
       }
     };
 
