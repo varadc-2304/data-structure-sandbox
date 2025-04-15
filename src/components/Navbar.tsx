@@ -2,16 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Menu, X, LogOut } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
 
   // Handle scroll effect
   useEffect(() => {
@@ -28,15 +24,6 @@ const Navbar = () => {
   }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success('Logged out successfully');
-    } catch (error) {
-      toast.error('Failed to log out');
-    }
-  };
 
   return (
     <nav
@@ -100,18 +87,6 @@ const Navbar = () => {
             >
               Algorithms
             </Link>
-            
-            {user && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleSignOut}
-                className="font-medium text-drona-dark hover:text-red-600"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            )}
           </div>
 
           {/* Mobile menu button */}
@@ -185,19 +160,6 @@ const Navbar = () => {
           >
             Algorithms
           </Link>
-          
-          {user && (
-            <button
-              onClick={() => {
-                handleSignOut();
-                setIsMenuOpen(false);
-              }}
-              className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </button>
-          )}
         </div>
       </div>
     </nav>
