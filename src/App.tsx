@@ -279,7 +279,8 @@ const App = () => (
             } />
             
             {/* Redirect to auth if trying to access unknown page */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+
           </Routes>
         </AuthProvider>
       </BrowserRouter>
