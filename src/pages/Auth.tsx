@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -18,42 +19,37 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'demo@drona.com',
+      password: 'password123',
     },
   });
 
-  const handleAuth = async (values: LoginFormValues) => {
+  const handleLogin = async (values: LoginFormValues) => {
     try {
-      if (isLogin) {
-        // Login
-        const { error } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
 
-        if (error) throw error;
-        
-        toast.success('Logged in successfully!');
-        navigate('/');
-      } else {
-        // Signup
-        const { error } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-        });
-
-        if (error) throw error;
-        
-        toast.success('Signup successful! Please check your email for verification.');
-      }
+      if (error) throw error;
+      
+      toast.success('Logged in successfully!');
+      navigate('/');
     } catch (error: any) {
+      console.error('Login error:', error);
       toast.error(error.message || 'Authentication failed');
     }
   };
@@ -63,17 +59,15 @@ const Auth = () => {
       <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-drona-dark mb-2 bg-clip-text text-transparent bg-gradient-to-r from-drona-green to-blue-600">
-            {isLogin ? 'Login to Drona' : 'Create an Account'}
+            Login to Drona
           </h1>
           <p className="text-drona-gray">
-            {isLogin 
-              ? 'Access your personalized visualization tools' 
-              : 'Join Drona to visualize algorithms and data structures'}
+            Access your personalized visualization tools
           </p>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAuth)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -110,18 +104,15 @@ const Auth = () => {
               )}
             />
             <Button type="submit" className="w-full h-11 mt-6">
-              {isLogin ? 'Login' : 'Sign Up'}
+              Login
             </Button>
           </form>
         </Form>
 
         <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-drona-green hover:underline text-sm"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
-          </button>
+          <p className="text-sm text-drona-gray">
+            Demo credentials are pre-filled for you
+          </p>
         </div>
       </div>
     </div>

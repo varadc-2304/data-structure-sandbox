@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   session: Session | null;
@@ -31,6 +32,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Create demo user if it doesn't exist yet
+    const createDemoUserIfNeeded = async () => {
+      try {
+        // First try to sign in with demo credentials
+        const { error } = await supabase.auth.signInWithPassword({
+          email: 'demo@drona.com',
+          password: 'password123',
+        });
+        
+        // If login fails, create the user
+        if (error && error.message.includes('Invalid login credentials')) {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: 'demo@drona.com',
+            password: 'password123',
+          });
+          
+          if (signUpError) {
+            console.error('Error creating demo user:', signUpError);
+          } else {
+            console.log('Demo user created successfully');
+            toast.success('Demo user created. You can now login.');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/creating demo user:', error);
+      }
+    };
+
+    createDemoUserIfNeeded();
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {

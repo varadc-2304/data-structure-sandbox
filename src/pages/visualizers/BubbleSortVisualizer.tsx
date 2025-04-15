@@ -1,16 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
-import { SortAsc } from 'lucide-react';
+import { SortAsc, Play, Pause, SkipBack, SkipForward, RefreshCcw } from 'lucide-react';
 
 const BubbleSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [currentSwapIndices, setCurrentSwapIndices] = useState<number[]>([]);
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(500);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [sortHistory, setSortHistory] = useState<Array<{
+    array: number[],
+    swapIndices: number[],
+    sortedIndices: number[]
+  }>>([]);
+  
+  const sortTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const generateRandomArray = () => {
     const size = Math.floor(Math.random() * 5) + 8; // 8-12 elements
@@ -20,49 +29,157 @@ const BubbleSortVisualizer = () => {
   };
 
   const resetSort = () => {
+    // Clear any running timeouts
+    if (sortTimeoutRef.current) {
+      clearTimeout(sortTimeoutRef.current);
+      sortTimeoutRef.current = null;
+    }
     setCurrentSwapIndices([]);
     setSortedIndices([]);
     setIsRunning(false);
+    setIsPaused(false);
+    setCurrentStep(0);
+    setSortHistory([]);
   };
 
-  const startSort = async () => {
-    if (array.length === 0 || isRunning) return;
-    
-    setIsRunning(true);
-    setSortedIndices([]);
-    
-    const arrCopy = [...array];
+  const calculateSortHistory = async (inputArray: number[]) => {
+    const history = [];
+    const arrCopy = [...inputArray];
     const n = arrCopy.length;
+    
+    // Initial state
+    history.push({
+      array: [...arrCopy],
+      swapIndices: [],
+      sortedIndices: []
+    });
     
     // Bubble sort algorithm
     for (let i = 0; i < n; i++) {
       let swapped = false;
       
       for (let j = 0; j < n - i - 1; j++) {
-        setCurrentSwapIndices([j, j + 1]);
-        
-        // Wait for animation
-        await new Promise(resolve => setTimeout(resolve, speed));
+        // Record the state before comparison
+        history.push({
+          array: [...arrCopy],
+          swapIndices: [j, j + 1],
+          sortedIndices: Array.from({ length: i }, (_, idx) => n - idx - 1)
+        });
         
         if (arrCopy[j] > arrCopy[j + 1]) {
           // Swap elements
           [arrCopy[j], arrCopy[j + 1]] = [arrCopy[j + 1], arrCopy[j]];
-          setArray([...arrCopy]);
           swapped = true;
+          
+          // Record the state after swap
+          history.push({
+            array: [...arrCopy],
+            swapIndices: [j, j + 1],
+            sortedIndices: Array.from({ length: i }, (_, idx) => n - idx - 1)
+          });
         }
       }
       
       // Mark this position as sorted
-      setSortedIndices(prev => [...prev, n - i - 1]);
+      const sortedIndices = Array.from({ length: i + 1 }, (_, idx) => n - idx - 1);
+      history.push({
+        array: [...arrCopy],
+        swapIndices: [],
+        sortedIndices
+      });
       
       // If no swapping occurred in this pass, array is sorted
       if (!swapped) break;
     }
     
-    // Mark all elements as sorted
-    setCurrentSwapIndices([]);
-    setSortedIndices(Array.from({ length: n }, (_, i) => i));
-    setIsRunning(false);
+    return history;
+  };
+
+  const startSort = async () => {
+    if (array.length === 0 || isRunning) return;
+    
+    setIsRunning(true);
+    setIsPaused(false);
+    
+    // Calculate all sorting steps if not already calculated
+    if (sortHistory.length === 0) {
+      const history = await calculateSortHistory([...array]);
+      setSortHistory(history);
+      setCurrentStep(0);
+    }
+    
+    // Function to process the next step
+    const processNextStep = () => {
+      if (currentStep < sortHistory.length - 1 && !isPaused) {
+        setCurrentStep(prev => prev + 1);
+        const nextState = sortHistory[currentStep + 1];
+        setArray([...nextState.array]);
+        setCurrentSwapIndices([...nextState.swapIndices]);
+        setSortedIndices([...nextState.sortedIndices]);
+        
+        // Schedule next step
+        sortTimeoutRef.current = setTimeout(() => {
+          processNextStep();
+        }, speed);
+      } else if (currentStep >= sortHistory.length - 1) {
+        setIsRunning(false);
+      }
+    };
+    
+    // Start processing steps
+    if (currentStep < sortHistory.length - 1) {
+      processNextStep();
+    } else {
+      setIsRunning(false);
+    }
+  };
+
+  const pauseSort = () => {
+    if (sortTimeoutRef.current) {
+      clearTimeout(sortTimeoutRef.current);
+      sortTimeoutRef.current = null;
+    }
+    setIsPaused(true);
+  };
+
+  const resumeSort = () => {
+    if (!isRunning) return;
+    setIsPaused(false);
+    startSort();
+  };
+
+  const nextStep = () => {
+    if (currentStep < sortHistory.length - 1) {
+      // Clear any running timeouts
+      if (sortTimeoutRef.current) {
+        clearTimeout(sortTimeoutRef.current);
+        sortTimeoutRef.current = null;
+      }
+      
+      setIsPaused(true);
+      setCurrentStep(prev => prev + 1);
+      const nextState = sortHistory[currentStep + 1];
+      setArray([...nextState.array]);
+      setCurrentSwapIndices([...nextState.swapIndices]);
+      setSortedIndices([...nextState.sortedIndices]);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep > 0) {
+      // Clear any running timeouts
+      if (sortTimeoutRef.current) {
+        clearTimeout(sortTimeoutRef.current);
+        sortTimeoutRef.current = null;
+      }
+      
+      setIsPaused(true);
+      setCurrentStep(prev => prev - 1);
+      const prevState = sortHistory[currentStep - 1];
+      setArray([...prevState.array]);
+      setCurrentSwapIndices([...prevState.swapIndices]);
+      setSortedIndices([...prevState.sortedIndices]);
+    }
   };
 
   const getBarHeight = (value: number) => {
@@ -88,6 +205,7 @@ const BubbleSortVisualizer = () => {
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-wrap gap-4">
                   <Button onClick={generateRandomArray} variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
                     Generate Random Array
                   </Button>
                   <div className="flex items-center space-x-2">
@@ -102,9 +220,37 @@ const BubbleSortVisualizer = () => {
                       className="w-32"
                     />
                   </div>
-                  <Button onClick={startSort} disabled={isRunning || array.length === 0}>
-                    <SortAsc className="mr-2 h-4 w-4" /> 
-                    Start Sort
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {!isRunning ? (
+                    <Button onClick={startSort} disabled={array.length === 0 || sortHistory.length === 0}>
+                      <Play className="mr-2 h-4 w-4" /> 
+                      Start Sort
+                    </Button>
+                  ) : isPaused ? (
+                    <Button onClick={resumeSort}>
+                      <Play className="mr-2 h-4 w-4" /> 
+                      Resume
+                    </Button>
+                  ) : (
+                    <Button onClick={pauseSort}>
+                      <Pause className="mr-2 h-4 w-4" /> 
+                      Pause
+                    </Button>
+                  )}
+                  
+                  <Button onClick={previousStep} disabled={currentStep <= 0 || (!isPaused && isRunning)} variant="outline">
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button onClick={nextStep} disabled={currentStep >= sortHistory.length - 1 || (!isPaused && isRunning)} variant="outline">
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button onClick={resetSort} variant="outline" className="ml-auto">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset
                   </Button>
                 </div>
                 
