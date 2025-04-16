@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw, Settings, HardDriveDownload, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Settings, HardDriveDownload, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -42,14 +41,7 @@ const SSTFVisualizer = () => {
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
   const [showHeadPath, setShowHeadPath] = useState<boolean>(true);
-  const [presets, setPresets] = useState<{name: string, requests: number[]}[]>([
-    { name: "Random Light", requests: [34, 98, 125, 65, 22] },
-    { name: "Random Heavy", requests: [12, 56, 128, 45, 92, 180, 150, 33] },
-    { name: "Sequential", requests: [20, 40, 60, 80, 100, 120, 140, 160] },
-    { name: "Scattered", requests: [10, 195, 45, 165, 80, 120] },
-  ]);
   const [savedConfigurations, setSavedConfigurations] = useState<{name: string, diskSize: number, headPos: number, requests: number[]}[]>([]);
-  const [newPresetName, setNewPresetName] = useState<string>("");
 
   const { toast } = useToast();
 
@@ -192,23 +184,6 @@ const SSTFVisualizer = () => {
     }
   };
 
-  const loadPreset = (preset: {name: string, requests: number[]}) => {
-    const newRequests = preset.requests.map(position => ({
-      position,
-      processed: false,
-      current: false
-    }));
-    
-    setRequestQueue(newRequests);
-    resetSimulation();
-    
-    toast({
-      title: "Preset loaded",
-      description: `Loaded preset: ${preset.name}`,
-      duration: 2000,
-    });
-  };
-
   const saveCurrentConfig = () => {
     if (requestQueue.length === 0) {
       toast({
@@ -259,32 +234,6 @@ const SSTFVisualizer = () => {
     });
   };
 
-  const addCustomPreset = () => {
-    if (!newPresetName || requestQueue.length === 0) {
-      toast({
-        title: "Cannot create preset",
-        description: "Please provide a name and have some requests in the queue",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-    
-    const newPreset = {
-      name: newPresetName,
-      requests: requestQueue.map(req => req.position)
-    };
-    
-    setPresets([...presets, newPreset]);
-    setNewPresetName("");
-    
-    toast({
-      title: "Preset created",
-      description: `Created preset: ${newPresetName}`,
-      duration: 2000,
-    });
-  };
-
   const clearAllRequests = () => {
     if (requestQueue.length > 0) {
       setRequestQueue([]);
@@ -296,24 +245,6 @@ const SSTFVisualizer = () => {
         duration: 2000,
       });
     }
-  };
-
-  // Function to generate a demo
-  const generateRandomRequests = (count = 8) => {
-    const newRequests = Array.from({ length: count }, () => ({
-      position: Math.floor(Math.random() * diskSize),
-      processed: false,
-      current: false
-    }));
-    
-    setRequestQueue(newRequests);
-    resetSimulation();
-    
-    toast({
-      title: "Random requests generated",
-      description: `Added ${count} random disk requests`,
-      duration: 2000,
-    });
   };
 
   return (
@@ -409,16 +340,7 @@ const SSTFVisualizer = () => {
                         <p className="text-xs text-arena-gray mt-1">Enter comma-separated values between 0 and {diskSize-1}</p>
                       </div>
                       
-                      <div className="flex justify-between items-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => generateRandomRequests(8)}
-                          className="text-xs"
-                        >
-                          <PlusCircle className="h-3 w-3 mr-1" /> Random Requests
-                        </Button>
-                        
+                      <div className="flex justify-end">
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -474,59 +396,6 @@ const SSTFVisualizer = () => {
                             <><Play className="mr-2 h-4 w-4" /> {currentStep >= requestQueue.length - 1 ? 'Restart' : 'Play'}</>
                           )}
                         </Button>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <Label className="text-sm font-medium">Preset Scenarios</Label>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="text-xs">
-                                <PlusCircle className="h-3 w-3 mr-1" /> Add
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Create New Preset</DialogTitle>
-                                <DialogDescription>
-                                  Save the current request pattern as a reusable preset
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="presetName">Preset Name</Label>
-                                  <Input 
-                                    id="presetName" 
-                                    value={newPresetName}
-                                    onChange={(e) => setNewPresetName(e.target.value)}
-                                    placeholder="e.g., My Custom Pattern" 
-                                  />
-                                </div>
-                                <Button onClick={addCustomPreset} className="w-full">
-                                  Create Preset
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          {presets.map((preset, idx) => (
-                            <Button 
-                              key={idx} 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs justify-start overflow-hidden text-ellipsis whitespace-nowrap"
-                              onClick={() => loadPreset(preset)}
-                              title={`Load ${preset.name}: ${preset.requests.join(', ')}`}
-                            >
-                              <HardDriveDownload className="h-3 w-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">{preset.name}</span>
-                            </Button>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </CardContent>
