@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
 
   // Handle scroll effect
   useEffect(() => {
@@ -24,6 +29,22 @@ const Navbar = () => {
   }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate('/auth');
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+      });
+    }
+  };
 
   return (
     <nav
@@ -87,6 +108,12 @@ const Navbar = () => {
             >
               Algorithms
             </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center font-medium text-drona-dark hover:text-drona-green transition-colors"
+            >
+              <LogOut className="mr-1 h-4 w-4" /> Logout
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -160,6 +187,15 @@ const Navbar = () => {
           >
             Algorithms
           </Link>
+          <button
+            onClick={() => {
+              handleLogout();
+              setIsMenuOpen(false);
+            }}
+            className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Logout
+          </button>
         </div>
       </div>
     </nav>
