@@ -60,7 +60,10 @@ const Auth = () => {
         description: "Welcome back!",
       });
       
+      setTimeout(() => {
       navigate('/');
+      }, 0);
+
       
     } catch (error: any) {
       toast({
