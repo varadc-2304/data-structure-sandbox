@@ -34,12 +34,26 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
+      // Query the custom auth table instead of using Supabase auth
+      const { data, error } = await supabase
+        .from('auth')
+        .select('id, email')
+        .eq('email', values.email)
+        .eq('password', values.password)  // Note: This is not secure, we'll discuss this below
+        .single();
       
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Invalid credentials');
+      }
+      
+      // Store the user info in localStorage for session management
+      localStorage.setItem('user', JSON.stringify({
+        id: data.id,
+        email: data.email,
+        timestamp: new Date().getTime()
+      }));
       
       toast({
         title: "Login Successful",

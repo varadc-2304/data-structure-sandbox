@@ -1,10 +1,13 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
+
+type User = {
+  id: string;
+  email: string;
+};
 
 type AuthContextType = {
-  session: Session | null;
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -15,51 +18,68 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Check for user in localStorage
+    const checkAuth = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          // Check if the session is still valid (optional: add expiration check)
+          setUser({
+            id: parsedUser.id,
+            email: parsedUser.email
+          });
+        } catch (error) {
+          console.error("Error parsing stored user:", error);
+          localStorage.removeItem('user');
+        }
       }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { data, error } = await supabase
+      .from('auth')
+      .select('id, email')
+      .eq('email', email)
+      .eq('password', password)
+      .single();
     
     if (error) {
       throw error;
     }
+    
+    if (!data) {
+      throw new Error('Invalid login credentials');
+    }
+    
+    // Store user in localStorage
+    localStorage.setItem('user', JSON.stringify({
+      id: data.id,
+      email: data.email,
+      timestamp: new Date().getTime()
+    }));
+    
+    setUser({
+      id: data.id,
+      email: data.email
+    });
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error signing out:", error);
-      throw error;
-    }
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        session,
         user,
         loading,
         signIn,
