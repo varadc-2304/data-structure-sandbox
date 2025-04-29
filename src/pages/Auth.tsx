@@ -11,6 +11,7 @@ import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -21,6 +22,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -34,33 +36,15 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      // Query the custom auth table instead of using Supabase auth
-      const { data, error } = await supabase
-        .from('auth')
-        .select('id, email')
-        .eq('email', values.email)
-        .eq('password', values.password)  // Note: This is not secure, we'll discuss this below
-        .single();
-      
-      if (error) throw error;
-      
-      if (!data) {
-        throw new Error('Invalid credentials');
-      }
-      
-      // Store the user info in localStorage for session management
-      localStorage.setItem('user', JSON.stringify({
-        id: data.id,
-        email: data.email,
-        timestamp: new Date().getTime()
-      }));
+      await signIn(values.email, values.password);
       
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
       
-      navigate('/');
+      // Use navigate to redirect to the home page
+      navigate('/', { replace: true });
       
     } catch (error: any) {
       toast({
