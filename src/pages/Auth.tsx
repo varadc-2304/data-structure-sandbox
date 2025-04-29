@@ -60,7 +60,7 @@ const Auth = () => {
         description: "Welcome back!",
       });
       
-      navigate('/');
+      navigate('/Index');
       
     } catch (error: any) {
       toast({
