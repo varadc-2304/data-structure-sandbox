@@ -50,7 +50,7 @@ const Auth = () => {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "Please check your credentials and try again",
+        description: "Please check your credentials and try again",
       });
     } finally {
       setIsLoading(false);
