@@ -1,9 +1,12 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HeroSection = () => {
+  const { user } = useAuth();
+
   return (
     <div className="relative overflow-hidden bg-white">
       {/* Background elements */}
@@ -33,20 +36,41 @@ const HeroSection = () => {
               An intuitive platform to master data structures, algorithms, and operating system concepts through interactive visualizations.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <Link
-                to="/data-structures"
-                className="drona-button inline-flex items-center"
-              >
-                Start Learning
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-              <Link
-                to="/algorithms"
-                className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
-              >
-                Explore Algorithms
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    to="/data-structures"
+                    className="drona-button inline-flex items-center"
+                  >
+                    Start Learning
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/algorithms"
+                    className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
+                  >
+                    Explore Algorithms
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/auth"
+                    className="drona-button inline-flex items-center"
+                  >
+                    Log In to Start
+                    <LogIn className="ml-2 h-4 w-4" />
+                  </Link>
+                  <a
+                    href="#features"
+                    className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
+                  >
+                    Learn More
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>
