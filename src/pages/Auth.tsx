@@ -10,7 +10,6 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
@@ -58,17 +57,21 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-drona-green/10">
-      <Card className="p-8 w-full max-w-md bg-white shadow-xl">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/c03333c1-1cd7-4c07-9556-89ea83c71d01.png" 
-              alt="Drona Logo" 
-              className="w-24 h-24 object-contain"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-drona-green/20 to-drona-green/5">
+      <div className="absolute inset-0 bg-[url('/lovable-uploads/c03333c1-1cd7-4c07-9556-89ea83c71d01.png')] bg-center bg-no-repeat opacity-[0.03] pointer-events-none" />
+      
+      <Card className="p-8 w-full max-w-md bg-white shadow-xl border border-drona-green/10 animate-fade-in">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-6">
+            <div className="relative w-28 h-28 p-2 rounded-full bg-drona-green/5 shadow-inner">
+              <img 
+                src="/lovable-uploads/c03333c1-1cd7-4c07-9556-89ea83c71d01.png" 
+                alt="Drona Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-drona-green">Drona</h1>
+          <h1 className="text-3xl font-bold text-drona-green">Drona</h1>
           <p className="text-gray-500 mt-2">Welcome to the learning visualization platform</p>
         </div>
 
@@ -81,7 +84,11 @@ const Auth = () => {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="Username" {...field} />
+                    <Input 
+                      placeholder="Username" 
+                      {...field} 
+                      className="border-drona-green/20 focus:border-drona-green focus-visible:ring-drona-green/20" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -95,7 +102,12 @@ const Auth = () => {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Password" {...field} />
+                    <Input 
+                      type="password" 
+                      placeholder="Password" 
+                      {...field} 
+                      className="border-drona-green/20 focus:border-drona-green focus-visible:ring-drona-green/20"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -104,19 +116,26 @@ const Auth = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-drona-green hover:bg-drona-green/90" 
+              className="w-full bg-drona-green hover:bg-drona-green/90 transition-all duration-300 mt-6" 
               disabled={isLoading}
             >
               {isLoading ? (
-                "Logging in..."
+                <div className="flex items-center">
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <span>Logging in...</span>
+                </div>
               ) : (
-                <>
+                <div className="flex items-center">
                   <LogIn className="mr-2 h-4 w-4" /> Login
-                </>
+                </div>
               )}
             </Button>
           </form>
         </Form>
+        
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>Demo credentials: demo / password</p>
+        </div>
       </Card>
     </div>
   );
