@@ -58,7 +58,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-drona-green/20 to-drona-green/5">
-      <div className="absolute inset-0 bg-[url('/lovable-uploads/c03333c1-1cd7-4c07-9556-89ea83c71d01.png')] bg-center bg-no-repeat opacity-[0.03] pointer-events-none" />
       
       <Card className="p-8 w-full max-w-md bg-white shadow-xl border border-drona-green/10 animate-fade-in">
         <div className="text-center mb-8">
@@ -132,10 +131,6 @@ const Auth = () => {
             </Button>
           </form>
         </Form>
-        
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Demo credentials: demo / password</p>
-        </div>
       </Card>
     </div>
   );
