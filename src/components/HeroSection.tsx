@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Mail, LogIn, Play } from 'lucide-react';
@@ -44,13 +45,13 @@ const HeroSection = () => {
                     Start Exploring
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
-                  <Link
-                    to="#how-it-works"
+                  <a
+                    href="#how-it-works"
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
                   >
                     Learn How It Works
                     <Play className="ml-2 h-4 w-4" />
-                  </Link>
+                  </a>
                 </>
               ) : (
                 <>
@@ -61,13 +62,13 @@ const HeroSection = () => {
                     Contact Sales
                     <Mail className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </a>
-                  <Link
-                    to="#how-it-works"
+                  <a
+                    href="#how-it-works"
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
                   >
                     Learn How It Works
                     <Play className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                  </a>
                   <Link
                     to="/auth"
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"

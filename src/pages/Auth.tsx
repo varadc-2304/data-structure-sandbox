@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -20,8 +20,16 @@ const loginSchema = z.object({
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { signIn } = useAuth();
+  const { user, signIn } = useAuth();
+  
+  // Redirect user to data structures page if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/data-structures', { replace: true });
+    }
+  }, [user, navigate]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -42,8 +50,9 @@ const Auth = () => {
         description: "Welcome back!",
       });
       
-      // Use navigate to redirect to the home page
-      navigate('/', { replace: true });
+      // Get the intended destination from location state, or default to data-structures
+      const from = location.state?.from || '/data-structures';
+      navigate(from, { replace: true });
       
     } catch (error: any) {
       toast({
