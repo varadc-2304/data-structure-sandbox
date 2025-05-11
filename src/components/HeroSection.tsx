@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Mail, LogIn, Play } from 'lucide-react';
@@ -16,100 +15,68 @@ const HeroSection = () => {
       <div className="absolute bottom-0 right-0 w-full h-1/3 bg-gradient-to-t from-drona-green/5 to-transparent" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-12 items-center">
-          {/* Content */}
-          <div className="flex-1">
-            <div className="text-left">
-              <div className="drona-chip mb-4 animate-fade-in">Algorithm Visualization Platform</div>
-              <h1 className="text-4xl font-bold tracking-tight text-drona-dark sm:text-5xl md:text-6xl animate-slide-in">
-                All Your Algorithm Visualizations in One Place
-              </h1>
-              <p className="mt-6 text-lg text-drona-gray md:text-xl max-w-3xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                Simulate Data Structures, CPU Scheduling, Disk Management, and more – with full control and clarity.
-              </p>
-              <div className="mt-10 flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-                {user ? (
-                  <>
-                    <Link
-                      to="/data-structures"
-                      className="drona-button inline-flex items-center"
-                    >
-                      Start Exploring
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                    <Link
-                      to="#how-it-works"
-                      className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
-                    >
-                      Learn How It Works
-                      <Play className="ml-2 h-4 w-4" />
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <a
-                      href="#contact-form"
-                      className="drona-button inline-flex items-center group"
-                    >
-                      Contact Sales
-                      <Mail className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </a>
-                    <Link
-                      to="#how-it-works"
-                      className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
-                    >
-                      Learn How It Works
-                      <Play className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    <Link
-                      to="/auth"
-                      className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
-                    >
-                      Login
-                      <LogIn className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+        <div className="flex flex-col items-center text-center">
+          {/* Drona Logo */}
+          <div className="mb-8">
+            <img 
+              src="/lovable-uploads/0448f63d-cd54-4a34-9d5a-5317cbcfbf28.png" 
+              alt="Drona Logo" 
+              className="h-32 w-32 object-contain"
+            />
           </div>
           
-          {/* Hero visualization graphic */}
-          <div className="flex-1 w-full">
-            <div className="relative w-full aspect-square max-w-lg mx-auto">
-              <div className="absolute inset-0 bg-drona-green/5 rounded-xl animate-pulse"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full p-4">
-                  <div className="border border-drona-green/20 bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-drona-green/5 rounded-lg p-2 h-32 overflow-hidden">
-                        <div className="text-xs font-semibold text-drona-green mb-1">Data Structures</div>
-                        <div className="flex justify-center items-center h-24">
-                          <HeroVisualizationBinaryTree />
-                        </div>
-                      </div>
-                      <div className="bg-drona-green/5 rounded-lg p-2 h-32 overflow-hidden">
-                        <div className="text-xs font-semibold text-drona-green mb-1">CPU Scheduling</div>
-                        <div className="flex justify-center items-center h-24">
-                          <HeroVisualizationCPU />
-                        </div>
-                      </div>
-                      <div className="bg-drona-green/5 rounded-lg p-2 h-32 overflow-hidden">
-                        <div className="text-xs font-semibold text-drona-green mb-1">Page Replacement</div>
-                        <div className="flex justify-center items-center h-24">
-                          <HeroVisualizationPage />
-                        </div>
-                      </div>
-                      <div className="bg-drona-green/5 rounded-lg p-2 h-32 overflow-hidden">
-                        <div className="text-xs font-semibold text-drona-green mb-1">Disk Scheduling</div>
-                        <div className="flex justify-center items-center h-24">
-                          <HeroVisualizationDisk />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Content */}
+          <div className="max-w-3xl">
+            <div className="drona-chip mb-4 animate-fade-in">Algorithm Visualization Platform</div>
+            <h1 className="text-4xl font-bold tracking-tight text-drona-dark sm:text-5xl md:text-6xl animate-slide-in">
+              All Your Algorithm Visualizations in One Place
+            </h1>
+            <p className="mt-6 text-lg text-drona-gray md:text-xl max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              Simulate Data Structures, CPU Scheduling, Disk Management, and more – with full control and clarity.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              {user ? (
+                <>
+                  <Link
+                    to="/data-structures"
+                    className="drona-button inline-flex items-center"
+                  >
+                    Start Exploring
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="#how-it-works"
+                    className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
+                  >
+                    Learn How It Works
+                    <Play className="ml-2 h-4 w-4" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <a
+                    href="#contact-form"
+                    className="drona-button inline-flex items-center group"
+                  >
+                    Contact Sales
+                    <Mail className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </a>
+                  <Link
+                    to="#how-it-works"
+                    className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
+                  >
+                    Learn How It Works
+                    <Play className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link
+                    to="/auth"
+                    className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
+                  >
+                    Login
+                    <LogIn className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -118,7 +85,9 @@ const HeroSection = () => {
   );
 };
 
-// Hero visualization mini-components
+// These visualization components are no longer needed since we removed that section
+// Keeping the code commented out in case you want to use it elsewhere later
+/*
 const HeroVisualizationBinaryTree = () => (
   <svg width="100" height="80" viewBox="0 0 100 80">
     <circle cx="50" cy="10" r="8" fill="#2E8B57" fillOpacity="0.7" />
@@ -169,5 +138,6 @@ const HeroVisualizationDisk = () => (
     <circle cx="50" cy="40" r="3" fill="#2E8B57" />
   </svg>
 );
+*/
 
 export default HeroSection;
