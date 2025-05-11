@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import CPUScheduling from "./pages/CPUScheduling";
 import PageReplacement from "./pages/PageReplacement";
 import DiskScheduling from "./pages/DiskScheduling";
 import Algorithms from "./pages/Algorithms";
+import AIML from "./pages/AIML";
 
 // Visualizers
 import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
@@ -50,6 +52,13 @@ import NQueensVisualizer from "./pages/visualizers/NQueensVisualizer";
 import FractionalKnapsackVisualizer from "./pages/visualizers/FractionalKnapsackVisualizer";
 import JobSequencingVisualizer from "./pages/visualizers/JobSequencingVisualizer";
 import ZeroOneKnapsackVisualizer from "./pages/visualizers/ZeroOneKnapsackVisualizer";
+
+// AI/ML Visualizers
+import KMeansVisualizer from "./pages/visualizers/KMeansVisualizer";
+import LogisticRegressionVisualizer from "./pages/visualizers/LogisticRegressionVisualizer";
+import RandomForestVisualizer from "./pages/visualizers/RandomForestVisualizer";
+import HillClimbingVisualizer from "./pages/visualizers/HillClimbingVisualizer";
+import AStarVisualizer from "./pages/visualizers/AStarVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -114,6 +123,14 @@ const App = () => (
               <Route path="/algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
               <Route path="/algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
               <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
+              
+              {/* AI/ML */}
+              <Route path="/aiml" element={<AIML />} />
+              <Route path="/aiml/kmeans" element={<KMeansVisualizer />} />
+              <Route path="/aiml/logistic-regression" element={<LogisticRegressionVisualizer />} />
+              <Route path="/aiml/random-forest" element={<RandomForestVisualizer />} />
+              <Route path="/aiml/hill-climbing" element={<HillClimbingVisualizer />} />
+              <Route path="/aiml/a-star" element={<AStarVisualizer />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Code, Brain, LineChart, Cpu, Award, Mail, List, HardDrive, Folder } from 'lucide-react';
+import { Code, Brain, LineChart, Cpu, Award, Mail, List, HardDrive, Folder, Target, Shield, CircuitBoard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,6 +59,16 @@ const visualizerCategories = [
       { name: "CPU Scheduling", path: "/cpu-scheduling/fcfs", icon: <Cpu size={16} /> },
       { name: "Page Replacement", path: "/page-replacement/fifo", icon: <Folder size={16} /> },
       { name: "Disk Scheduling", path: "/disk-scheduling/fcfs", icon: <HardDrive size={16} /> },
+    ]
+  },
+  {
+    title: "AI/ML Algorithms",
+    items: [
+      { name: "K-means Clustering", path: "/aiml/kmeans", icon: <Target size={16} /> },
+      { name: "Logistic Regression", path: "/aiml/logistic-regression", icon: <LineChart size={16} /> },
+      { name: "Random Forest", path: "/aiml/random-forest", icon: <CircuitBoard size={16} /> },
+      { name: "Hill Climbing", path: "/aiml/hill-climbing", icon: <Shield size={16} /> },
+      { name: "A* Search Algorithm", path: "/aiml/a-star", icon: <Brain size={16} /> },
     ]
   }
 ];

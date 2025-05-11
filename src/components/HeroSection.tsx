@@ -32,10 +32,10 @@ const HeroSection = () => {
             <div className="drona-chip mb-3 animate-fade-in">Interactive Educational Platform</div>
             <h1 className="text-4xl font-bold tracking-tight text-drona-dark sm:text-5xl md:text-6xl animate-slide-in">
               Visualize &amp; Learn
-              <span className="block text-drona-green mt-1">Computer Science Concepts</span>
+              <span className="block text-drona-green mt-1">Computer Science &amp; AI Concepts</span>
             </h1>
             <p className="mt-5 max-w-xl mx-auto text-lg text-drona-gray sm:text-xl md:mt-5 md:text-2xl md:max-w-3xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              An intuitive platform to master data structures, algorithms, and operating system concepts through interactive visualizations.
+              An intuitive platform to master data structures, algorithms, operating systems, and machine learning concepts through interactive visualizations.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
               {user ? (
@@ -75,9 +75,9 @@ const HeroSection = () => {
             </div>
           </div>
           
-          {/* Hero cards (optional visual enhancement) */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {['DS', 'CPU', 'OS', 'Algo'].map((item, i) => (
+          {/* Hero cards */}
+          <div className="mt-16 grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
+            {['DS', 'CPU', 'OS', 'Algo', 'AI/ML'].map((item, i) => (
               <div 
                 key={i}
                 className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex flex-col items-center transition-all hover:shadow-xl hover:border-drona-green/20 hover:-translate-y-1"
