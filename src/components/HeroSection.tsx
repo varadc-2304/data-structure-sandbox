@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button';
 
 const HeroSection = () => {
   const { user } = useAuth();
+  
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div className="relative overflow-hidden bg-white py-16 md:py-24">
@@ -45,30 +52,30 @@ const HeroSection = () => {
                     Start Exploring
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
-                  <a
-                    href="#how-it-works"
+                  <button
+                    onClick={() => scrollToSection('how-it-works')}
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center"
                   >
                     Learn How It Works
                     <Play className="ml-2 h-4 w-4" />
-                  </a>
+                  </button>
                 </>
               ) : (
                 <>
-                  <a
-                    href="#contact-form"
+                  <button
+                    onClick={() => scrollToSection('contact-form')}
                     className="drona-button inline-flex items-center group"
                   >
                     Contact Sales
                     <Mail className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
-                  <a
-                    href="#how-it-works"
+                  </button>
+                  <button
+                    onClick={() => scrollToSection('how-it-works')}
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
                   >
                     Learn How It Works
                     <Play className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
+                  </button>
                   <Link
                     to="/auth"
                     className="px-6 py-3 bg-white text-drona-dark border border-gray-200 rounded-full font-medium shadow-sm transition-all duration-300 hover:shadow-md hover:border-drona-green/20 inline-flex items-center group"
