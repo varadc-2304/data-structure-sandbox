@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 const CallToAction = () => {
   const { user } = useAuth();
   
+  const scrollToContactForm = () => {
+    const element = document.getElementById('contact-form');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  
   return (
     <div className="py-16 bg-drona-green/10">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -27,12 +34,12 @@ const CallToAction = () => {
             </Link>
           ) : (
             <>
-              <a href="#contact-form">
+              <button onClick={scrollToContactForm}>
                 <Button size="lg" className="bg-drona-green hover:bg-drona-green/90">
                   <Mail className="mr-2 h-5 w-5" />
                   Contact Sales
                 </Button>
-              </a>
+              </button>
               <Link to="/auth">
                 <Button size="lg" variant="outline" className="border-drona-green text-drona-green hover:bg-drona-green hover:text-white">
                   <LogIn className="mr-2 h-5 w-5" />

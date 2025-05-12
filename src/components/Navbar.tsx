@@ -46,6 +46,14 @@ const Navbar = () => {
       });
     }
   };
+  
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setIsMenuOpen(false); // Close mobile menu if open
+    }
+  };
 
   return (
     <nav
@@ -125,20 +133,19 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Button 
-                  variant="outline" 
-                  className="border border-drona-green text-drona-green hover:bg-drona-green hover:text-white transition-colors"
-                  onClick={() => window.scrollTo({ top: document.getElementById('features')?.offsetTop - 100, behavior: 'smooth' })}
+                <button 
+                  className="border border-drona-green text-drona-green hover:bg-drona-green hover:text-white transition-colors px-4 py-2 rounded-md font-medium"
+                  onClick={() => scrollToSection('features')}
                 >
                   Features
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center border border-drona-green text-drona-green hover:bg-drona-green hover:text-white transition-colors"
+                </button>
+                <button 
+                  className="flex items-center border border-drona-green text-drona-green hover:bg-drona-green hover:text-white transition-colors px-4 py-2 rounded-md font-medium"
+                  onClick={() => scrollToSection('contact-form')}
                 >
                   <Mail className="mr-2 h-4 w-4" />
                   Contact Sales
-                </Button>
+                </button>
                 <Link to="/auth">
                   <Button className="flex items-center bg-drona-green hover:bg-drona-green/90">
                     <LogIn className="mr-2 h-4 w-4" />
@@ -235,15 +242,13 @@ const Navbar = () => {
           ) : (
             <>
               <button
-                onClick={() => {
-                  window.scrollTo({ top: document.getElementById('features')?.offsetTop - 100, behavior: 'smooth' });
-                  setIsMenuOpen(false);
-                }}
+                onClick={() => scrollToSection('features')}
                 className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
               >
                 Features
               </button>
               <button
+                onClick={() => scrollToSection('contact-form')}
                 className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
               >
                 <Mail className="mr-2 h-4 w-4" /> Contact Sales
