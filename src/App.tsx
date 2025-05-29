@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,12 +62,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Index />} />
+              
               {/* Data Structures */}
               <Route path="/data-structures" element={<DataStructures />} />
               <Route path="/data-structures/array" element={<ArrayVisualizer />} />
@@ -116,6 +117,8 @@ const App = () => (
               <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
             </Route>
             
+            {/* Redirect root to auth if not logged in */}
+            <Route path="/" element={<Navigate to="/auth" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

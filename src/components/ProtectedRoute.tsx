@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) {
+    // You could render a loading spinner here
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-drona-green"></div>
@@ -15,9 +15,9 @@ export const ProtectedRoute = () => {
     );
   }
 
-  // If not authenticated, redirect to the login page with the return path
+  // If not authenticated, redirect to the login page
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // If authenticated, render the child routes
