@@ -104,7 +104,7 @@ const Auth = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-green-500 hover:bg-green-600 text-white" 
+              className="w-full" 
               disabled={isLoading}
             >
               {isLoading ? (
