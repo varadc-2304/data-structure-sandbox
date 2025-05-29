@@ -58,16 +58,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="p-8 w-full max-w-md">
         <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/c7121dc2-79d6-44fc-a15d-cb0892a8b308.png" 
-              alt="Drona Logo" 
-              className="w-20 h-20 rounded-full"
-            />
-          </div>
           <h1 className="text-2xl font-bold text-drona-green">Drona</h1>
           <p className="text-gray-500 mt-2">Welcome to the learning visualization platform</p>
         </div>
@@ -104,7 +97,7 @@ const Auth = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-green-200 text-gray-800 hover:bg-green-300" 
+              className="w-full" 
               disabled={isLoading}
             >
               {isLoading ? (
