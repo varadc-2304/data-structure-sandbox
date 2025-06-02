@@ -2,18 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, ArrowDown, ArrowUp } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, ArrowDown, ArrowUp, Shuffle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 
 const StackVisualizer = () => {
   const [stack, setStack] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
+  const [stackSize, setStackSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
-  const logsEndRef = React.useRef<HTMLDivElement>(null);
 
   const resetHighlights = () => {
     setLastOperation(null);
@@ -23,14 +23,6 @@ const StackVisualizer = () => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
-
-  const scrollToBottom = () => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [logs]);
 
   const pushElement = () => {
     if (newElement.trim() === '') {
@@ -102,10 +94,20 @@ const StackVisualizer = () => {
   };
 
   const generateRandomStack = () => {
-    const size = 3 + Math.floor(Math.random() * 4); // Random size between 3 and 6
+    if (stackSize.trim() === '' || isNaN(Number(stackSize)) || Number(stackSize) <= 0) {
+      toast({
+        title: "Invalid size",
+        description: "Please enter a valid positive number for stack size",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const size = Math.min(Number(stackSize), 15); // Limit to 15 elements max
     const randomStack = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
     setStack(randomStack);
     setLastOperation(null);
+    setStackSize('');
     
     const message = `Generated random stack with ${size} elements`;
     addToLog(message);
@@ -131,7 +133,7 @@ const StackVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-6 animate-slide-in">
+        <div className="mb-6">
           <div className="arena-chip mb-2">Data Structure Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Stack Visualizer</h1>
           <p className="text-arena-gray">
@@ -139,16 +141,26 @@ const StackVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Stack Visualization</h2>
-            <Button 
-              onClick={generateRandomStack} 
-              variant="outline"
-              className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
-            >
-              Generate Random Stack
-            </Button>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={stackSize}
+                onChange={(e) => setStackSize(e.target.value)}
+                placeholder="Size"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+              />
+              <Button 
+                onClick={generateRandomStack} 
+                variant="outline"
+                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+              >
+                <Shuffle className="h-4 w-4" />
+                Generate Random Stack
+              </Button>
+            </div>
           </div>
           
           {/* Stack visualization */}
@@ -173,7 +185,6 @@ const StackVisualizer = () => {
                           (lastOperation === 'push' && index === stack.length - 1) ||
                           (lastOperation === 'pop' && index === stack.length - 1) ||
                           (lastOperation === 'peek' && index === stack.length - 1),
-                        "animate-scale-in": lastOperation === 'push' && index === stack.length - 1,
                       }
                     )}
                   >
@@ -260,7 +271,31 @@ const StackVisualizer = () => {
                   </div>
                 ))
               )}
-              <div ref={logsEndRef} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-2">About Stacks</h2>
+          <p className="text-arena-gray mb-4">
+            A stack is a linear data structure that follows the Last-In-First-Out (LIFO) principle. The last element added is the first one to be removed.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="bg-arena-light p-3 rounded-lg">
+              <span className="font-medium">Time Complexity:</span>
+              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+                <li>Push: O(1)</li>
+                <li>Pop: O(1)</li>
+                <li>Peek: O(1)</li>
+                <li>Search: O(n)</li>
+              </ul>
+            </div>
+            <div className="bg-arena-light p-3 rounded-lg">
+              <span className="font-medium">Space Complexity:</span>
+              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+                <li>Storage: O(n)</li>
+                <li>Auxiliary: O(1)</li>
+              </ul>
             </div>
           </div>
         </div>

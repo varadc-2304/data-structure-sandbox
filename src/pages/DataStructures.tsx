@@ -72,9 +72,9 @@ const DataStructures = () => {
       
       <div className="page-container pt-24">
         <div className="mb-10 text-center">
-          <div className="drona-chip mb-3 animate-fade-in">Interactive Visualizers</div>
-          <h1 className="text-3xl font-bold text-drona-dark mb-3 animate-slide-in">Data Structures</h1>
-          <p className="max-w-2xl mx-auto text-drona-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="drona-chip mb-3">Interactive Visualizers</div>
+          <h1 className="text-3xl font-bold text-drona-dark mb-3">Data Structures</h1>
+          <p className="max-w-2xl mx-auto text-drona-gray">
             Select a data structure to visualize and explore its operations.
           </p>
         </div>
@@ -83,8 +83,7 @@ const DataStructures = () => {
           {dataStructures.map((ds, index) => (
             <div 
               key={ds.title}
-              className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
             >
               <div className="flex flex-col h-full">
                 <div className="flex items-center mb-3">

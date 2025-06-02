@@ -2,19 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, ArrowRight, ArrowLeft, Shuffle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 
 const QueueVisualizer = () => {
   const [queue, setQueue] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
+  const [queueSize, setQueueSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
+  };
+
+  const addToLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
   const enqueueElement = () => {
@@ -32,9 +39,12 @@ const QueueVisualizer = () => {
     setLastOperation('enqueue');
     setNewElement('');
     
+    const message = `Enqueued "${newValue}" to the back of the queue`;
+    addToLog(message);
+    
     toast({
       title: "Element enqueued",
-      description: `Added "${newValue}" to the back of the queue`,
+      description: message,
     });
   };
 
@@ -52,9 +62,12 @@ const QueueVisualizer = () => {
     setQueue(queue.slice(1));
     setLastOperation('dequeue');
     
+    const message = `Dequeued "${dequeuedValue}" from the front of the queue`;
+    addToLog(message);
+    
     toast({
       title: "Element dequeued",
-      description: `Removed "${dequeuedValue}" from the front of the queue`,
+      description: message,
     });
   };
 
@@ -71,9 +84,37 @@ const QueueVisualizer = () => {
     const frontValue = queue[0];
     setLastOperation('peek');
     
+    const message = `Peeked at front element: "${frontValue}"`;
+    addToLog(message);
+    
     toast({
       title: "Front element",
       description: `Front element is "${frontValue}"`,
+    });
+  };
+
+  const generateRandomQueue = () => {
+    if (queueSize.trim() === '' || isNaN(Number(queueSize)) || Number(queueSize) <= 0) {
+      toast({
+        title: "Invalid size",
+        description: "Please enter a valid positive number for queue size",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const size = Math.min(Number(queueSize), 15); // Limit to 15 elements max
+    const randomQueue = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    setQueue(randomQueue);
+    setLastOperation(null);
+    setQueueSize('');
+    
+    const message = `Generated random queue with ${size} elements`;
+    addToLog(message);
+    
+    toast({
+      title: "Random queue generated",
+      description: message,
     });
   };
 
@@ -92,7 +133,7 @@ const QueueVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10 animate-slide-in">
+        <div className="mb-10">
           <div className="arena-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Queue Visualizer</h1>
           <p className="text-arena-gray">
@@ -100,8 +141,27 @@ const QueueVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-semibold mb-4">Queue Visualization</h2>
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Queue Visualization</h2>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={queueSize}
+                onChange={(e) => setQueueSize(e.target.value)}
+                placeholder="Size"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+              />
+              <Button 
+                onClick={generateRandomQueue} 
+                variant="outline"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                <Shuffle className="h-4 w-4" />
+                Generate Random Queue
+              </Button>
+            </div>
+          </div>
           
           {/* Queue visualization */}
           <div className="mb-6 relative">
@@ -130,7 +190,6 @@ const QueueVisualizer = () => {
                               (lastOperation === 'enqueue' && index === queue.length - 1) ||
                               (lastOperation === 'dequeue' && index === 0) ||
                               (lastOperation === 'peek' && index === 0),
-                            "animate-scale-in": lastOperation === 'enqueue' && index === queue.length - 1,
                           }
                         )}
                       >
@@ -205,9 +264,27 @@ const QueueVisualizer = () => {
               </Button>
             </div>
           </div>
+
+          {/* Operation Logs */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  No operations performed yet
+                </div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
+        <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Queues</h2>
           <p className="text-arena-gray mb-4">
             A queue is a linear data structure that follows the First-In-First-Out (FIFO) principle. The first element added is the first one to be removed.
@@ -223,12 +300,10 @@ const QueueVisualizer = () => {
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Common Applications:</span>
+              <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>CPU task scheduling</li>
-                <li>Handling of requests on a shared resource</li>
-                <li>Breadth-first search algorithm</li>
-                <li>Print queue management</li>
+                <li>Storage: O(n)</li>
+                <li>Auxiliary: O(1)</li>
               </ul>
             </div>
           </div>

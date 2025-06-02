@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Plus, Trash, Eye, AlertCircle, ArrowRightCircle } from 'lucide-react';
+import { ArrowRight, Plus, Trash, Eye, AlertCircle, ArrowRightCircle, Shuffle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface Node {
   value: number | string;
@@ -14,14 +15,21 @@ const LinkedListVisualizer = () => {
   const [head, setHead] = useState<Node | null>(null);
   const [newElement, setNewElement] = useState('');
   const [position, setPosition] = useState('');
+  const [listSize, setListSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
 
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
+  };
+
+  const addToLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
   const getLinkedListArray = (): Node[] => {
@@ -64,9 +72,12 @@ const LinkedListVisualizer = () => {
     setOperationTarget(getLinkedListArray().length - 1);
     setNewElement('');
     
+    const message = `Appended "${newValue}" to the end of the linked list`;
+    addToLog(message);
+    
     toast({
       title: "Node appended",
-      description: `Added "${newValue}" to the end of the linked list`,
+      description: message,
     });
   };
 
@@ -129,9 +140,12 @@ const LinkedListVisualizer = () => {
     setNewElement('');
     setPosition('');
     
+    const message = `Inserted "${newValue}" at position ${pos}`;
+    addToLog(message);
+    
     toast({
       title: "Node inserted",
-      description: `Inserted "${newValue}" at position ${pos}`,
+      description: message,
     });
   };
 
@@ -183,9 +197,12 @@ const LinkedListVisualizer = () => {
     setOperationTarget(pos);
     setPosition('');
     
+    const message = `Removed "${deletedValue}" from position ${pos}`;
+    addToLog(message);
+    
     toast({
       title: "Node deleted",
-      description: `Removed "${deletedValue}" from position ${pos}`,
+      description: message,
     });
   };
 
@@ -222,9 +239,55 @@ const LinkedListVisualizer = () => {
     setLastOperation('view');
     setOperationTarget(pos);
     
+    const message = `Viewed element at position ${pos}: "${current?.value}"`;
+    addToLog(message);
+    
     toast({
       title: "Node viewed",
-      description: `Element at position ${pos} is "${current?.value}"`,
+      description: message,
+    });
+  };
+
+  const generateRandomLinkedList = () => {
+    if (listSize.trim() === '' || isNaN(Number(listSize)) || Number(listSize) <= 0) {
+      toast({
+        title: "Invalid size",
+        description: "Please enter a valid positive number for list size",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const size = Math.min(Number(listSize), 15); // Limit to 15 nodes max
+    setHead(null);
+    
+    let newHead: Node | null = null;
+    let current: Node | null = null;
+
+    for (let i = 0; i < size; i++) {
+      const value = Math.floor(Math.random() * 100);
+      const newNode: Node = { value, next: null };
+      
+      if (newHead === null) {
+        newHead = newNode;
+        current = newNode;
+      } else if (current !== null) {
+        current.next = newNode;
+        current = newNode;
+      }
+    }
+
+    setHead(newHead);
+    setLastOperation(null);
+    setOperationTarget(null);
+    setListSize('');
+    
+    const message = `Generated random linked list with ${size} nodes`;
+    addToLog(message);
+    
+    toast({
+      title: "Random linked list generated",
+      description: message,
     });
   };
 
@@ -243,7 +306,7 @@ const LinkedListVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10 animate-slide-in">
+        <div className="mb-10">
           <div className="arena-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Linked List Visualizer</h1>
           <p className="text-arena-gray">
@@ -251,8 +314,27 @@ const LinkedListVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-xl font-semibold mb-4">Linked List Visualization</h2>
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Linked List Visualization</h2>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={listSize}
+                onChange={(e) => setListSize(e.target.value)}
+                placeholder="Size"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+              />
+              <Button 
+                onClick={generateRandomLinkedList} 
+                variant="outline"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                <Shuffle className="h-4 w-4" />
+                Generate Random List
+              </Button>
+            </div>
+          </div>
           
           {/* Linked List visualization */}
           <div className="mb-6 relative">
@@ -273,7 +355,6 @@ const LinkedListVisualizer = () => {
                         "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                         {
                           "border-arena-green bg-arena-green/10 shadow-md": operationTarget === index,
-                          "animate-scale-in": lastOperation === 'append' && operationTarget === index,
                           "array-element-highlight": lastOperation === 'view' && operationTarget === index,
                         }
                       )}
@@ -305,13 +386,13 @@ const LinkedListVisualizer = () => {
                   placeholder="Enter value"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={appendNode}
                   className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Append
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -336,12 +417,12 @@ const LinkedListVisualizer = () => {
                   placeholder="Position"
                   className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={insertAtPosition}
                   className="bg-arena-green text-white px-2 py-2 rounded-lg hover:bg-arena-green/90 transition-colors duration-300"
                 >
                   Insert
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -359,13 +440,13 @@ const LinkedListVisualizer = () => {
                   placeholder="Enter position"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={deleteAtPosition}
                   className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
             
@@ -383,19 +464,37 @@ const LinkedListVisualizer = () => {
                   placeholder="Enter position"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <button
+                <Button
                   onClick={viewAtPosition}
                   className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   View
                   <Eye className="ml-2 h-4 w-4" />
-                </button>
+                </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Operation Logs */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  No operations performed yet
+                </div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
+                    {log}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
+        <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Linked Lists</h2>
           <p className="text-arena-gray mb-4">
             A linked list is a linear data structure where elements are stored in nodes. Each node points to the next node in the sequence, forming a chain.
@@ -406,17 +505,15 @@ const LinkedListVisualizer = () => {
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
                 <li>Access: O(n)</li>
                 <li>Search: O(n)</li>
-                <li>Insertion: O(1) (with a pointer to the position)</li>
-                <li>Deletion: O(1) (with a pointer to the position)</li>
+                <li>Insertion: O(1) (with pointer)</li>
+                <li>Deletion: O(1) (with pointer)</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Common Operations:</span>
+              <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Traversing the list</li>
-                <li>Inserting nodes at beginning/end/position</li>
-                <li>Deleting nodes from beginning/end/position</li>
-                <li>Searching for a specific value</li>
+                <li>Storage: O(n)</li>
+                <li>Auxiliary: O(1)</li>
               </ul>
             </div>
           </div>

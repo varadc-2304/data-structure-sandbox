@@ -10,12 +10,12 @@ const ArrayVisualizer = () => {
   const [array, setArray] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
   const [position, setPosition] = useState('');
+  const [arraySize, setArraySize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   
   const arrayRef = useRef<HTMLDivElement>(null);
-  const logsEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const resetHighlights = () => {
@@ -27,14 +27,6 @@ const ArrayVisualizer = () => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
-
-  const scrollToBottom = () => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [logs]);
 
   const appendElement = () => {
     if (newElement.trim() === '') {
@@ -82,28 +74,29 @@ const ArrayVisualizer = () => {
 
     const pos = Number(position);
     
-    if (pos < 0 || pos > array.length) {
+    if (pos < 0 || pos >= array.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 0 and ${array.length}`,
+        description: `Position must be between 0 and ${array.length - 1}`,
         variant: "destructive",
       });
       return;
     }
 
     const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
-    const newArray = [...array.slice(0, pos), newValue, ...array.slice(pos)];
+    const newArray = [...array];
+    newArray[pos] = newValue; // Replace element at position instead of inserting
     setArray(newArray);
     setLastOperation('insert');
     setOperationTarget(pos);
     setNewElement('');
     setPosition('');
     
-    const message = `Inserted "${newValue}" at position ${pos}`;
+    const message = `Replaced element at position ${pos} with "${newValue}"`;
     addToLog(message);
     
     toast({
-      title: "Element inserted",
+      title: "Element replaced",
       description: message,
     });
   };
@@ -179,11 +172,21 @@ const ArrayVisualizer = () => {
   };
 
   const generateRandomArray = () => {
-    const size = 5 + Math.floor(Math.random() * 6); // Random size between 5 and 10
+    if (arraySize.trim() === '' || isNaN(Number(arraySize)) || Number(arraySize) <= 0) {
+      toast({
+        title: "Invalid size",
+        description: "Please enter a valid positive number for array size",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const size = Math.min(Number(arraySize), 20); // Limit to 20 elements max
     const randomArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
     setArray(randomArray);
     setLastOperation(null);
     setOperationTarget(null);
+    setArraySize('');
     
     const message = `Generated random array with ${size} elements`;
     addToLog(message);
@@ -193,13 +196,6 @@ const ArrayVisualizer = () => {
       description: message,
     });
   };
-
-  // Scroll the array to show newly added elements
-  useEffect(() => {
-    if (arrayRef.current && lastOperation) {
-      arrayRef.current.scrollLeft = arrayRef.current.scrollWidth;
-    }
-  }, [array, lastOperation]);
 
   // Clear highlights after a delay
   useEffect(() => {
@@ -216,7 +212,7 @@ const ArrayVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-28">
-        <div className="mb-8 animate-slide-in">
+        <div className="mb-8">
           <div className="drona-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Array Visualizer</h1>
           <p className="text-drona-gray">
@@ -224,17 +220,26 @@ const ArrayVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-6 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+        <div className="mb-6 bg-white rounded-2xl shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Array Visualization</h2>
-            <Button 
-              onClick={generateRandomArray} 
-              variant="outline"
-              className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
-            >
-              <Shuffle className="h-4 w-4" />
-              Generate Random Array
-            </Button>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={arraySize}
+                onChange={(e) => setArraySize(e.target.value)}
+                placeholder="Size"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+              />
+              <Button 
+                onClick={generateRandomArray} 
+                variant="outline"
+                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+              >
+                <Shuffle className="h-4 w-4" />
+                Generate Random Array
+              </Button>
+            </div>
           </div>
           
           {/* Array visualization */}
@@ -257,7 +262,6 @@ const ArrayVisualizer = () => {
                       "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                       {
                         "border-drona-green bg-drona-green/10 shadow-md": operationTarget === index,
-                        "animate-scale-in": lastOperation === 'append' && operationTarget === index,
                         "array-element-highlight": lastOperation === 'view' && operationTarget === index,
                       }
                     )}
@@ -295,11 +299,11 @@ const ArrayVisualizer = () => {
               </div>
             </div>
             
-            {/* Insert at position */}
+            {/* Replace at position */}
             <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-drona-green mr-2" />
-                Insert at Position
+                Replace at Position
               </h3>
               <div className="grid grid-cols-5 gap-2">
                 <input
@@ -320,7 +324,7 @@ const ArrayVisualizer = () => {
                   onClick={insertAtPosition}
                   className="bg-drona-green hover:bg-drona-green/90 text-white"
                 >
-                  Insert
+                  Replace
                 </Button>
               </div>
             </div>
@@ -389,12 +393,11 @@ const ArrayVisualizer = () => {
                   </div>
                 ))
               )}
-              <div ref={logsEndRef} />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
+        <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Arrays</h2>
           <p className="text-drona-gray mb-4">
             An array is a collection of elements stored at contiguous memory locations. It is the simplest data structure where each element can be accessed using an index.
@@ -410,12 +413,10 @@ const ArrayVisualizer = () => {
               </ul>
             </div>
             <div className="bg-drona-light p-3 rounded-lg">
-              <span className="font-medium">Common Operations:</span>
+              <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-drona-gray">
-                <li>Accessing elements by index</li>
-                <li>Inserting elements</li>
-                <li>Deleting elements</li>
-                <li>Traversing the array</li>
+                <li>Storage: O(n)</li>
+                <li>Auxiliary: O(1)</li>
               </ul>
             </div>
           </div>
