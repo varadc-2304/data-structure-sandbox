@@ -1,36 +1,36 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, Shuffle } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, Shuffle, ArrowRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 interface ListNode {
+  id: number;
   value: number;
-  next: ListNode | null;
+  next: number | null;
 }
 
 const LinkedListVisualizer = () => {
-  const [head, setHead] = useState<ListNode | null>(null);
+  const [nodes, setNodes] = useState<ListNode[]>([]);
   const [newElement, setNewElement] = useState('');
   const [listSize, setListSize] = useState('');
   const [position, setPosition] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [isTraversing, setIsTraversing] = useState(false);
-  const [currentTraverseIndex, setCurrentTraverseIndex] = useState(-1);
-  const [targetReached, setTargetReached] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
+  const [traversalPath, setTraversalPath] = useState<number[]>([]);
+  const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
   
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
-    setIsTraversing(false);
-    setCurrentTraverseIndex(-1);
-    setTargetReached(false);
+    setIsViewing(false);
+    setTraversalPath([]);
+    setCurrentTraversal(-1);
   };
 
   const addToLog = (message: string) => {
@@ -38,74 +38,37 @@ const LinkedListVisualizer = () => {
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const listToArray = (): number[] => {
-    const array: number[] = [];
-    let current = head;
-    while (current) {
-      array.push(current.value);
-      current = current.next;
-    }
-    return array;
-  };
-
-  const addElement = () => {
+  const appendElement = () => {
     if (newElement.trim() === '') {
       toast({
         title: "Input required",
-        description: "Please enter a value to add",
+        description: "Please enter a value to append",
         variant: "destructive",
       });
       return;
     }
 
-    const newNode: ListNode = {
-      value: Number(newElement),
-      next: head
-    };
+    const newValue = Number(newElement);
+    const newId = nodes.length > 0 ? Math.max(...nodes.map(n => n.id)) + 1 : 0;
     
-    setHead(newNode);
+    if (nodes.length === 0) {
+      setNodes([{ id: newId, value: newValue, next: null }]);
+    } else {
+      const updatedNodes = [...nodes];
+      updatedNodes[updatedNodes.length - 1].next = newId;
+      updatedNodes.push({ id: newId, value: newValue, next: null });
+      setNodes(updatedNodes);
+    }
+    
+    setLastOperation('append');
+    setOperationTarget(newId);
     setNewElement('');
     
-    const message = `Added ${newElement} to the beginning of the list`;
+    const message = `Appended "${newValue}" to the end of the list`;
     addToLog(message);
     
     toast({
-      title: "Element added",
-      description: message,
-    });
-  };
-
-  const removeElement = () => {
-    if (!head) {
-      toast({
-        title: "List is empty",
-        description: "Cannot remove from an empty list",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const removedValue = head.value;
-    setHead(head.next);
-    
-    const message = `Removed ${removedValue} from the beginning of the list`;
-    addToLog(message);
-    
-    toast({
-      title: "Element removed",
-      description: message,
-    });
-  };
-
-  const clearList = () => {
-    setHead(null);
-    resetHighlights();
-    
-    const message = "Cleared the entire list";
-    addToLog(message);
-    
-    toast({
-      title: "List cleared",
+      title: "Element appended",
       description: message,
     });
   };
@@ -121,26 +84,47 @@ const LinkedListVisualizer = () => {
     }
 
     const pos = Number(position);
-    const array = listToArray();
     
-    if (pos < 0 || pos >= array.length) {
+    if (pos < 0 || pos >= nodes.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 0 and ${array.length - 1}`,
+        description: `Position must be between 0 and ${nodes.length - 1}`,
         variant: "destructive",
       });
       return;
     }
 
+    // Create traversal path
+    const path = [];
+    for (let i = 0; i <= pos; i++) {
+      path.push(nodes[i].id);
+    }
+    
+    setTraversalPath(path);
+    setCurrentTraversal(0);
     setLastOperation('view');
-    setOperationTarget(pos);
-    setIsTraversing(true);
-    setCurrentTraverseIndex(0);
+    setIsViewing(true);
     setPosition('');
     
-    const message = `Viewing element at position ${pos}: ${array[pos]}`;
+    const message = `Viewing element at position ${pos}: ${nodes[pos].value}`;
     addToLog(message);
   };
+
+  // Handle traversal animation
+  useEffect(() => {
+    if (traversalPath.length > 0 && currentTraversal < traversalPath.length - 1) {
+      const timer = setTimeout(() => {
+        setCurrentTraversal(prev => prev + 1);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else if (currentTraversal === traversalPath.length - 1) {
+      setOperationTarget(traversalPath[currentTraversal]);
+      const timer = setTimeout(() => {
+        resetHighlights();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentTraversal, traversalPath]);
 
   const generateRandomList = () => {
     if (listSize.trim() === '' || isNaN(Number(listSize)) || Number(listSize) <= 0) {
@@ -152,19 +136,18 @@ const LinkedListVisualizer = () => {
       return;
     }
 
-    const size = Math.min(Number(listSize), 15);
-    const randomValues = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    const size = Math.min(Number(listSize), 10);
+    const newNodes = [];
     
-    let newHead: ListNode | null = null;
-    for (let i = randomValues.length - 1; i >= 0; i--) {
-      const newNode: ListNode = {
-        value: randomValues[i],
-        next: newHead
-      };
-      newHead = newNode;
+    for (let i = 0; i < size; i++) {
+      newNodes.push({
+        id: i,
+        value: Math.floor(Math.random() * 100),
+        next: i < size - 1 ? i + 1 : null
+      });
     }
     
-    setHead(newHead);
+    setNodes(newNodes);
     resetHighlights();
     setListSize('');
     
@@ -176,40 +159,6 @@ const LinkedListVisualizer = () => {
       description: message,
     });
   };
-
-  // Handle traversal animation
-  useEffect(() => {
-    if (isTraversing && operationTarget !== null) {
-      if (currentTraverseIndex <= operationTarget) {
-        const timer = setTimeout(() => {
-          if (currentTraverseIndex === operationTarget) {
-            setTargetReached(true);
-            setIsTraversing(false);
-            const array = listToArray();
-            toast({
-              title: "Element found",
-              description: `Element at position ${operationTarget} is ${array[operationTarget]}`,
-            });
-          } else {
-            setCurrentTraverseIndex(currentTraverseIndex + 1);
-          }
-        }, 300);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [isTraversing, currentTraverseIndex, operationTarget]);
-
-  // Clear highlights after target is reached
-  useEffect(() => {
-    if (targetReached) {
-      const timer = setTimeout(() => {
-        resetHighlights();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [targetReached]);
-
-  const array = listToArray();
 
   return (
     <div className="min-h-screen bg-white">
@@ -261,48 +210,62 @@ const LinkedListVisualizer = () => {
             </div>
           </div>
           
-          {/* Linked list visualization */}
-          <div className="mb-6 relative overflow-hidden">
+          {/* Linked List visualization */}
+          <div className="mb-6 relative">
             <div 
               className="flex items-center bg-arena-light rounded-lg p-4 overflow-x-auto"
               style={{ minHeight: "120px" }}
             >
-              {array.length === 0 ? (
+              {nodes.length === 0 ? (
                 <div className="flex items-center justify-center w-full py-8 text-arena-gray">
                   <AlertCircle className="mr-2 h-5 w-5" />
                   <span>Linked list is empty. Add elements using the controls below.</span>
                 </div>
               ) : (
-                array.map((item, index) => (
-                  <div key={index} className="flex items-center">
+                nodes.map((node, index) => (
+                  <div key={node.id} className="flex items-center">
                     <div
                       className={cn(
-                        "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative",
+                        "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
                         {
                           "border-arena-green bg-arena-green/10 shadow-md": 
-                            isTraversing && currentTraverseIndex === index,
-                          "border-arena-green bg-arena-green/10 shadow-md animate-bounce": 
-                            targetReached && operationTarget === index,
+                            (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
+                            (operationTarget === node.id && !isViewing),
+                          "border-arena-green bg-arena-green/10 shadow-md": 
+                            isViewing && operationTarget === node.id,
                         }
                       )}
+                      style={{
+                        animation: isViewing && operationTarget === node.id ? 'bounce 0.6s ease-in-out 3' : 'none',
+                        transformOrigin: 'center'
+                      }}
                     >
-                      <div className="text-lg font-medium">{item}</div>
-                      <div className="text-xs text-arena-gray">[{index}]</div>
-                      
-                      {/* Pointer to next node */}
-                      {index < array.length - 1 && (
-                        <div className="absolute -right-4 top-1/2 transform -translate-y-1/2">
-                          <div className="w-6 h-0.5 bg-gray-400"></div>
-                          <div className="absolute -right-1 -top-1 w-2 h-2 border-t-2 border-r-2 border-gray-400 transform rotate-45"></div>
-                        </div>
-                      )}
+                      <div className="text-lg font-medium">{node.value}</div>
+                      <div className="text-xs text-arena-gray">Node {index}</div>
                     </div>
-                    {index < array.length - 1 && <div className="w-4"></div>}
+                    
+                    {/* Arrow between nodes */}
+                    {node.next !== null && (
+                      <div className="flex items-center mx-2">
+                        <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                        <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
+                        <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                      </div>
+                    )}
+                    
+                    {/* NULL indicator for last node */}
+                    {node.next === null && index === nodes.length - 1 && (
+                      <div className="flex items-center mx-2">
+                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                        <div className="text-sm text-gray-400 ml-2">NULL</div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
             </div>
           </div>
+          
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Add element */}
@@ -320,7 +283,7 @@ const LinkedListVisualizer = () => {
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <Button
-                  onClick={addElement}
+                  onClick={appendElement}
                   variant="default"
                   className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
                 >
@@ -333,10 +296,32 @@ const LinkedListVisualizer = () => {
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Trash className="h-5 w-5 text-arena-green mr-2" />
-                Remove First Element
+                Remove Last Element
               </h3>
               <Button
-                onClick={removeElement}
+                onClick={() => {
+                  if (nodes.length === 0) {
+                    toast({
+                      title: "List is empty",
+                      description: "Cannot remove from an empty list",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  const removedElement = nodes[nodes.length - 1].value;
+                  const newNodes = [...nodes];
+                  newNodes.pop();
+                  if (newNodes.length > 0) {
+                    newNodes[newNodes.length - 1].next = null;
+                  }
+                  setNodes(newNodes);
+                  const message = `Removed ${removedElement} from the list`;
+                  addToLog(message);
+                  toast({
+                    title: "Element removed",
+                    description: message,
+                  });
+                }}
                 variant="default"
                 className="w-full bg-arena-green text-white hover:bg-arena-green/90"
               >
@@ -351,7 +336,16 @@ const LinkedListVisualizer = () => {
                 Clear List
               </h3>
               <Button
-                onClick={clearList}
+                onClick={() => {
+                  setNodes([]);
+                  resetHighlights();
+                  const message = "Cleared the entire list";
+                  addToLog(message);
+                  toast({
+                    title: "List cleared",
+                    description: message,
+                  });
+                }}
                 variant="default"
                 className="w-full bg-arena-green text-white hover:bg-arena-green/90"
               >
@@ -404,6 +398,14 @@ const LinkedListVisualizer = () => {
           </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-10px); }
+          60% { transform: translateY(-5px); }
+        }
+      `}</style>
     </div>
   );
 };

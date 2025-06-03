@@ -1,86 +1,77 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, AlertCircle, Search, Share2, ArrowRight } from 'lucide-react';
+import { Plus, Trash, Play, Pause, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
-interface Node {
+interface GraphNode {
   id: string;
+  label: string;
   x: number;
   y: number;
-  highlighted: boolean;
+  color?: string;
 }
 
-interface Edge {
+interface GraphEdge {
   from: string;
   to: string;
   weight?: number;
-  directed: boolean;
-  highlighted: boolean;
+  directed?: boolean;
 }
 
 const GraphVisualizer = () => {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [nodeName, setNodeName] = useState('');
-  const [fromNode, setFromNode] = useState('');
-  const [toNode, setToNode] = useState('');
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [edges, setEdges] = useState<GraphEdge[]>([]);
+  const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [edgeFrom, setEdgeFrom] = useState('');
+  const [edgeTo, setEdgeTo] = useState('');
   const [edgeWeight, setEdgeWeight] = useState('');
   const [isDirected, setIsDirected] = useState(false);
-  const [sourceNode, setSourceNode] = useState('');
-  const [lastOperation, setLastOperation] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [currentDragNode, setCurrentDragNode] = useState<string | null>(null);
-  const [visitOrder, setVisitOrder] = useState<string[]>([]);
-  const [currentVisitIndex, setCurrentVisitIndex] = useState(-1);
+  const [traversalOrder, setTraversalOrder] = useState<string[]>([]);
+  const [currentTraversal, setCurrentTraversal] = useState(-1);
+  const [isTraversing, setIsTraversing] = useState(false);
+  const [traversalType, setTraversalType] = useState<'bfs' | 'dfs' | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  
-  const graphRef = useRef<HTMLDivElement>(null);
+
   const { toast } = useToast();
 
-  const resetHighlights = () => {
-    setNodes(nodes.map(node => ({ ...node, highlighted: false })));
-    setEdges(edges.map(edge => ({ ...edge, highlighted: false })));
-    setLastOperation(null);
-    setVisitOrder([]);
-    setCurrentVisitIndex(-1);
-  };
-
   const addToLog = (message: string) => {
-    setLogs(prev => [message, ...prev.slice(0, 9)]);
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
   const addNode = () => {
-    if (nodeName.trim() === '') {
+    if (newNodeLabel.trim() === '') {
       toast({
-        title: "Invalid input",
-        description: "Please enter a node name",
+        title: "Input required",
+        description: "Please enter a node label",
         variant: "destructive",
       });
       return;
     }
 
-    if (nodes.some(node => node.id === nodeName)) {
+    if (nodes.find(node => node.id === newNodeLabel)) {
       toast({
         title: "Node exists",
-        description: `Node "${nodeName}" already exists`,
+        description: "A node with this label already exists",
         variant: "destructive",
       });
       return;
     }
 
-    // Get random position within the graph container
-    const containerWidth = graphRef.current?.clientWidth || 500;
-    const containerHeight = graphRef.current?.clientHeight || 300;
-    const x = Math.random() * (containerWidth - 100) + 50;
-    const y = Math.random() * (containerHeight - 100) + 50;
+    const newNode: GraphNode = {
+      id: newNodeLabel,
+      label: newNodeLabel,
+      x: Math.random() * 400 + 50,
+      y: Math.random() * 300 + 50,
+    };
 
-    setNodes([...nodes, { id: nodeName, x, y, highlighted: false }]);
-    setNodeName('');
+    setNodes([...nodes, newNode]);
+    setNewNodeLabel('');
     
-    const message = `Added node "${nodeName}"`;
+    const message = `Added node "${newNodeLabel}"`;
     addToLog(message);
     
     toast({
@@ -90,62 +81,37 @@ const GraphVisualizer = () => {
   };
 
   const addEdge = () => {
-    if (fromNode.trim() === '' || toNode.trim() === '') {
+    if (edgeFrom.trim() === '' || edgeTo.trim() === '') {
       toast({
-        title: "Invalid input",
-        description: "Please select both source and target nodes",
+        title: "Input required",
+        description: "Please enter both from and to nodes",
         variant: "destructive",
       });
       return;
     }
 
-    if (fromNode === toNode) {
+    if (!nodes.find(node => node.id === edgeFrom) || !nodes.find(node => node.id === edgeTo)) {
       toast({
-        title: "Invalid edge",
-        description: "Cannot create an edge from a node to itself",
+        title: "Invalid nodes",
+        description: "One or both nodes don't exist",
         variant: "destructive",
       });
       return;
     }
 
-    if (!nodes.some(node => node.id === fromNode) || !nodes.some(node => node.id === toNode)) {
-      toast({
-        title: "Node not found",
-        description: "One or both nodes do not exist",
-        variant: "destructive",
-      });
-      return;
-    }
+    const newEdge: GraphEdge = {
+      from: edgeFrom,
+      to: edgeTo,
+      weight: edgeWeight ? Number(edgeWeight) : undefined,
+      directed: isDirected,
+    };
 
-    const existingEdge = edges.find(edge => 
-      (edge.from === fromNode && edge.to === toNode) ||
-      (!isDirected && edge.from === toNode && edge.to === fromNode)
-    );
-
-    if (existingEdge) {
-      toast({
-        title: "Edge exists",
-        description: `Edge already exists between "${fromNode}" and "${toNode}"`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const weight = edgeWeight.trim() !== '' && !isNaN(Number(edgeWeight)) ? Number(edgeWeight) : undefined;
-    
-    setEdges([...edges, { 
-      from: fromNode, 
-      to: toNode, 
-      weight, 
-      directed: isDirected, 
-      highlighted: false 
-    }]);
-    
-    setFromNode('');
-    setToNode('');
+    setEdges([...edges, newEdge]);
+    setEdgeFrom('');
+    setEdgeTo('');
     setEdgeWeight('');
     
-    const message = `Added ${isDirected ? 'directed' : 'undirected'} edge from "${fromNode}" to "${toNode}"${weight !== undefined ? ` with weight ${weight}` : ''}`;
+    const message = `Added ${isDirected ? 'directed' : 'undirected'} edge from "${edgeFrom}" to "${edgeTo}"${newEdge.weight ? ` with weight ${newEdge.weight}` : ''}`;
     addToLog(message);
     
     toast({
@@ -154,388 +120,283 @@ const GraphVisualizer = () => {
     });
   };
 
-  const deleteNode = (id: string) => {
-    setNodes(nodes.filter(node => node.id !== id));
-    setEdges(edges.filter(edge => edge.from !== id && edge.to !== id));
-    
-    const message = `Deleted node "${id}" and all connected edges`;
-    addToLog(message);
-    
-    toast({
-      title: "Node deleted",
-      description: message,
+  const getNeighbors = (nodeId: string): string[] => {
+    const neighbors: string[] = [];
+    edges.forEach(edge => {
+      if (edge.from === nodeId) {
+        neighbors.push(edge.to);
+      }
+      if (!edge.directed && edge.to === nodeId) {
+        neighbors.push(edge.from);
+      }
     });
+    return neighbors;
   };
 
-  const startNodeDrag = (id: string) => {
-    setIsDragging(true);
-    setCurrentDragNode(id);
-  };
-
-  const handleNodeDrag = (e: React.MouseEvent) => {
-    if (isDragging && currentDragNode && graphRef.current) {
-      const rect = graphRef.current.getBoundingClientRect();
-      const x = Math.max(25, Math.min(e.clientX - rect.left, rect.width - 25));
-      const y = Math.max(25, Math.min(e.clientY - rect.top, rect.height - 25));
-      
-      setNodes(nodes.map(node => 
-        node.id === currentDragNode ? { ...node, x, y } : node
-      ));
-    }
-  };
-
-  const stopNodeDrag = () => {
-    setIsDragging(false);
-    setCurrentDragNode(null);
-  };
-
-  // BFS algorithm
-  const runBFS = () => {
-    if (nodes.length === 0) {
-      toast({
-        title: "Empty graph",
-        description: "Cannot run BFS on an empty graph",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (sourceNode === '') {
-      toast({
-        title: "Source required",
-        description: "Please select a source node for BFS",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    resetHighlights();
-    setLastOperation('bfs');
-
-    const visited: { [key: string]: boolean } = {};
-    const queue: string[] = [];
-    const visitedOrder: string[] = [];
+  const bfsTraversal = (startNodeId: string): string[] => {
+    if (!nodes.find(node => node.id === startNodeId)) return [];
     
-    // Initialize all nodes as not visited
-    nodes.forEach(node => {
-      visited[node.id] = false;
-    });
+    const visited = new Set<string>();
+    const queue = [startNodeId];
+    const result: string[] = [];
     
-    // Start BFS from the source node
-    visited[sourceNode] = true;
-    queue.push(sourceNode);
-    visitedOrder.push(sourceNode);
-    
-    // Process the queue
     while (queue.length > 0) {
       const current = queue.shift()!;
-      
-      // Find all adjacent vertices
-      const adjacentEdges = edges.filter(edge => 
-        edge.from === current || (!edge.directed && edge.to === current)
-      );
-      
-      for (const edge of adjacentEdges) {
-        const neighbor = edge.from === current ? edge.to : edge.from;
+      if (!visited.has(current)) {
+        visited.add(current);
+        result.push(current);
         
-        if (!visited[neighbor]) {
-          visited[neighbor] = true;
-          queue.push(neighbor);
-          visitedOrder.push(neighbor);
-        }
+        const neighbors = getNeighbors(current);
+        neighbors.forEach(neighbor => {
+          if (!visited.has(neighbor)) {
+            queue.push(neighbor);
+          }
+        });
       }
     }
     
-    setVisitOrder(visitedOrder);
-    setCurrentVisitIndex(0);
-
-    const message = `BFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
-    addToLog(message);
-    
-    toast({
-      title: "BFS started",
-      description: `Running BFS from node "${sourceNode}"`,
-    });
+    return result;
   };
 
-  // DFS algorithm
-  const runDFS = () => {
+  const dfsTraversal = (startNodeId: string): string[] => {
+    if (!nodes.find(node => node.id === startNodeId)) return [];
+    
+    const visited = new Set<string>();
+    const result: string[] = [];
+    
+    const dfs = (nodeId: string) => {
+      visited.add(nodeId);
+      result.push(nodeId);
+      
+      const neighbors = getNeighbors(nodeId);
+      neighbors.forEach(neighbor => {
+        if (!visited.has(neighbor)) {
+          dfs(neighbor);
+        }
+      });
+    };
+    
+    dfs(startNodeId);
+    return result;
+  };
+
+  const startTraversal = (type: 'bfs' | 'dfs') => {
     if (nodes.length === 0) {
       toast({
         title: "Empty graph",
-        description: "Cannot run DFS on an empty graph",
+        description: "Please add some nodes first",
         variant: "destructive",
       });
       return;
     }
 
-    if (sourceNode === '') {
-      toast({
-        title: "Source required",
-        description: "Please select a source node for DFS",
-        variant: "destructive",
-      });
-      return;
+    const startNode = nodes[0].id;
+    let result: string[] = [];
+    
+    if (type === 'bfs') {
+      result = bfsTraversal(startNode);
+    } else {
+      result = dfsTraversal(startNode);
     }
-
-    resetHighlights();
-    setLastOperation('dfs');
-
-    const visited: { [key: string]: boolean } = {};
-    const visitedOrder: string[] = [];
     
-    // Initialize all nodes as not visited
-    nodes.forEach(node => {
-      visited[node.id] = false;
-    });
+    setTraversalOrder(result);
+    setTraversalType(type);
+    setCurrentTraversal(0);
+    setIsTraversing(true);
     
-    // Function to perform DFS
-    const dfs = (nodeId: string) => {
-      visited[nodeId] = true;
-      visitedOrder.push(nodeId);
-      
-      // Find all adjacent vertices
-      const adjacentEdges = edges.filter(edge => 
-        edge.from === nodeId || (!edge.directed && edge.to === nodeId)
-      );
-      
-      for (const edge of adjacentEdges) {
-        const neighbor = edge.from === nodeId ? edge.to : edge.from;
-        
-        if (!visited[neighbor]) {
-          dfs(neighbor);
-        }
-      }
-    };
-    
-    // Start DFS from the source node
-    dfs(sourceNode);
-    
-    setVisitOrder(visitedOrder);
-    setCurrentVisitIndex(0);
-
-    const message = `DFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
+    const message = `Started ${type.toUpperCase()} traversal from node "${startNode}"`;
     addToLog(message);
-    
-    toast({
-      title: "DFS started",
-      description: `Running DFS from node "${sourceNode}"`,
-    });
   };
 
-  // Handle traversal animation
-  useEffect(() => {
-    if (lastOperation && visitOrder.length > 0 && currentVisitIndex >= 0) {
+  React.useEffect(() => {
+    if (isTraversing && currentTraversal < traversalOrder.length) {
       const timer = setTimeout(() => {
-        if (currentVisitIndex < visitOrder.length) {
-          setNodes(prevNodes => 
-            prevNodes.map(node => ({
-              ...node,
-              highlighted: node.id === visitOrder[currentVisitIndex]
-            }))
-          );
-          setCurrentVisitIndex(currentVisitIndex + 1);
+        if (currentTraversal < traversalOrder.length - 1) {
+          setCurrentTraversal(prev => prev + 1);
         } else {
-          // Traversal complete
-          setTimeout(() => {
-            resetHighlights();
-          }, 1000);
+          setIsTraversing(false);
+          const message = `Completed ${traversalType?.toUpperCase()} traversal: ${traversalOrder.join(' -> ')}`;
+          addToLog(message);
+          toast({
+            title: "Traversal completed",
+            description: message,
+          });
         }
-      }, 800);
+      }, 1000);
+      
       return () => clearTimeout(timer);
     }
-  }, [lastOperation, visitOrder, currentVisitIndex]);
+  }, [isTraversing, currentTraversal, traversalOrder]);
 
-  useEffect(() => {
-    // Add event listeners for mouse events outside the component
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        handleNodeDrag(e as unknown as React.MouseEvent);
-      }
-    };
+  const getNodePosition = (nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    return node ? { x: node.x, y: node.y } : { x: 0, y: 0 };
+  };
 
-    const handleMouseUp = () => {
-      if (isDragging) {
-        stopNodeDrag();
-      }
-    };
+  const renderEdge = (edge: GraphEdge, index: number) => {
+    const fromPos = getNodePosition(edge.from);
+    const toPos = getNodePosition(edge.to);
+    
+    // Calculate edge positions from node boundaries
+    const dx = toPos.x - fromPos.x;
+    const dy = toPos.y - fromPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const nodeRadius = 25;
+    
+    const offsetX = (dx / distance) * nodeRadius;
+    const offsetY = (dy / distance) * nodeRadius;
+    
+    const startX = fromPos.x + offsetX;
+    const startY = fromPos.y + offsetY;
+    const endX = toPos.x - offsetX;
+    const endY = toPos.y - offsetY;
+    
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    return (
+      <g key={index}>
+        <line
+          x1={startX}
+          y1={startY}
+          x2={endX}
+          y2={endY}
+          stroke="#6B7280"
+          strokeWidth="2"
+          markerEnd={edge.directed ? "url(#arrowhead)" : undefined}
+        />
+        {edge.weight && (
+          <circle cx={midX} cy={midY} r="12" fill="white" stroke="#6B7280" strokeWidth="1" />
+        )}
+        {edge.weight && (
+          <text x={midX} y={midY + 4} textAnchor="middle" fontSize="10" fill="#374151">
+            {edge.weight}
+          </text>
+        )}
+      </g>
+    );
+  };
 
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, currentDragNode]);
+  const renderNode = (node: GraphNode) => {
+    const isHighlighted = isTraversing && currentTraversal >= 0 && 
+                         traversalOrder[currentTraversal] === node.id;
+
+    return (
+      <g key={node.id}>
+        <circle
+          cx={node.x}
+          cy={node.y}
+          r="25"
+          fill={isHighlighted ? "#10B981" : "#F9FAFB"}
+          stroke={isHighlighted ? "#10B981" : "#6B7280"}
+          strokeWidth="2"
+          className="transition-all duration-300"
+        />
+        <text
+          x={node.x}
+          y={node.y + 4}
+          textAnchor="middle"
+          fontSize="12"
+          fill={isHighlighted ? "white" : "#374151"}
+          className="font-medium"
+        >
+          {node.label}
+        </text>
+      </g>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
-          <div className="arena-chip mb-4">Data Structure Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Graph Visualizer</h1>
+        <div className="mb-6">
+          <div className="arena-chip mb-2">Data Structure Visualization</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-2">Graph Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize and perform operations on graphs. Add nodes and edges, run traversal algorithms like BFS and DFS.
+            Create and visualize graphs with nodes and edges. Explore BFS and DFS traversal algorithms.
           </p>
         </div>
         
         <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Graph Visualization</h2>
-
-          {/* Algorithm buttons */}
-          <div className="flex gap-2 mb-4">
-            <select
-              value={sourceNode}
-              onChange={(e) => setSourceNode(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-            >
-              <option value="">Select Source Node</option>
-              {nodes.map(node => (
-                <option key={`source-${node.id}`} value={node.id}>{node.id}</option>
-              ))}
-            </select>
-            <Button 
-              onClick={runBFS}
-              variant="outline"
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Run BFS
-            </Button>
-            <Button 
-              onClick={runDFS}
-              variant="outline"
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Run DFS
-            </Button>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Graph Visualization</h2>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => startTraversal('bfs')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'bfs' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                BFS
+              </Button>
+              <Button 
+                onClick={() => startTraversal('dfs')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'dfs' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                DFS
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsTraversing(false);
+                  setCurrentTraversal(-1);
+                  setTraversalOrder([]);
+                  setTraversalType(null);
+                }}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
+            </div>
           </div>
           
           {/* Graph visualization */}
-          <div 
-            ref={graphRef}
-            className="mb-6 relative bg-arena-light rounded-lg overflow-hidden"
-            style={{ height: '400px', cursor: isDragging ? 'grabbing' : 'default' }}
-          >
-            {nodes.length === 0 ? (
-              <div className="flex items-center justify-center w-full h-full text-arena-gray">
-                <AlertCircle className="mr-2 h-5 w-5" />
-                <span>Graph is empty. Add nodes and edges using the controls below.</span>
-              </div>
-            ) : (
-              <>
-                {/* Render edges */}
-                <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                  {edges.map((edge, index) => {
-                    const fromNode = nodes.find(node => node.id === edge.from);
-                    const toNode = nodes.find(node => node.id === edge.to);
-                    
-                    if (fromNode && toNode) {
-                      const dx = toNode.x - fromNode.x;
-                      const dy = toNode.y - fromNode.y;
-                      const length = Math.sqrt(dx * dx + dy * dy);
-                      const unitX = dx / length;
-                      const unitY = dy / length;
-                      
-                      // Start from edge of fromNode and end at edge of toNode
-                      const startX = fromNode.x + unitX * 24;
-                      const startY = fromNode.y + unitY * 24;
-                      const endX = toNode.x - unitX * 24;
-                      const endY = toNode.y - unitY * 24;
-                      
-                      const midX = (startX + endX) / 2;
-                      const midY = (startY + endY) / 2;
-                      
-                      return (
-                        <g key={`${edge.from}-${edge.to}-${index}`}>
-                          <line
-                            x1={startX}
-                            y1={startY}
-                            x2={endX}
-                            y2={endY}
-                            stroke={edge.highlighted ? '#ea384c' : '#9ca3af'}
-                            strokeWidth={edge.highlighted ? 3 : 2}
-                          />
-                          {edge.directed && (
-                            <polygon
-                              points={`${endX - 8 * unitX - 4 * unitY},${endY - 8 * unitY + 4 * unitX} ${endX - 8 * unitX + 4 * unitY},${endY - 8 * unitY - 4 * unitX} ${endX},${endY}`}
-                              fill={edge.highlighted ? '#ea384c' : '#9ca3af'}
-                            />
-                          )}
-                          {edge.weight !== undefined && (
-                            <g>
-                              <circle
-                                cx={midX}
-                                cy={midY}
-                                r="12"
-                                fill="white"
-                                stroke="#d1d5db"
-                                strokeWidth="1"
-                              />
-                              <text
-                                x={midX}
-                                y={midY + 4}
-                                textAnchor="middle"
-                                className="text-xs font-medium fill-gray-700"
-                              >
-                                {edge.weight}
-                              </text>
-                            </g>
-                          )}
-                        </g>
-                      );
-                    }
-                    return null;
-                  })}
-                </svg>
+          <div className="mb-6 relative">
+            <div 
+              className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
+              style={{ minHeight: "400px" }}
+            >
+              <svg width="100%" height="400" className="border border-gray-200 rounded">
+                <defs>
+                  <marker
+                    id="arrowhead"
+                    markerWidth="10"
+                    markerHeight="7"
+                    refX="9"
+                    refY="3.5"
+                    orient="auto"
+                  >
+                    <polygon
+                      points="0 0, 10 3.5, 0 7"
+                      fill="#6B7280"
+                    />
+                  </marker>
+                </defs>
                 
-                {/* Render nodes */}
-                {nodes.map(node => {
-                  const isBouncing = visitOrder.includes(node.id) && 
-                                   currentVisitIndex > 0 && 
-                                   visitOrder[currentVisitIndex - 1] === node.id;
-                  
-                  return (
-                    <div
-                      key={node.id}
-                      className={cn(
-                        "absolute w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-md cursor-grab transition-all duration-300 bg-white",
-                        {
-                          "border-arena-red text-arena-red": node.highlighted && !isBouncing,
-                          "border-gray-300": !node.highlighted && !isBouncing,
-                          "animate-bounce border-arena-green text-arena-green": isBouncing,
-                        }
-                      )}
-                      style={{
-                        left: `${node.x - 24}px`,
-                        top: `${node.y - 24}px`,
-                        cursor: isDragging && currentDragNode === node.id ? 'grabbing' : 'grab',
-                      }}
-                      onMouseDown={() => startNodeDrag(node.id)}
-                    >
-                      <div className="absolute -top-6 text-xs whitespace-nowrap font-medium">{node.id}</div>
-                      <button
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNode(node.id);
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  );
-                })}
-              </>
-            )}
+                {/* Render edges first */}
+                {edges.map((edge, index) => renderEdge(edge, index))}
+                
+                {/* Render nodes on top */}
+                {nodes.map(node => renderNode(node))}
+              </svg>
+              
+              {nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-arena-gray">
+                  <span>Graph is empty. Add nodes and edges using the controls below.</span>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Add node */}
+          {/* Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-arena-green mr-2" />
@@ -544,90 +405,126 @@ const GraphVisualizer = () => {
               <div className="flex">
                 <input
                   type="text"
-                  value={nodeName}
-                  onChange={(e) => setNodeName(e.target.value)}
-                  placeholder="Enter node name"
+                  value={newNodeLabel}
+                  onChange={(e) => setNewNodeLabel(e.target.value)}
+                  placeholder="Node label"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <Button 
-                  variant="default" 
+                <Button
                   onClick={addNode}
-                  className="rounded-r-lg bg-arena-green text-white hover:bg-arena-green/90"
+                  variant="default"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
                 >
-                  Add Node
+                  Add
                 </Button>
               </div>
             </div>
-            
-            {/* Add edge */}
+
             <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Share2 className="h-5 w-5 text-arena-green mr-2" />
-                Add Edge
-              </h3>
+              <h3 className="text-lg font-medium mb-3">Add Edge</h3>
               <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={fromNode}
-                    onChange={(e) => setFromNode(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                  >
-                    <option value="">From Node</option>
-                    {nodes.map(node => (
-                      <option key={`from-${node.id}`} value={node.id}>{node.id}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={toNode}
-                    onChange={(e) => setToNode(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                  >
-                    <option value="">To Node</option>
-                    {nodes.map(node => (
-                      <option key={`to-${node.id}`} value={node.id}>{node.id}</option>
-                    ))}
-                  </select>
+                <div className="flex gap-1">
+                  <input
+                    type="text"
+                    value={edgeFrom}
+                    onChange={(e) => setEdgeFrom(e.target.value)}
+                    placeholder="From"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    value={edgeTo}
+                    onChange={(e) => setEdgeTo(e.target.value)}
+                    placeholder="To"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <input
                     type="number"
                     value={edgeWeight}
                     onChange={(e) => setEdgeWeight(e.target.value)}
-                    placeholder="Weight (optional)"
-                    className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                    placeholder="Weight"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
-                  <label className="inline-flex items-center">
+                  <label className="flex items-center text-sm">
                     <input
                       type="checkbox"
                       checked={isDirected}
                       onChange={(e) => setIsDirected(e.target.checked)}
-                      className="form-checkbox text-arena-green"
+                      className="mr-1"
                     />
-                    <span className="ml-2 text-sm">Directed</span>
+                    Directed
                   </label>
                 </div>
-                <Button 
-                  variant="default" 
+                <Button
                   onClick={addEdge}
-                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+                  variant="default"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90 text-sm"
                 >
                   Add Edge
                 </Button>
               </div>
+            </div>
+            
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
+                Clear Graph
+              </h3>
+              <Button
+                onClick={() => {
+                  setNodes([]);
+                  setEdges([]);
+                  setTraversalOrder([]);
+                  setCurrentTraversal(-1);
+                  setIsTraversing(false);
+                  setTraversalType(null);
+                  const message = "Cleared the entire graph";
+                  addToLog(message);
+                  toast({
+                    title: "Graph cleared",
+                    description: message,
+                  });
+                }}
+                variant="default"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+              >
+                Clear
+              </Button>
+            </div>
+
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3">Traversal Status</h3>
+              <div className="text-sm text-arena-gray">
+                {isTraversing ? (
+                  <span className="text-arena-green">
+                    Running {traversalType?.toUpperCase()}... 
+                    ({currentTraversal + 1}/{traversalOrder.length})
+                  </span>
+                ) : (
+                  <span>Ready to traverse</span>
+                )}
+              </div>
+              {traversalOrder.length > 0 && (
+                <div className="mt-2 text-xs text-arena-gray">
+                  Order: {traversalOrder.slice(0, currentTraversal + 1).join(' → ')}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Operation Logs */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-32 overflow-y-auto text-sm">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
               {logs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-arena-gray">
                   No operations performed yet
                 </div>
               ) : (
                 logs.map((log, index) => (
-                  <div key={index} className="mb-2 p-2 bg-white rounded border-l-4 border-arena-green">
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
                     {log}
                   </div>
                 ))
@@ -635,28 +532,27 @@ const GraphVisualizer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Graphs</h2>
           <p className="text-arena-gray mb-4">
-            A graph is a non-linear data structure consisting of nodes (vertices) and edges that connect them. Graphs can be used to represent many types of relationships and networks.
+            A graph is a data structure consisting of vertices (nodes) connected by edges. Graphs can be directed or undirected, weighted or unweighted.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Time Complexity:</span>
+              <span className="font-medium">Traversal Algorithms:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>BFS/DFS: O(V + E)</li>
-                <li>Add Vertex: O(1)</li>
-                <li>Add Edge: O(1)</li>
-                <li>Remove Vertex: O(V + E)</li>
+                <li>BFS: Breadth-First Search</li>
+                <li>DFS: Depth-First Search</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Space Complexity:</span>
+              <span className="font-medium">Applications:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Adjacency List: O(V + E)</li>
-                <li>Adjacency Matrix: O(V²)</li>
-                <li>BFS/DFS: O(V) auxiliary space</li>
+                <li>Social networks</li>
+                <li>Road networks</li>
+                <li>Web page links</li>
+                <li>Computer networks</li>
               </ul>
             </div>
           </div>

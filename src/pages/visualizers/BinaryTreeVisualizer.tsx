@@ -2,233 +2,230 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Shuffle, Search } from 'lucide-react';
+import { Plus, Trash, Eye, Play, Pause } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 interface TreeNode {
+  id: number;
   value: number;
   left: TreeNode | null;
   right: TreeNode | null;
   x?: number;
   y?: number;
-  id?: string;
 }
 
 const BinaryTreeVisualizer = () => {
   const [root, setRoot] = useState<TreeNode | null>(null);
-  const [treeSize, setTreeSize] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [traversalOrder, setTraversalOrder] = useState<number[]>([]);
+  const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
+  const [traversalType, setTraversalType] = useState<'inorder' | 'preorder' | 'postorder' | null>(null);
+  const [isTraversing, setIsTraversing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
-  const [currentTraversal, setCurrentTraversal] = useState<string | null>(null);
-  const [traversalOrder, setTraversalOrder] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
   
   const { toast } = useToast();
 
   const addToLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)]);
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const generateNodeId = (value: number, level: number, position: number): string => {
-    return `${value}-${level}-${position}`;
-  };
-
-  const calculateNodePositions = (node: TreeNode | null, x: number, y: number, level: number, position: number): void => {
-    if (!node) return;
-    
-    const horizontalSpacing = Math.max(80, 300 / Math.pow(2, level));
-    
-    node.x = x;
-    node.y = y;
-    node.id = generateNodeId(node.value, level, position);
-    
-    if (node.left) {
-      calculateNodePositions(node.left, x - horizontalSpacing, y + 80, level + 1, position * 2);
+  const insertNode = (root: TreeNode | null, value: number, id: number): TreeNode => {
+    if (!root) {
+      return { id, value, left: null, right: null };
     }
-    if (node.right) {
-      calculateNodePositions(node.right, x + horizontalSpacing, y + 80, level + 1, position * 2 + 1);
+
+    // For demonstration, insert left if value is less, right if greater
+    if (value < root.value) {
+      root.left = insertNode(root.left, value, id);
+    } else {
+      root.right = insertNode(root.right, value, id);
     }
+    
+    return root;
   };
 
-  const buildRandomTree = (values: number[], index: number = 0): TreeNode | null => {
-    if (index >= values.length || values[index] === null) return null;
-    
-    const node: TreeNode = {
-      value: values[index],
-      left: null,
-      right: null
-    };
-    
-    node.left = buildRandomTree(values, 2 * index + 1);
-    node.right = buildRandomTree(values, 2 * index + 2);
-    
-    return node;
-  };
-
-  const generateRandomTree = () => {
-    if (treeSize.trim() === '' || isNaN(Number(treeSize)) || Number(treeSize) <= 0) {
+  const addElement = () => {
+    if (newValue.trim() === '') {
       toast({
-        title: "Invalid size",
-        description: "Please enter a valid positive number for tree size",
+        title: "Input required",
+        description: "Please enter a value to add",
         variant: "destructive",
       });
       return;
     }
 
-    const size = Math.min(Number(treeSize), 15);
-    const values: number[] = [];
+    const value = Number(newValue);
+    const id = Date.now();
     
-    for (let i = 0; i < size; i++) {
-      values.push(Math.floor(Math.random() * 100) + 1);
+    if (root === null) {
+      setRoot({ id, value, left: null, right: null });
+    } else {
+      setRoot(insertNode(root, value, id));
     }
     
-    const newRoot = buildRandomTree(values);
-    if (newRoot) {
-      calculateNodePositions(newRoot, 400, 50, 0, 0);
-    }
-    
-    setRoot(newRoot);
-    setTreeSize('');
-    setHighlightedNodes(new Set());
-    setCurrentTraversal(null);
-    
-    const message = `Generated random binary tree with ${size} nodes`;
+    setNewValue('');
+    const message = `Added node with value ${value}`;
     addToLog(message);
     
     toast({
-      title: "Random tree generated",
+      title: "Node added",
       description: message,
     });
   };
 
-  const inorderTraversal = (node: TreeNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
+  const calculatePositions = (node: TreeNode | null, x: number, y: number, spacing: number): void => {
+    if (!node) return;
     
-    inorderTraversal(node.left, result);
-    result.push(node.id!);
-    inorderTraversal(node.right, result);
+    node.x = x;
+    node.y = y;
     
-    return result;
+    if (node.left) {
+      calculatePositions(node.left, x - spacing, y + 80, spacing / 2);
+    }
+    if (node.right) {
+      calculatePositions(node.right, x + spacing, y + 80, spacing / 2);
+    }
   };
 
-  const preorderTraversal = (node: TreeNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
-    
-    result.push(node.id!);
+  const inorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
+    inorderTraversal(node.left, result);
+    result.push(node.id);
+    inorderTraversal(node.right, result);
+  };
+
+  const preorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
+    result.push(node.id);
     preorderTraversal(node.left, result);
     preorderTraversal(node.right, result);
-    
-    return result;
   };
 
-  const postorderTraversal = (node: TreeNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
-    
+  const postorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
     postorderTraversal(node.left, result);
     postorderTraversal(node.right, result);
-    result.push(node.id!);
-    
-    return result;
+    result.push(node.id);
   };
 
-  const runTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
+  const startTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
     if (!root) {
       toast({
         title: "Empty tree",
-        description: "Cannot perform traversal on an empty tree",
+        description: "Please add some nodes first",
         variant: "destructive",
       });
       return;
     }
 
-    let order: string[] = [];
+    const result: number[] = [];
+    
     switch (type) {
       case 'inorder':
-        order = inorderTraversal(root);
+        inorderTraversal(root, result);
         break;
       case 'preorder':
-        order = preorderTraversal(root);
+        preorderTraversal(root, result);
         break;
       case 'postorder':
-        order = postorderTraversal(root);
+        postorderTraversal(root, result);
         break;
     }
-
-    setCurrentTraversal(type);
-    setTraversalOrder(order);
-    setCurrentIndex(0);
-    setHighlightedNodes(new Set());
-
-    const message = `Started ${type} traversal: ${order.map(id => {
-      const value = id.split('-')[0];
-      return value;
-    }).join(' → ')}`;
+    
+    setTraversalOrder(result);
+    setTraversalType(type);
+    setCurrentTraversal(0);
+    setIsTraversing(true);
+    
+    const message = `Started ${type} traversal`;
     addToLog(message);
-
-    toast({
-      title: `${type.charAt(0).toUpperCase() + type.slice(1)} traversal started`,
-      description: `Traversing ${order.length} nodes`,
-    });
   };
 
   useEffect(() => {
-    if (currentTraversal && traversalOrder.length > 0 && currentIndex >= 0) {
+    if (isTraversing && currentTraversal < traversalOrder.length) {
       const timer = setTimeout(() => {
-        if (currentIndex < traversalOrder.length) {
-          setHighlightedNodes(new Set([traversalOrder[currentIndex]]));
-          setCurrentIndex(currentIndex + 1);
+        if (currentTraversal < traversalOrder.length - 1) {
+          setCurrentTraversal(prev => prev + 1);
         } else {
-          // Traversal complete
-          setCurrentTraversal(null);
-          setHighlightedNodes(new Set());
-          setCurrentIndex(-1);
+          setIsTraversing(false);
+          const message = `Completed ${traversalType} traversal: ${getTraversalValues().join(' -> ')}`;
+          addToLog(message);
+          toast({
+            title: "Traversal completed",
+            description: message,
+          });
         }
-      }, 800);
-
+      }, 1000);
+      
       return () => clearTimeout(timer);
     }
-  }, [currentTraversal, currentIndex, traversalOrder]);
+  }, [isTraversing, currentTraversal, traversalOrder]);
+
+  const getTraversalValues = (): number[] => {
+    const values: number[] = [];
+    const findValue = (node: TreeNode | null, targetId: number): number | null => {
+      if (!node) return null;
+      if (node.id === targetId) return node.value;
+      return findValue(node.left, targetId) || findValue(node.right, targetId);
+    };
+
+    traversalOrder.forEach(id => {
+      const value = findValue(root, id);
+      if (value !== null) values.push(value);
+    });
+    
+    return values;
+  };
 
   const renderTree = (node: TreeNode | null): JSX.Element | null => {
-    if (!node || node.x === undefined || node.y === undefined) return null;
+    if (!node) return null;
 
-    const isHighlighted = highlightedNodes.has(node.id!);
+    const isHighlighted = isTraversing && currentTraversal >= 0 && 
+                         traversalOrder[currentTraversal] === node.id;
 
     return (
-      <div key={node.id}>
+      <div key={node.id} className="relative">
         <div
           className={cn(
-            "absolute w-12 h-12 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-all duration-300",
+            "w-12 h-12 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10",
             {
-              "bg-white border-gray-300": !isHighlighted,
-              "bg-arena-green/20 border-arena-green animate-bounce": isHighlighted,
+              "border-arena-green bg-arena-green text-white shadow-lg scale-110": isHighlighted,
             }
           )}
           style={{
-            left: `${node.x - 24}px`,
-            top: `${node.y}px`,
+            position: 'absolute',
+            left: node.x ? `${node.x}px` : '0px',
+            top: node.y ? `${node.y}px` : '0px',
+            transform: 'translate(-50%, -50%)',
           }}
         >
           {node.value}
         </div>
+        
         {node.left && renderTree(node.left)}
         {node.right && renderTree(node.right)}
       </div>
     );
   };
 
+  useEffect(() => {
+    if (root) {
+      calculatePositions(root, 300, 50, 100);
+    }
+  }, [root]);
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
-          <div className="arena-chip mb-4">Data Structure Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Binary Tree Visualizer</h1>
+        <div className="mb-6">
+          <div className="arena-chip mb-2">Data Structure Visualization</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-2">Binary Tree Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize and perform operations on binary trees. Generate random trees and run traversal algorithms.
+            Visualize binary tree operations and traversals. Add nodes and explore different traversal methods.
           </p>
         </div>
         
@@ -236,79 +233,131 @@ const BinaryTreeVisualizer = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Binary Tree Visualization</h2>
             <div className="flex gap-2">
-              <input
-                type="number"
-                value={treeSize}
-                onChange={(e) => setTreeSize(e.target.value)}
-                placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-              />
               <Button 
-                onClick={generateRandomTree} 
+                onClick={() => startTraversal('inorder')}
+                disabled={isTraversing}
                 variant="outline"
-                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
-                <Shuffle className="h-4 w-4" />
-                Generate Random Tree
+                {isTraversing && traversalType === 'inorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Inorder
+              </Button>
+              <Button 
+                onClick={() => startTraversal('preorder')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'preorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Preorder
+              </Button>
+              <Button 
+                onClick={() => startTraversal('postorder')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'postorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Postorder
               </Button>
             </div>
           </div>
-
-          {/* Traversal buttons */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              onClick={() => runTraversal('inorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Inorder Traversal
-            </Button>
-            <Button
-              onClick={() => runTraversal('preorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Preorder Traversal
-            </Button>
-            <Button
-              onClick={() => runTraversal('postorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Postorder Traversal
-            </Button>
-          </div>
           
           {/* Tree visualization */}
-          <div className="mb-6 relative bg-arena-light rounded-lg overflow-hidden" style={{ height: '400px' }}>
-            {!root ? (
-              <div className="flex items-center justify-center w-full h-full text-arena-gray">
-                <span>No tree generated. Use the controls above to generate a random tree.</span>
+          <div className="mb-6 relative">
+            <div 
+              className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
+              style={{ minHeight: "400px", maxHeight: "500px" }}
+            >
+              {root ? (
+                <div className="relative w-full h-full">
+                  {renderTree(root)}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  <span>Tree is empty. Add nodes using the controls below.</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
+                Add Node
+              </h3>
+              <div className="flex">
+                <input
+                  type="number"
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="Enter value"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={addElement}
+                  variant="default"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Add
+                </Button>
               </div>
-            ) : (
-              <div className="relative w-full h-full">
-                {renderTree(root)}
+            </div>
+            
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
+                Clear Tree
+              </h3>
+              <Button
+                onClick={() => {
+                  setRoot(null);
+                  setTraversalOrder([]);
+                  setCurrentTraversal(-1);
+                  setIsTraversing(false);
+                  setTraversalType(null);
+                  const message = "Cleared the entire tree";
+                  addToLog(message);
+                  toast({
+                    title: "Tree cleared",
+                    description: message,
+                  });
+                }}
+                variant="default"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+              >
+                Clear
+              </Button>
+            </div>
+
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3">Traversal Status</h3>
+              <div className="text-sm text-arena-gray">
+                {isTraversing ? (
+                  <span className="text-arena-green">
+                    Running {traversalType} traversal... 
+                    ({currentTraversal + 1}/{traversalOrder.length})
+                  </span>
+                ) : (
+                  <span>Ready to traverse</span>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Operation Logs */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-32 overflow-y-auto text-sm">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
               {logs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-arena-gray">
                   No operations performed yet
                 </div>
               ) : (
                 logs.map((log, index) => (
-                  <div key={index} className="mb-2 p-2 bg-white rounded border-l-4 border-arena-green">
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
                     {log}
                   </div>
                 ))
@@ -316,13 +365,21 @@ const BinaryTreeVisualizer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Binary Trees</h2>
           <p className="text-arena-gray mb-4">
             A binary tree is a hierarchical data structure where each node has at most two children, referred to as left and right child.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div className="bg-arena-light p-3 rounded-lg">
+              <span className="font-medium">Traversal Types:</span>
+              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+                <li>Inorder: Left → Root → Right</li>
+                <li>Preorder: Root → Left → Right</li>
+                <li>Postorder: Left → Right → Root</li>
+              </ul>
+            </div>
             <div className="bg-arena-light p-3 rounded-lg">
               <span className="font-medium">Time Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
@@ -336,7 +393,7 @@ const BinaryTreeVisualizer = () => {
               <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
                 <li>Storage: O(n)</li>
-                <li>Auxiliary (Recursion): O(h) where h is height</li>
+                <li>Auxiliary: O(h) where h is height</li>
               </ul>
             </div>
           </div>

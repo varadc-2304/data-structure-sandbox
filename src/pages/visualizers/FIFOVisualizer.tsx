@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipBack, SkipForward, Rewind, FastForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface PageFrame {
@@ -28,8 +28,14 @@ const FIFOVisualizer = () => {
   const [pageFaults, setPageFaults] = useState<number>(0);
   const [pageHits, setPageHits] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1); // seconds
+  const [speed, setSpeed] = useState<number>(1);
   const [referenceHistory, setReferenceHistory] = useState<{ page: number; fault: boolean }[]>([]);
+  const [simulationHistory, setSimulationHistory] = useState<{
+    frames: PageFrame[];
+    faults: number;
+    hits: number;
+    history: { page: number; fault: boolean }[];
+  }[]>([]);
 
   // Initialize frames
   useEffect(() => {
@@ -49,7 +55,7 @@ const FIFOVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, pageReferences.length, speed]);
@@ -58,7 +64,6 @@ const FIFOVisualizer = () => {
     if (!inputReference.trim()) return;
     
     try {
-      // Parse comma-separated values or space-separated values
       const newReferences = inputReference
         .split(/[,\s]+/)
         .filter(Boolean)
@@ -83,6 +88,7 @@ const FIFOVisualizer = () => {
     setPageHits(0);
     setIsPlaying(false);
     setReferenceHistory([]);
+    setSimulationHistory([]);
     
     const resetFrames = Array(framesCount).fill(null).map((_, index) => ({
       id: index,
@@ -93,32 +99,26 @@ const FIFOVisualizer = () => {
     setFrames(resetFrames);
   };
 
-  const nextStep = () => {
-    if (currentStep >= pageReferences.length - 1) {
-      setIsPlaying(false);
-      return;
-    }
+  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[][]) => {
+    if (stepIndex >= pageReferences.length) return null;
     
-    const nextStep = currentStep + 1;
-    const pageRef = pageReferences[nextStep];
+    const pageRef = pageReferences[stepIndex];
+    const pageInFrames = currentFrames.some(frame => frame.page === pageRef);
     
-    // Check if page is already in frames (page hit)
-    const pageInFrames = frames.some(frame => frame.page === pageRef);
-    
-    // Create copy of frames for modification
-    let newFrames = frames.map(frame => ({ ...frame, highlight: false }));
+    let newFrames = currentFrames.map(frame => ({ ...frame, highlight: false }));
+    let newFaults = currentFaults;
+    let newHits = currentHits;
+    let newHistory = [...currentHistory];
     
     if (pageInFrames) {
-      // Page hit - just highlight the frame
       newFrames = newFrames.map(frame => 
         frame.page === pageRef ? { ...frame, highlight: true } : frame
       );
-      setPageHits(prev => prev + 1);
+      newHits++;
     } else {
-      // Page fault - replace using FIFO
-      const oldestFrameIndex = frames.findIndex(frame => !frame.loaded) !== -1 
-        ? frames.findIndex(frame => !frame.loaded) 
-        : 0;  // If all frames are loaded, replace the first one (FIFO)
+      const oldestFrameIndex = newFrames.findIndex(frame => !frame.loaded) !== -1 
+        ? newFrames.findIndex(frame => !frame.loaded) 
+        : 0;
       
       newFrames[oldestFrameIndex] = {
         ...newFrames[oldestFrameIndex],
@@ -127,21 +127,103 @@ const FIFOVisualizer = () => {
         highlight: true
       };
       
-      // Shift the FIFO queue
-      if (frames.every(frame => frame.loaded)) {
-        // Move the replaced frame to the end of the queue by rotating the array
+      if (currentFrames.every(frame => frame.loaded)) {
         newFrames = [
           ...newFrames.slice(1),
           newFrames[0]
         ];
       }
       
-      setPageFaults(prev => prev + 1);
+      newFaults++;
     }
     
-    setFrames(newFrames);
-    setCurrentStep(nextStep);
-    setReferenceHistory([...referenceHistory, { page: pageRef, fault: !pageInFrames }]);
+    newHistory.push({ page: pageRef, fault: !pageInFrames });
+    
+    return {
+      frames: newFrames,
+      faults: newFaults,
+      hits: newHits,
+      history: newHistory
+    };
+  };
+
+  const nextStep = () => {
+    if (currentStep >= pageReferences.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
+    
+    const nextStepIndex = currentStep + 1;
+    const result = simulateStep(nextStepIndex, frames, pageFaults, pageHits, referenceHistory);
+    
+    if (result) {
+      setFrames(result.frames);
+      setPageFaults(result.faults);
+      setPageHits(result.hits);
+      setReferenceHistory(result.history);
+      setCurrentStep(nextStepIndex);
+      
+      // Save to history
+      const newHistory = [...simulationHistory];
+      newHistory[nextStepIndex] = result;
+      setSimulationHistory(newHistory);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep <= -1) return;
+    
+    const prevStepIndex = currentStep - 1;
+    
+    if (prevStepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    const prevState = simulationHistory[prevStepIndex];
+    if (prevState) {
+      setFrames(prevState.frames);
+      setPageFaults(prevState.faults);
+      setPageHits(prevState.hits);
+      setReferenceHistory(prevState.history);
+      setCurrentStep(prevStepIndex);
+    }
+  };
+
+  const goToStep = (stepIndex: number) => {
+    if (stepIndex < -1 || stepIndex >= pageReferences.length) return;
+    
+    if (stepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    // Simulate from beginning to target step
+    let currentFrames = Array(framesCount).fill(null).map((_, index) => ({
+      id: index,
+      page: null,
+      loaded: false,
+      highlight: false
+    }));
+    let currentFaults = 0;
+    let currentHits = 0;
+    let currentHistory: { page: number; fault: boolean }[] = [];
+    
+    for (let i = 0; i <= stepIndex; i++) {
+      const result = simulateStep(i, currentFrames, currentFaults, currentHits, currentHistory);
+      if (result) {
+        currentFrames = result.frames;
+        currentFaults = result.faults;
+        currentHits = result.hits;
+        currentHistory = result.history;
+      }
+    }
+    
+    setFrames(currentFrames);
+    setPageFaults(currentFaults);
+    setPageHits(currentHits);
+    setReferenceHistory(currentHistory);
+    setCurrentStep(stepIndex);
   };
 
   const togglePlayPause = () => {
@@ -151,6 +233,14 @@ const FIFOVisualizer = () => {
     } else {
       setIsPlaying(!isPlaying);
     }
+  };
+
+  const fastForward = () => {
+    goToStep(pageReferences.length - 1);
+  };
+
+  const rewind = () => {
+    resetSimulation();
   };
 
   return (
@@ -200,47 +290,109 @@ const FIFOVisualizer = () => {
                         onKeyDown={(e) => e.key === 'Enter' && handleAddReference()}
                         className="rounded-r-none"
                       />
-                      <Button onClick={handleAddReference} className="rounded-l-none">Add</Button>
+                      <Button onClick={handleAddReference} className="rounded-l-none bg-drona-green hover:bg-drona-green/90">Add</Button>
                     </div>
                   </div>
                   
                   <div>
                     <Label>Simulation Speed</Label>
-                    <div className="flex items-center mt-1">
-                      <input 
-                        type="range" 
+                    <div className="mt-2">
+                      <Slider 
+                        value={[speed]} 
+                        onValueChange={(value) => setSpeed(value[0])}
                         min={0.5} 
                         max={3} 
-                        step={0.5} 
-                        value={speed} 
-                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        step={0.5}
                         className="w-full"
                       />
-                      <span className="ml-2 text-sm text-drona-gray">{speed}x</span>
+                      <div className="flex justify-between text-sm text-drona-gray mt-1">
+                        <span>0.5x</span>
+                        <span>{speed}x</span>
+                        <span>3x</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="flex space-x-2">
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Controls */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Playback Controls</CardTitle>
+                <CardDescription>Control the simulation flow</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
-                      onClick={resetSimulation}
+                      size="sm"
+                      onClick={rewind}
+                      disabled={currentStep === -1}
+                      className="flex-1"
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset
+                      <Rewind className="h-4 w-4" />
                     </Button>
                     <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={previousStep}
+                      disabled={currentStep <= -1}
+                      className="flex-1"
+                    >
+                      <SkipBack className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm"
                       onClick={togglePlayPause}
                       disabled={pageReferences.length === 0}
+                      className="flex-1 bg-drona-green hover:bg-drona-green/90"
                     >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {currentStep >= pageReferences.length - 1 ? 'Restart' : 'Play'}</>
-                      )}
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={nextStep}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={fastForward}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <FastForward className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={resetSimulation}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset
+                  </Button>
+
+                  {pageReferences.length > 0 && (
+                    <div>
+                      <Label>Step: {currentStep + 1} of {pageReferences.length}</Label>
+                      <Slider 
+                        value={[currentStep + 1]} 
+                        onValueChange={(value) => goToStep(value[0] - 1)}
+                        min={0} 
+                        max={pageReferences.length}
+                        step={1}
+                        className="w-full mt-2"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -296,12 +448,16 @@ const FIFOVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Reference String</h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 rounded-lg overflow-x-auto">
                         {pageReferences.map((page, idx) => (
                           <Badge 
                             key={idx}
                             variant={idx === currentStep ? "default" : "outline"}
-                            className={idx === currentStep ? "bg-drona-green" : ""}
+                            className={cn(
+                              "transition-all duration-200",
+                              idx === currentStep ? "bg-drona-green scale-110" : "",
+                              idx < currentStep ? "opacity-60" : ""
+                            )}
                           >
                             {page}
                           </Badge>
@@ -311,23 +467,23 @@ const FIFOVisualizer = () => {
                     
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Memory Frames</h3>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-4 p-4 bg-gray-50 rounded-lg">
                         {frames.map((frame, idx) => (
                           <div 
                             key={frame.id} 
                             className={cn(
-                              "border border-gray-200 rounded-lg p-4 flex items-center justify-center transition-all", 
-                              frame.highlight && "bg-drona-green/10 border-drona-green"
+                              "border-2 rounded-lg p-6 flex items-center justify-center transition-all duration-300 min-h-[80px]", 
+                              frame.highlight ? "bg-drona-green/10 border-drona-green shadow-lg transform scale-105" : "bg-white border-gray-200"
                             )}
                           >
                             <div className="text-center">
-                              <div className="font-medium">Frame {idx}</div>
+                              <div className="font-medium text-sm text-gray-500 mb-1">Frame {idx}</div>
                               {frame.page !== null ? (
-                                <div className={cn("text-2xl font-bold mt-1", frame.highlight && "text-drona-green")}>
-                                  Page {frame.page}
+                                <div className={cn("text-3xl font-bold", frame.highlight ? "text-drona-green" : "text-gray-700")}>
+                                  {frame.page}
                                 </div>
                               ) : (
-                                <div className="text-gray-400 text-2xl mt-1">Empty</div>
+                                <div className="text-gray-400 text-2xl">Empty</div>
                               )}
                             </div>
                           </div>

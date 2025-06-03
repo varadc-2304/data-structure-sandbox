@@ -2,240 +2,284 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Shuffle, Search } from 'lucide-react';
+import { Plus, Trash, Search, Play, Pause } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 interface BSTNode {
+  id: number;
   value: number;
   left: BSTNode | null;
   right: BSTNode | null;
   x?: number;
   y?: number;
-  id?: string;
 }
 
 const BSTVisualizer = () => {
   const [root, setRoot] = useState<BSTNode | null>(null);
-  const [treeSize, setTreeSize] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [searchValue, setSearchValue] = useState('');
+  const [traversalOrder, setTraversalOrder] = useState<number[]>([]);
+  const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
+  const [traversalType, setTraversalType] = useState<'inorder' | 'preorder' | 'postorder' | 'search' | null>(null);
+  const [isTraversing, setIsTraversing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
-  const [currentTraversal, setCurrentTraversal] = useState<string | null>(null);
-  const [traversalOrder, setTraversalOrder] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
   
   const { toast } = useToast();
 
   const addToLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)]);
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const generateNodeId = (value: number): string => {
-    return `node-${value}`;
-  };
-
-  const insertBST = (node: BSTNode | null, value: number): BSTNode => {
-    if (!node) {
-      return {
-        value,
-        left: null,
-        right: null,
-        id: generateNodeId(value)
-      };
+  const insertNode = (root: BSTNode | null, value: number): BSTNode => {
+    if (!root) {
+      return { id: Date.now(), value, left: null, right: null };
     }
 
-    if (value < node.value) {
-      node.left = insertBST(node.left, value);
-    } else if (value > node.value) {
-      node.right = insertBST(node.right, value);
+    if (value < root.value) {
+      root.left = insertNode(root.left, value);
+    } else if (value > root.value) {
+      root.right = insertNode(root.right, value);
     }
-
-    return node;
-  };
-
-  const calculateNodePositions = (node: BSTNode | null, x: number, y: number, level: number): void => {
-    if (!node) return;
     
-    const horizontalSpacing = Math.max(80, 300 / Math.pow(2, level));
+    return root;
+  };
+
+  const addElement = () => {
+    if (newValue.trim() === '') {
+      toast({
+        title: "Input required",
+        description: "Please enter a value to add",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const value = Number(newValue);
+    setRoot(prev => insertNode(prev, value));
+    setNewValue('');
+    
+    const message = `Added node with value ${value}`;
+    addToLog(message);
+    
+    toast({
+      title: "Node added",
+      description: message,
+    });
+  };
+
+  const calculatePositions = (node: BSTNode | null, x: number, y: number, spacing: number): void => {
+    if (!node) return;
     
     node.x = x;
     node.y = y;
     
     if (node.left) {
-      calculateNodePositions(node.left, x - horizontalSpacing, y + 80, level + 1);
+      calculatePositions(node.left, x - spacing, y + 80, spacing / 2);
     }
     if (node.right) {
-      calculateNodePositions(node.right, x + horizontalSpacing, y + 80, level + 1);
+      calculatePositions(node.right, x + spacing, y + 80, spacing / 2);
     }
   };
 
-  const generateRandomBST = () => {
-    if (treeSize.trim() === '' || isNaN(Number(treeSize)) || Number(treeSize) <= 0) {
-      toast({
-        title: "Invalid size",
-        description: "Please enter a valid positive number for BST size",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const size = Math.min(Number(treeSize), 15);
-    const values = new Set<number>();
-    
-    while (values.size < size) {
-      values.add(Math.floor(Math.random() * 100) + 1);
-    }
-
-    let newRoot: BSTNode | null = null;
-    Array.from(values).forEach(value => {
-      newRoot = insertBST(newRoot, value);
-    });
-
-    if (newRoot) {
-      calculateNodePositions(newRoot, 400, 50, 0);
-    }
-    
-    setRoot(newRoot);
-    setTreeSize('');
-    setHighlightedNodes(new Set());
-    setCurrentTraversal(null);
-    
-    const message = `Generated random BST with ${size} nodes`;
-    addToLog(message);
-    
-    toast({
-      title: "Random BST generated",
-      description: message,
-    });
-  };
-
-  const inorderTraversal = (node: BSTNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
-    
+  const inorderTraversal = (node: BSTNode | null, result: number[]): void => {
+    if (!node) return;
     inorderTraversal(node.left, result);
-    result.push(node.id!);
+    result.push(node.id);
     inorderTraversal(node.right, result);
-    
-    return result;
   };
 
-  const preorderTraversal = (node: BSTNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
-    
-    result.push(node.id!);
+  const preorderTraversal = (node: BSTNode | null, result: number[]): void => {
+    if (!node) return;
+    result.push(node.id);
     preorderTraversal(node.left, result);
     preorderTraversal(node.right, result);
-    
-    return result;
   };
 
-  const postorderTraversal = (node: BSTNode | null, result: string[] = []): string[] => {
-    if (!node) return result;
-    
+  const postorderTraversal = (node: BSTNode | null, result: number[]): void => {
+    if (!node) return;
     postorderTraversal(node.left, result);
     postorderTraversal(node.right, result);
-    result.push(node.id!);
-    
-    return result;
+    result.push(node.id);
   };
 
-  const runTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
+  const searchPath = (node: BSTNode | null, value: number, path: number[]): boolean => {
+    if (!node) return false;
+    
+    path.push(node.id);
+    
+    if (node.value === value) return true;
+    
+    if (value < node.value) {
+      return searchPath(node.left, value, path);
+    } else {
+      return searchPath(node.right, value, path);
+    }
+  };
+
+  const startTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
     if (!root) {
       toast({
-        title: "Empty BST",
-        description: "Cannot perform traversal on an empty BST",
+        title: "Empty tree",
+        description: "Please add some nodes first",
         variant: "destructive",
       });
       return;
     }
 
-    let order: string[] = [];
+    const result: number[] = [];
+    
     switch (type) {
       case 'inorder':
-        order = inorderTraversal(root);
+        inorderTraversal(root, result);
         break;
       case 'preorder':
-        order = preorderTraversal(root);
+        preorderTraversal(root, result);
         break;
       case 'postorder':
-        order = postorderTraversal(root);
+        postorderTraversal(root, result);
         break;
     }
-
-    setCurrentTraversal(type);
-    setTraversalOrder(order);
-    setCurrentIndex(0);
-    setHighlightedNodes(new Set());
-
-    const message = `Started ${type} traversal: ${order.map(id => {
-      const value = id.split('-')[1];
-      return value;
-    }).join(' → ')}`;
+    
+    setTraversalOrder(result);
+    setTraversalType(type);
+    setCurrentTraversal(0);
+    setIsTraversing(true);
+    
+    const message = `Started ${type} traversal`;
     addToLog(message);
+  };
 
-    toast({
-      title: `${type.charAt(0).toUpperCase() + type.slice(1)} traversal started`,
-      description: `Traversing ${order.length} nodes`,
-    });
+  const startSearch = () => {
+    if (!root) {
+      toast({
+        title: "Empty tree",
+        description: "Please add some nodes first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (searchValue.trim() === '') {
+      toast({
+        title: "Input required",
+        description: "Please enter a value to search",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const value = Number(searchValue);
+    const path: number[] = [];
+    const found = searchPath(root, value, path);
+    
+    setTraversalOrder(path);
+    setTraversalType('search');
+    setCurrentTraversal(0);
+    setIsTraversing(true);
+    
+    const message = `Searching for value ${value}`;
+    addToLog(message);
   };
 
   useEffect(() => {
-    if (currentTraversal && traversalOrder.length > 0 && currentIndex >= 0) {
+    if (isTraversing && currentTraversal < traversalOrder.length) {
       const timer = setTimeout(() => {
-        if (currentIndex < traversalOrder.length) {
-          setHighlightedNodes(new Set([traversalOrder[currentIndex]]));
-          setCurrentIndex(currentIndex + 1);
+        if (currentTraversal < traversalOrder.length - 1) {
+          setCurrentTraversal(prev => prev + 1);
         } else {
-          // Traversal complete
-          setCurrentTraversal(null);
-          setHighlightedNodes(new Set());
-          setCurrentIndex(-1);
+          setIsTraversing(false);
+          if (traversalType === 'search') {
+            const found = searchValue.trim() !== '' && 
+                         traversalOrder.length > 0 && 
+                         findValue(root, traversalOrder[traversalOrder.length - 1]) === Number(searchValue);
+            const message = found ? 
+              `Found value ${searchValue} in the tree!` : 
+              `Value ${searchValue} not found in the tree`;
+            addToLog(message);
+            toast({
+              title: found ? "Search successful" : "Search failed",
+              description: message,
+              variant: found ? "default" : "destructive",
+            });
+          } else {
+            const message = `Completed ${traversalType} traversal: ${getTraversalValues().join(' -> ')}`;
+            addToLog(message);
+            toast({
+              title: "Traversal completed",
+              description: message,
+            });
+          }
         }
-      }, 800);
-
+      }, 1000);
+      
       return () => clearTimeout(timer);
     }
-  }, [currentTraversal, currentIndex, traversalOrder]);
+  }, [isTraversing, currentTraversal, traversalOrder]);
 
-  const renderBST = (node: BSTNode | null): JSX.Element | null => {
-    if (!node || node.x === undefined || node.y === undefined) return null;
+  const findValue = (node: BSTNode | null, targetId: number): number | null => {
+    if (!node) return null;
+    if (node.id === targetId) return node.value;
+    return findValue(node.left, targetId) || findValue(node.right, targetId);
+  };
 
-    const isHighlighted = highlightedNodes.has(node.id!);
+  const getTraversalValues = (): number[] => {
+    const values: number[] = [];
+    traversalOrder.forEach(id => {
+      const value = findValue(root, id);
+      if (value !== null) values.push(value);
+    });
+    return values;
+  };
+
+  const renderTree = (node: BSTNode | null): JSX.Element | null => {
+    if (!node) return null;
+
+    const isHighlighted = isTraversing && currentTraversal >= 0 && 
+                         traversalOrder[currentTraversal] === node.id;
 
     return (
-      <div key={node.id}>
+      <div key={node.id} className="relative">
         <div
           className={cn(
-            "absolute w-12 h-12 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-all duration-300",
+            "w-12 h-12 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10",
             {
-              "bg-white border-gray-300": !isHighlighted,
-              "bg-arena-green/20 border-arena-green animate-bounce": isHighlighted,
+              "border-arena-green bg-arena-green text-white shadow-lg scale-110": isHighlighted,
             }
           )}
           style={{
-            left: `${node.x - 24}px`,
-            top: `${node.y}px`,
+            position: 'absolute',
+            left: node.x ? `${node.x}px` : '0px',
+            top: node.y ? `${node.y}px` : '0px',
+            transform: 'translate(-50%, -50%)',
           }}
         >
           {node.value}
         </div>
-        {node.left && renderBST(node.left)}
-        {node.right && renderBST(node.right)}
+        
+        {node.left && renderTree(node.left)}
+        {node.right && renderTree(node.right)}
       </div>
     );
   };
+
+  useEffect(() => {
+    if (root) {
+      calculatePositions(root, 300, 50, 100);
+    }
+  }, [root]);
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
-          <div className="arena-chip mb-4">Data Structure Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Binary Search Tree Visualizer</h1>
+        <div className="mb-6">
+          <div className="arena-chip mb-2">Data Structure Visualization</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-2">Binary Search Tree Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize and perform operations on binary search trees. Generate random BSTs and run traversal algorithms.
+            Visualize BST operations including insertion, search, and various traversal methods.
           </p>
         </div>
         
@@ -243,79 +287,155 @@ const BSTVisualizer = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">BST Visualization</h2>
             <div className="flex gap-2">
-              <input
-                type="number"
-                value={treeSize}
-                onChange={(e) => setTreeSize(e.target.value)}
-                placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-              />
               <Button 
-                onClick={generateRandomBST} 
+                onClick={() => startTraversal('inorder')}
+                disabled={isTraversing}
                 variant="outline"
-                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
-                <Shuffle className="h-4 w-4" />
-                Generate Random BST
+                {isTraversing && traversalType === 'inorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Inorder
+              </Button>
+              <Button 
+                onClick={() => startTraversal('preorder')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'preorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Preorder
+              </Button>
+              <Button 
+                onClick={() => startTraversal('postorder')}
+                disabled={isTraversing}
+                variant="outline"
+                className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                {isTraversing && traversalType === 'postorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                Postorder
               </Button>
             </div>
           </div>
-
-          {/* Traversal buttons */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              onClick={() => runTraversal('inorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+          
+          {/* Tree visualization */}
+          <div className="mb-6 relative">
+            <div 
+              className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
+              style={{ minHeight: "400px", maxHeight: "500px" }}
             >
-              <Search className="h-4 w-4" />
-              Inorder Traversal
-            </Button>
-            <Button
-              onClick={() => runTraversal('preorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Preorder Traversal
-            </Button>
-            <Button
-              onClick={() => runTraversal('postorder')}
-              variant="outline"
-              disabled={!root || currentTraversal !== null}
-              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-            >
-              <Search className="h-4 w-4" />
-              Postorder Traversal
-            </Button>
+              {root ? (
+                <div className="relative w-full h-full">
+                  {renderTree(root)}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  <span>BST is empty. Add nodes using the controls below.</span>
+                </div>
+              )}
+            </div>
           </div>
           
-          {/* BST visualization */}
-          <div className="mb-6 relative bg-arena-light rounded-lg overflow-hidden" style={{ height: '400px' }}>
-            {!root ? (
-              <div className="flex items-center justify-center w-full h-full text-arena-gray">
-                <span>No BST generated. Use the controls above to generate a random BST.</span>
+          {/* Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
+                Add Node
+              </h3>
+              <div className="flex">
+                <input
+                  type="number"
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="Enter value"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={addElement}
+                  variant="default"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Add
+                </Button>
               </div>
-            ) : (
-              <div className="relative w-full h-full">
-                {renderBST(root)}
+            </div>
+
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Search className="h-5 w-5 text-arena-green mr-2" />
+                Search
+              </h3>
+              <div className="flex">
+                <input
+                  type="number"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Search value"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={startSearch}
+                  disabled={isTraversing}
+                  variant="default"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Search
+                </Button>
               </div>
-            )}
+            </div>
+            
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
+                Clear Tree
+              </h3>
+              <Button
+                onClick={() => {
+                  setRoot(null);
+                  setTraversalOrder([]);
+                  setCurrentTraversal(-1);
+                  setIsTraversing(false);
+                  setTraversalType(null);
+                  const message = "Cleared the entire BST";
+                  addToLog(message);
+                  toast({
+                    title: "BST cleared",
+                    description: message,
+                  });
+                }}
+                variant="default"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+              >
+                Clear
+              </Button>
+            </div>
+
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3">Status</h3>
+              <div className="text-sm text-arena-gray">
+                {isTraversing ? (
+                  <span className="text-arena-green">
+                    Running {traversalType}... 
+                    ({currentTraversal + 1}/{traversalOrder.length})
+                  </span>
+                ) : (
+                  <span>Ready</span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Operation Logs */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-32 overflow-y-auto text-sm">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
               {logs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-arena-gray">
                   No operations performed yet
                 </div>
               ) : (
                 logs.map((log, index) => (
-                  <div key={index} className="mb-2 p-2 bg-white rounded border-l-4 border-arena-green">
+                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
                     {log}
                   </div>
                 ))
@@ -323,27 +443,34 @@ const BSTVisualizer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Binary Search Trees</h2>
           <p className="text-arena-gray mb-4">
-            A Binary Search Tree (BST) is a binary tree where for each node, all values in the left subtree are smaller and all values in the right subtree are larger.
+            A BST is a binary tree where left child values are less than parent and right child values are greater than parent.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Time Complexity (Average):</span>
+              <span className="font-medium">BST Properties:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Search: O(log n)</li>
-                <li>Insertion: O(log n)</li>
-                <li>Deletion: O(log n)</li>
-                <li>Traversal: O(n)</li>
+                <li>Left subtree values &lt; root</li>
+                <li>Right subtree values &gt; root</li>
+                <li>Inorder gives sorted sequence</li>
+              </ul>
+            </div>
+            <div className="bg-arena-light p-3 rounded-lg">
+              <span className="font-medium">Time Complexity:</span>
+              <ul className="list-disc pl-5 mt-1 text-arena-gray">
+                <li>Search: O(log n) avg, O(n) worst</li>
+                <li>Insert: O(log n) avg, O(n) worst</li>
+                <li>Delete: O(log n) avg, O(n) worst</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
               <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
                 <li>Storage: O(n)</li>
-                <li>Auxiliary (Recursion): O(h) where h is height</li>
+                <li>Auxiliary: O(h) where h is height</li>
               </ul>
             </div>
           </div>
