@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipBack, SkipForward, Rewind, FastForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface PageFrame {
@@ -18,6 +18,13 @@ interface PageFrame {
   lastUsed: number;
   loaded: boolean;
   highlight: boolean;
+}
+
+interface SimulationStep {
+  frames: PageFrame[];
+  faults: number;
+  hits: number;
+  history: { page: number; fault: boolean }[];
 }
 
 const MRUVisualizer = () => {
@@ -29,8 +36,10 @@ const MRUVisualizer = () => {
   const [pageFaults, setPageFaults] = useState<number>(0);
   const [pageHits, setPageHits] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1); // seconds
+  const [speed, setSpeed] = useState<number>(1);
   const [referenceHistory, setReferenceHistory] = useState<{ page: number; fault: boolean }[]>([]);
+  const [simulationSteps, setSimulationSteps] = useState<SimulationStep[]>([]);
+  const [autoPlay, setAutoPlay] = useState<boolean>(false);
 
   // Initialize frames
   useEffect(() => {
@@ -45,22 +54,138 @@ const MRUVisualizer = () => {
     resetSimulation();
   }, [framesCount]);
 
-  // Handle play/pause
+  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[]) => {
+    if (stepIndex >= pageReferences.length) return null;
+    
+    const pageRef = pageReferences[stepIndex];
+    const pageInFrames = currentFrames.findIndex(frame => frame.page === pageRef);
+    
+    let newFrames = currentFrames.map(frame => ({ ...frame, highlight: false }));
+    let newFaults = currentFaults;
+    let newHits = currentHits;
+    
+    if (pageInFrames !== -1) {
+      // Page hit
+      newFrames[pageInFrames] = { 
+        ...newFrames[pageInFrames], 
+        lastUsed: stepIndex,
+        highlight: true 
+      };
+      newHits++;
+    } else {
+      // Page fault
+      const emptyFrameIndex = newFrames.findIndex(frame => !frame.loaded);
+      
+      if (emptyFrameIndex !== -1) {
+        newFrames[emptyFrameIndex] = {
+          ...newFrames[emptyFrameIndex],
+          page: pageRef,
+          lastUsed: stepIndex,
+          loaded: true,
+          highlight: true
+        };
+      } else {
+        // Find MRU frame
+        let mruIndex = 0;
+        for (let i = 1; i < newFrames.length; i++) {
+          if (newFrames[i].lastUsed > newFrames[mruIndex].lastUsed) {
+            mruIndex = i;
+          }
+        }
+        
+        newFrames[mruIndex] = {
+          ...newFrames[mruIndex],
+          page: pageRef,
+          lastUsed: stepIndex,
+          highlight: true
+        };
+      }
+      newFaults++;
+    }
+    
+    const newHistory = [...currentHistory, { page: pageRef, fault: pageInFrames === -1 }];
+    
+    return {
+      frames: newFrames,
+      faults: newFaults,
+      hits: newHits,
+      history: newHistory
+    };
+  };
+
+  const precomputeSimulation = () => {
+    const steps: SimulationStep[] = [];
+    let currentFrames = Array(framesCount).fill(null).map((_, index) => ({
+      id: index,
+      page: null,
+      lastUsed: 0,
+      loaded: false,
+      highlight: false
+    }));
+    let currentFaults = 0;
+    let currentHits = 0;
+    let currentHistory: { page: number; fault: boolean }[] = [];
+
+    // Initial state
+    steps.push({
+      frames: [...currentFrames],
+      faults: currentFaults,
+      hits: currentHits,
+      history: [...currentHistory]
+    });
+
+    for (let i = 0; i < pageReferences.length; i++) {
+      const result = simulateStep(i, currentFrames, currentFaults, currentHits, currentHistory);
+      if (result) {
+        currentFrames = result.frames;
+        currentFaults = result.faults;
+        currentHits = result.hits;
+        currentHistory = result.history;
+        
+        steps.push({
+          frames: [...currentFrames],
+          faults: currentFaults,
+          hits: currentHits,
+          history: [...currentHistory]
+        });
+      }
+    }
+
+    setSimulationSteps(steps);
+    return steps;
+  };
+
+  const updateToStep = (stepIndex: number) => {
+    if (stepIndex < 0 || stepIndex >= simulationSteps.length) return;
+    
+    const step = simulationSteps[stepIndex];
+    setFrames(step.frames);
+    setPageFaults(step.faults);
+    setPageHits(step.hits);
+    setReferenceHistory(step.history);
+    setCurrentStep(stepIndex - 1); // Adjust for 0-based indexing
+  };
+
+  // Handle auto-play
   useEffect(() => {
-    if (!isPlaying || currentStep >= pageReferences.length - 1) return;
+    if (!autoPlay || currentStep >= pageReferences.length - 1) return;
 
     const timer = setTimeout(() => {
-      nextStep();
+      const nextStepIndex = currentStep + 2; // +2 because steps include initial state
+      if (nextStepIndex < simulationSteps.length) {
+        updateToStep(nextStepIndex);
+      } else {
+        setAutoPlay(false);
+      }
     }, 1000 / speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, pageReferences.length, speed]);
+  }, [autoPlay, currentStep, pageReferences.length, speed, simulationSteps]);
 
   const handleAddReference = () => {
     if (!inputReference.trim()) return;
     
     try {
-      // Parse comma-separated values or space-separated values
       const newReferences = inputReference
         .split(/[,\s]+/)
         .filter(Boolean)
@@ -83,8 +208,9 @@ const MRUVisualizer = () => {
     setCurrentStep(-1);
     setPageFaults(0);
     setPageHits(0);
-    setIsPlaying(false);
+    setAutoPlay(false);
     setReferenceHistory([]);
+    setSimulationSteps([]);
     
     const resetFrames = Array(framesCount).fill(null).map((_, index) => ({
       id: index,
@@ -96,78 +222,60 @@ const MRUVisualizer = () => {
     setFrames(resetFrames);
   };
 
-  const nextStep = () => {
-    if (currentStep >= pageReferences.length - 1) {
-      setIsPlaying(false);
-      return;
+  const handlePlayPause = () => {
+    if (pageReferences.length === 0) return;
+    
+    if (simulationSteps.length === 0) {
+      precomputeSimulation();
     }
     
-    const nextStep = currentStep + 1;
-    const pageRef = pageReferences[nextStep];
-    
-    // Check if page is already in frames (page hit)
-    const pageInFrames = frames.findIndex(frame => frame.page === pageRef);
-    
-    // Create copy of frames for modification
-    let newFrames = frames.map(frame => ({ ...frame, highlight: false }));
-    
-    if (pageInFrames !== -1) {
-      // Page hit - update lastUsed time and highlight
-      newFrames[pageInFrames] = { 
-        ...newFrames[pageInFrames], 
-        lastUsed: nextStep,
-        highlight: true 
-      };
-      setPageHits(prev => prev + 1);
-    } else {
-      // Page fault - replace using MRU
-      
-      // Find empty frame or most recently used frame
-      const emptyFrameIndex = newFrames.findIndex(frame => !frame.loaded);
-      
-      if (emptyFrameIndex !== -1) {
-        // Empty frame available
-        newFrames[emptyFrameIndex] = {
-          ...newFrames[emptyFrameIndex],
-          page: pageRef,
-          lastUsed: nextStep,
-          loaded: true,
-          highlight: true
-        };
-      } else {
-        // No empty frames, find most recently used
-        let mruIndex = 0;
-        
-        for (let i = 1; i < newFrames.length; i++) {
-          if (newFrames[i].lastUsed > newFrames[mruIndex].lastUsed) {
-            mruIndex = i;
-          }
-        }
-        
-        newFrames[mruIndex] = {
-          ...newFrames[mruIndex],
-          page: pageRef,
-          lastUsed: nextStep,
-          highlight: true
-        };
-      }
-      
-      setPageFaults(prev => prev + 1);
-    }
-    
-    setFrames(newFrames);
-    setCurrentStep(nextStep);
-    setReferenceHistory([...referenceHistory, { page: pageRef, fault: pageInFrames === -1 }]);
-  };
-
-  const togglePlayPause = () => {
     if (currentStep >= pageReferences.length - 1) {
       resetSimulation();
-      setIsPlaying(true);
+      setTimeout(() => {
+        const steps = precomputeSimulation();
+        setAutoPlay(true);
+        updateToStep(1);
+      }, 100);
     } else {
-      setIsPlaying(!isPlaying);
+      setAutoPlay(!autoPlay);
     }
   };
+
+  const handleStepForward = () => {
+    if (simulationSteps.length === 0) precomputeSimulation();
+    const nextStepIndex = currentStep + 2;
+    if (nextStepIndex < simulationSteps.length) {
+      updateToStep(nextStepIndex);
+    }
+  };
+
+  const handleStepBackward = () => {
+    if (simulationSteps.length === 0) precomputeSimulation();
+    const prevStepIndex = Math.max(0, currentStep + 1);
+    updateToStep(prevStepIndex);
+  };
+
+  const handleRewind = () => {
+    if (simulationSteps.length === 0) precomputeSimulation();
+    updateToStep(0);
+  };
+
+  const handleFastForward = () => {
+    if (simulationSteps.length === 0) precomputeSimulation();
+    updateToStep(simulationSteps.length - 1);
+  };
+
+  const handleSliderChange = (value: number[]) => {
+    if (simulationSteps.length === 0) precomputeSimulation();
+    setAutoPlay(false);
+    updateToStep(value[0]);
+  };
+
+  useEffect(() => {
+    if (pageReferences.length > 0 && simulationSteps.length === 0) {
+      precomputeSimulation();
+    }
+  }, [pageReferences]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -236,27 +344,81 @@ const MRUVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleRewind}
+                        disabled={pageReferences.length === 0}
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleStepBackward}
+                        disabled={pageReferences.length === 0 || currentStep < 0}
+                      >
+                        <SkipBack className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        onClick={handlePlayPause}
+                        disabled={pageReferences.length === 0}
+                      >
+                        {autoPlay ? (
+                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
+                        ) : (
+                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= pageReferences.length - 1 ? 'Restart' : 'Play'}</>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleStepForward}
+                        disabled={pageReferences.length === 0 || currentStep >= pageReferences.length - 1}
+                      >
+                        <SkipForward className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleFastForward}
+                        disabled={pageReferences.length === 0}
+                      >
+                        <FastForward className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={resetSimulation}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
-                    <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                      onClick={togglePlayPause}
-                      disabled={pageReferences.length === 0}
-                    >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {currentStep >= pageReferences.length - 1 ? 'Restart' : 'Play'}</>
-                      )}
-                    </Button>
                   </div>
+                  
+                  {pageReferences.length > 0 && (
+                    <div>
+                      <Label>Step Control</Label>
+                      <div className="mt-2">
+                        <Slider
+                          value={[currentStep + 1]}
+                          max={pageReferences.length}
+                          min={0}
+                          step={1}
+                          onValueChange={handleSliderChange}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-drona-gray mt-1">
+                          <span>0</span>
+                          <span>{pageReferences.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

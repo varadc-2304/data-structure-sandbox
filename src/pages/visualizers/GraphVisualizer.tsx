@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Play, Pause, RotateCcw } from 'lucide-react';
@@ -34,6 +33,9 @@ const GraphVisualizer = () => {
   const [isTraversing, setIsTraversing] = useState(false);
   const [traversalType, setTraversalType] = useState<'bfs' | 'dfs' | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const { toast } = useToast();
 
@@ -119,6 +121,54 @@ const GraphVisualizer = () => {
       description: message,
     });
   };
+
+  const handleMouseDown = (nodeId: string, event: React.MouseEvent) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || !svgRef.current) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left - node.x;
+    const offsetY = event.clientY - rect.top - node.y;
+
+    setDraggedNode(nodeId);
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const handleMouseMove = useCallback((event: MouseEvent) => {
+    if (!draggedNode || !svgRef.current) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const newX = event.clientX - rect.left - dragOffset.x;
+    const newY = event.clientY - rect.top - dragOffset.y;
+
+    // Constrain to SVG bounds
+    const constrainedX = Math.max(25, Math.min(775, newX));
+    const constrainedY = Math.max(25, Math.min(375, newY));
+
+    setNodes(prevNodes =>
+      prevNodes.map(node =>
+        node.id === draggedNode
+          ? { ...node, x: constrainedX, y: constrainedY }
+          : node
+      )
+    );
+  }, [draggedNode, dragOffset]);
+
+  const handleMouseUp = useCallback(() => {
+    setDraggedNode(null);
+    setDragOffset({ x: 0, y: 0 });
+  }, []);
+
+  React.useEffect(() => {
+    if (draggedNode) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [draggedNode, handleMouseMove, handleMouseUp]);
 
   const getNeighbors = (nodeId: string): string[] => {
     const neighbors: string[] = [];
@@ -282,7 +332,11 @@ const GraphVisualizer = () => {
                          traversalOrder[currentTraversal] === node.id;
 
     return (
-      <g key={node.id}>
+      <g 
+        key={node.id}
+        style={{ cursor: 'grab' }}
+        onMouseDown={(e) => handleMouseDown(node.id, e)}
+      >
         <circle
           cx={node.x}
           cy={node.y}
@@ -299,6 +353,7 @@ const GraphVisualizer = () => {
           fontSize="12"
           fill={isHighlighted ? "white" : "#374151"}
           className="font-medium"
+          style={{ pointerEvents: 'none' }}
         >
           {node.label}
         </text>
@@ -363,7 +418,13 @@ const GraphVisualizer = () => {
               className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
               style={{ minHeight: "400px" }}
             >
-              <svg width="100%" height="400" className="border border-gray-200 rounded">
+              <svg 
+                ref={svgRef}
+                width="100%" 
+                height="400" 
+                className="border border-gray-200 rounded"
+                style={{ userSelect: 'none' }}
+              >
                 <defs>
                   <marker
                     id="arrowhead"
@@ -423,20 +484,20 @@ const GraphVisualizer = () => {
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3">Add Edge</h3>
               <div className="space-y-2">
-                <div className="flex gap-1">
+                <div className="grid grid-cols-2 gap-1">
                   <input
                     type="text"
                     value={edgeFrom}
                     onChange={(e) => setEdgeFrom(e.target.value)}
                     placeholder="From"
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
                   <input
                     type="text"
                     value={edgeTo}
                     onChange={(e) => setEdgeTo(e.target.value)}
                     placeholder="To"
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                    className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                   />
                 </div>
                 <div className="flex gap-1">
