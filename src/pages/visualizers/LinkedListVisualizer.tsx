@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
@@ -231,13 +232,12 @@ const LinkedListVisualizer = () => {
                           "border-arena-green bg-arena-green/10 shadow-md": 
                             (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
                             (operationTarget === node.id && !isViewing),
-                          "border-arena-green bg-arena-green/10 shadow-md": 
+                          "border-arena-green bg-arena-green/10 shadow-md transform": 
                             isViewing && operationTarget === node.id,
                         }
                       )}
                       style={{
-                        animation: isViewing && operationTarget === node.id ? 'bounce 0.6s ease-in-out 3' : 'none',
-                        transformOrigin: 'center'
+                        animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
                       }}
                     >
                       <div className="text-lg font-medium">{node.value}</div>
@@ -399,13 +399,21 @@ const LinkedListVisualizer = () => {
         </div>
       </div>
       
-      <style jsx>{`
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-10px); }
-          60% { transform: translateY(-5px); }
-        }
-      `}</style>
+      <style>
+        {`
+          @keyframes bounceInPlace {
+            0%, 20%, 50%, 80%, 100% { 
+              transform: translateY(0); 
+            }
+            40% { 
+              transform: translateY(-10px); 
+            }
+            60% { 
+              transform: translateY(-5px); 
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

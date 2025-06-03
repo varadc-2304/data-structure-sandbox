@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipBack, SkipForward, Rewind, FastForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -99,7 +100,7 @@ const FIFOVisualizer = () => {
     setFrames(resetFrames);
   };
 
-  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[][]) => {
+  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[]) => {
     if (stepIndex >= pageReferences.length) return null;
     
     const pageRef = pageReferences[stepIndex];
