@@ -39,7 +39,7 @@ const ArrayVisualizer = () => {
       return;
     }
 
-    const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
+    const newValue = Number(newElement);
     setArray([...array, newValue]);
     setLastOperation('append');
     setOperationTarget(array.length);
@@ -84,7 +84,7 @@ const ArrayVisualizer = () => {
       return;
     }
 
-    const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
+    const newValue = Number(newElement);
     const newArray = [...array];
     newArray[pos] = newValue; // Replace element at position instead of inserting
     setArray(newArray);
