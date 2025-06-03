@@ -84,17 +84,15 @@ const QueueVisualizer = () => {
     }
 
     const frontValue = queue[0];
-    setPeekValue(frontValue);
-    setShowPeekModal(true);
     setLastOperation('peek');
     
     const message = `Peeked at front element: "${frontValue}"`;
     addToLog(message);
     
-    // Auto close modal after 2 seconds
-    setTimeout(() => {
-      setShowPeekModal(false);
-    }, 2000);
+    toast({
+      title: "Front element",
+      description: `Front element is "${frontValue}"`,
+    });
   };
 
   const generateRandomQueue = () => {
@@ -176,7 +174,7 @@ const QueueVisualizer = () => {
           </div>
           
           {/* Queue visualization */}
-          <div className="mb-6 relative">
+          <div className="mb-6 relative overflow-hidden">
             <div className="flex flex-col items-center">
               <div 
                 className="flex items-center bg-arena-light rounded-lg p-4 w-full overflow-x-auto relative"
@@ -235,7 +233,7 @@ const QueueVisualizer = () => {
                 <Button
                   onClick={enqueueElement}
                   variant="default"
-                  className="rounded-l-none rounded-r-lg"
+                  className="rounded-l-none rounded-r-lg bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Enqueue
                 </Button>
@@ -251,7 +249,7 @@ const QueueVisualizer = () => {
               <Button
                 onClick={dequeueElement}
                 variant="default"
-                className="w-full"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
               >
                 Dequeue
               </Button>
@@ -302,16 +300,6 @@ const QueueVisualizer = () => {
           </div>
         </div>
       </div>
-
-      {/* Peek Modal */}
-      {showPeekModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg animate-bounce">
-            <h3 className="text-lg font-semibold mb-2">Front Element</h3>
-            <div className="text-2xl font-bold text-arena-green">{peekValue}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

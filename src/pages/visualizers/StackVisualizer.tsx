@@ -3,13 +3,12 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, ArrowDown, ArrowUp, Shuffle } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 const StackVisualizer = () => {
   const [stack, setStack] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
-  const [position, setPosition] = useState('');
   const [stackSize, setStackSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
@@ -101,38 +100,27 @@ const StackVisualizer = () => {
     });
   };
 
-  const viewAtPosition = () => {
-    if (position.trim() === '' || isNaN(Number(position))) {
+  const viewTopElement = () => {
+    if (stack.length === 0) {
       toast({
-        title: "Invalid position",
-        description: "Please enter a valid numeric position",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const pos = Number(position);
-    
-    if (pos < 0 || pos >= stack.length) {
-      toast({
-        title: "Out of bounds",
-        description: `Position must be between 0 and ${stack.length - 1}`,
+        title: "Empty stack",
+        description: "Cannot view element in an empty stack",
         variant: "destructive",
       });
       return;
     }
 
     setLastOperation('view');
-    setOperationTarget(pos);
+    setOperationTarget(stack.length - 1);
     setIsViewing(true);
-    setPosition('');
     
-    const message = `Viewed element at position ${pos}: "${stack[pos]}"`;
+    const topValue = stack[stack.length - 1];
+    const message = `Viewed top element: "${topValue}"`;
     addToLog(message);
     
     toast({
-      title: "Element viewed",
-      description: `Element at position ${pos} is "${stack[pos]}"`,
+      title: "Top element viewed",
+      description: `Top element is "${topValue}"`,
     });
   };
 
@@ -194,36 +182,29 @@ const StackVisualizer = () => {
                 value={stackSize}
                 onChange={(e) => setStackSize(e.target.value)}
                 placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
               />
               <Button 
                 onClick={generateRandomStack} 
                 variant="outline"
-                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
                 <Shuffle className="h-4 w-4" />
                 Generate Random Stack
               </Button>
-              <input
-                type="number"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                placeholder="Position"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
-              />
               <Button
-                onClick={viewAtPosition}
+                onClick={viewTopElement}
                 variant="outline"
-                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
                 <Eye className="h-4 w-4" />
-                View at Position
+                View Top Element
               </Button>
             </div>
           </div>
           
           {/* Stack visualization */}
-          <div className="mb-6 relative">
+          <div className="mb-6 relative overflow-hidden">
             <div 
               className="flex flex-col-reverse items-center bg-arena-light rounded-lg p-4"
               style={{ minHeight: "240px" }}
@@ -240,8 +221,8 @@ const StackVisualizer = () => {
                     className={cn(
                       "w-full max-w-xs p-4 m-1 rounded-lg border-2 border-gray-200 flex justify-between items-center transition-all duration-300",
                       {
-                        "border-drona-green bg-drona-green/10 shadow-md": operationTarget === index,
-                        "animate-bounce": isViewing && operationTarget === index,
+                        "border-arena-green bg-arena-green/10 shadow-md": operationTarget === index && !isViewing,
+                        "border-arena-green bg-arena-green/10 shadow-md animate-bounce": isViewing && operationTarget === index,
                       }
                     )}
                   >
@@ -253,7 +234,7 @@ const StackVisualizer = () => {
                 ))
               )}
               {/* Base of the stack */}
-              <div className="w-full max-w-xs h-2 bg-drona-green rounded-b-lg mt-1"></div>
+              <div className="w-full max-w-xs h-2 bg-arena-green rounded-b-lg mt-1"></div>
             </div>
           </div>
           
@@ -261,7 +242,7 @@ const StackVisualizer = () => {
             {/* Push element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-drona-green mr-2" />
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Push Element
               </h3>
               <div className="flex">
@@ -270,12 +251,12 @@ const StackVisualizer = () => {
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <Button
                   onClick={pushElement}
                   variant="default"
-                  className="rounded-l-none bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Push
                   <ArrowUp className="ml-2 h-4 w-4" />
@@ -286,13 +267,13 @@ const StackVisualizer = () => {
             {/* Pop element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Trash className="h-5 w-5 text-drona-green mr-2" />
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
                 Pop Element
               </h3>
               <Button
                 onClick={popElement}
                 variant="default"
-                className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Pop
                 <ArrowDown className="ml-2 h-4 w-4" />
@@ -302,13 +283,13 @@ const StackVisualizer = () => {
             {/* Peek element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-drona-green mr-2" />
+                <Eye className="h-5 w-5 text-arena-green mr-2" />
                 Peek Element
               </h3>
               <Button
                 onClick={peekElement}
                 variant="default"
-                className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Peek
                 <Eye className="ml-2 h-4 w-4" />

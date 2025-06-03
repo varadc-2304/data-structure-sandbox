@@ -2,33 +2,35 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Plus, Trash, Eye, AlertCircle, ArrowRightCircle, Shuffle } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Plus, Trash, Eye, AlertCircle, Shuffle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
-interface Node {
-  value: number | string;
-  next: Node | null;
+interface ListNode {
+  value: number;
+  next: ListNode | null;
 }
 
 const LinkedListVisualizer = () => {
-  const [head, setHead] = useState<Node | null>(null);
+  const [head, setHead] = useState<ListNode | null>(null);
   const [newElement, setNewElement] = useState('');
-  const [position, setPosition] = useState('');
   const [listSize, setListSize] = useState('');
+  const [position, setPosition] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [traversingIndices, setTraversingIndices] = useState<number[]>([]);
-  const [isViewing, setIsViewing] = useState(false);
-
+  const [isTraversing, setIsTraversing] = useState(false);
+  const [currentTraverseIndex, setCurrentTraverseIndex] = useState(-1);
+  const [targetReached, setTargetReached] = useState(false);
+  
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
-    setTraversingIndices([]);
-    setIsViewing(false);
+    setIsTraversing(false);
+    setCurrentTraverseIndex(-1);
+    setTargetReached(false);
   };
 
   const addToLog = (message: string) => {
@@ -36,176 +38,74 @@ const LinkedListVisualizer = () => {
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const getLinkedListArray = (): Node[] => {
-    const result: Node[] = [];
+  const listToArray = (): number[] => {
+    const array: number[] = [];
     let current = head;
-    
-    while (current !== null) {
-      result.push(current);
+    while (current) {
+      array.push(current.value);
       current = current.next;
     }
-    
-    return result;
+    return array;
   };
 
-  const appendNode = () => {
+  const addElement = () => {
     if (newElement.trim() === '') {
       toast({
         title: "Input required",
-        description: "Please enter a value to append",
+        description: "Please enter a value to add",
         variant: "destructive",
       });
       return;
     }
 
-    const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
-    const newNode: Node = { value: newValue, next: null };
+    const newNode: ListNode = {
+      value: Number(newElement),
+      next: head
+    };
     
-    if (head === null) {
-      setHead(newNode);
-    } else {
-      // Find the last node
-      let current = head;
-      while (current.next !== null) {
-        current = current.next;
-      }
-      current.next = newNode;
-    }
-    
-    setLastOperation('append');
-    setOperationTarget(getLinkedListArray().length - 1);
+    setHead(newNode);
     setNewElement('');
     
-    const message = `Appended "${newValue}" to the end of the linked list`;
+    const message = `Added ${newElement} to the beginning of the list`;
     addToLog(message);
     
     toast({
-      title: "Node appended",
+      title: "Element added",
       description: message,
     });
   };
 
-  const insertAtPosition = () => {
-    if (newElement.trim() === '') {
+  const removeElement = () => {
+    if (!head) {
       toast({
-        title: "Input required",
-        description: "Please enter a value to insert",
+        title: "List is empty",
+        description: "Cannot remove from an empty list",
         variant: "destructive",
       });
       return;
     }
 
-    if (position.trim() === '' || isNaN(Number(position))) {
-      toast({
-        title: "Invalid position",
-        description: "Please enter a valid numeric position",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const pos = Number(position);
-    const listArray = getLinkedListArray();
+    const removedValue = head.value;
+    setHead(head.next);
     
-    if (pos < 0 || pos > listArray.length) {
-      toast({
-        title: "Out of bounds",
-        description: `Position must be between 0 and ${listArray.length}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
-    const newNode: Node = { value: newValue, next: null };
-    
-    if (pos === 0) {
-      // Insert at the beginning
-      newNode.next = head;
-      setHead(newNode);
-    } else {
-      // Insert at a specific position
-      let current = head;
-      let index = 0;
-      
-      while (current !== null && index < pos - 1) {
-        current = current.next;
-        index++;
-      }
-      
-      if (current !== null) {
-        newNode.next = current.next;
-        current.next = newNode;
-      }
-    }
-    
-    setLastOperation('insert');
-    setOperationTarget(pos);
-    setNewElement('');
-    setPosition('');
-    
-    const message = `Inserted "${newValue}" at position ${pos}`;
+    const message = `Removed ${removedValue} from the beginning of the list`;
     addToLog(message);
     
     toast({
-      title: "Node inserted",
+      title: "Element removed",
       description: message,
     });
   };
 
-  const deleteAtPosition = () => {
-    if (position.trim() === '' || isNaN(Number(position))) {
-      toast({
-        title: "Invalid position",
-        description: "Please enter a valid numeric position",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const pos = Number(position);
-    const listArray = getLinkedListArray();
+  const clearList = () => {
+    setHead(null);
+    resetHighlights();
     
-    if (pos < 0 || pos >= listArray.length) {
-      toast({
-        title: "Out of bounds",
-        description: `Position must be between 0 and ${listArray.length - 1}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let deletedValue;
-    
-    if (pos === 0) {
-      // Delete from the beginning
-      deletedValue = head?.value;
-      setHead(head?.next || null);
-    } else {
-      // Delete from a specific position
-      let current = head;
-      let index = 0;
-      
-      while (current !== null && index < pos - 1) {
-        current = current.next;
-        index++;
-      }
-      
-      if (current !== null && current.next !== null) {
-        deletedValue = current.next.value;
-        current.next = current.next.next;
-      }
-    }
-    
-    setLastOperation('delete');
-    setOperationTarget(pos);
-    setPosition('');
-    
-    const message = `Removed "${deletedValue}" from position ${pos}`;
+    const message = "Cleared the entire list";
     addToLog(message);
     
     toast({
-      title: "Node deleted",
+      title: "List cleared",
       description: message,
     });
   };
@@ -221,55 +121,28 @@ const LinkedListVisualizer = () => {
     }
 
     const pos = Number(position);
-    const listArray = getLinkedListArray();
+    const array = listToArray();
     
-    if (pos < 0 || pos >= listArray.length) {
+    if (pos < 0 || pos >= array.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 0 and ${listArray.length - 1}`,
+        description: `Position must be between 0 and ${array.length - 1}`,
         variant: "destructive",
       });
       return;
     }
 
-    // Animate traversal to the target position
-    const traverseToPosition = async () => {
-      setIsViewing(true);
-      const traversalPath: number[] = [];
-      
-      for (let i = 0; i <= pos; i++) {
-        traversalPath.push(i);
-        setTraversingIndices([...traversalPath]);
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-      
-      // Highlight the final target
-      setLastOperation('view');
-      setOperationTarget(pos);
-      setTraversingIndices([]);
-      setPosition('');
-      
-      let current = head;
-      let index = 0;
-      
-      while (current !== null && index < pos) {
-        current = current.next;
-        index++;
-      }
-      
-      const message = `Viewed element at position ${pos}: "${current?.value}"`;
-      addToLog(message);
-      
-      toast({
-        title: "Node viewed",
-        description: message,
-      });
-    };
-
-    traverseToPosition();
+    setLastOperation('view');
+    setOperationTarget(pos);
+    setIsTraversing(true);
+    setCurrentTraverseIndex(0);
+    setPosition('');
+    
+    const message = `Viewing element at position ${pos}: ${array[pos]}`;
+    addToLog(message);
   };
 
-  const generateRandomLinkedList = () => {
+  const generateRandomList = () => {
     if (listSize.trim() === '' || isNaN(Number(listSize)) || Number(listSize) <= 0) {
       toast({
         title: "Invalid size",
@@ -279,59 +152,75 @@ const LinkedListVisualizer = () => {
       return;
     }
 
-    const size = Math.min(Number(listSize), 15); // Limit to 15 nodes max
-    setHead(null);
+    const size = Math.min(Number(listSize), 15);
+    const randomValues = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
     
-    let newHead: Node | null = null;
-    let current: Node | null = null;
-
-    for (let i = 0; i < size; i++) {
-      const value = Math.floor(Math.random() * 100);
-      const newNode: Node = { value, next: null };
-      
-      if (newHead === null) {
-        newHead = newNode;
-        current = newNode;
-      } else if (current !== null) {
-        current.next = newNode;
-        current = newNode;
-      }
+    let newHead: ListNode | null = null;
+    for (let i = randomValues.length - 1; i >= 0; i--) {
+      const newNode: ListNode = {
+        value: randomValues[i],
+        next: newHead
+      };
+      newHead = newNode;
     }
-
+    
     setHead(newHead);
-    setLastOperation(null);
-    setOperationTarget(null);
+    resetHighlights();
     setListSize('');
     
-    const message = `Generated random linked list with ${size} nodes`;
+    const message = `Generated random list with ${size} elements`;
     addToLog(message);
     
     toast({
-      title: "Random linked list generated",
+      title: "Random list generated",
       description: message,
     });
   };
 
-  // Clear highlights after a delay
+  // Handle traversal animation
   useEffect(() => {
-    if (lastOperation) {
+    if (isTraversing && operationTarget !== null) {
+      if (currentTraverseIndex <= operationTarget) {
+        const timer = setTimeout(() => {
+          if (currentTraverseIndex === operationTarget) {
+            setTargetReached(true);
+            setIsTraversing(false);
+            const array = listToArray();
+            toast({
+              title: "Element found",
+              description: `Element at position ${operationTarget} is ${array[operationTarget]}`,
+            });
+          } else {
+            setCurrentTraverseIndex(currentTraverseIndex + 1);
+          }
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isTraversing, currentTraverseIndex, operationTarget]);
+
+  // Clear highlights after target is reached
+  useEffect(() => {
+    if (targetReached) {
       const timer = setTimeout(() => {
         resetHighlights();
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [lastOperation, operationTarget]);
+  }, [targetReached]);
+
+  const array = listToArray();
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
-          <div className="arena-chip mb-4">Data Structure Visualization</div>
-          <h1 className="text-4xl font-bold text-arena-dark mb-2">Linked List Visualizer</h1>
+        <div className="mb-6">
+          <div className="arena-chip mb-2">Data Structure Visualization</div>
+          <h1 className="text-3xl font-bold text-arena-dark mb-2">Linked List Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize and perform operations on a singly linked list. Add, insert, view, or delete nodes to see how linked lists work.
+            Visualize and perform operations on linked lists. Add, remove, or traverse elements to see how linked lists work.
           </p>
         </div>
         
@@ -347,7 +236,7 @@ const LinkedListVisualizer = () => {
                 className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
               />
               <Button 
-                onClick={generateRandomLinkedList} 
+                onClick={generateRandomList} 
                 variant="outline"
                 className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
@@ -372,37 +261,43 @@ const LinkedListVisualizer = () => {
             </div>
           </div>
           
-          {/* Linked List visualization */}
-          <div className="mb-6 relative">
+          {/* Linked list visualization */}
+          <div className="mb-6 relative overflow-hidden">
             <div 
-              className="flex overflow-x-auto pb-4 pt-2 px-2 bg-arena-light rounded-lg items-center"
-              style={{ minHeight: "80px" }}
+              className="flex items-center bg-arena-light rounded-lg p-4 overflow-x-auto"
+              style={{ minHeight: "120px" }}
             >
-              {!head ? (
+              {array.length === 0 ? (
                 <div className="flex items-center justify-center w-full py-8 text-arena-gray">
                   <AlertCircle className="mr-2 h-5 w-5" />
-                  <span>Linked List is empty. Add nodes using the controls below.</span>
+                  <span>Linked list is empty. Add elements using the controls below.</span>
                 </div>
               ) : (
-                getLinkedListArray().map((node, index) => (
+                array.map((item, index) => (
                   <div key={index} className="flex items-center">
                     <div
                       className={cn(
-                        "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
+                        "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative",
                         {
                           "border-arena-green bg-arena-green/10 shadow-md": 
-                            operationTarget === index || traversingIndices.includes(index),
-                          "animate-bounce": 
-                            (isViewing && operationTarget === index) || traversingIndices.includes(index),
+                            isTraversing && currentTraverseIndex === index,
+                          "border-arena-green bg-arena-green/10 shadow-md animate-bounce": 
+                            targetReached && operationTarget === index,
                         }
                       )}
                     >
-                      <div className="text-lg font-medium">{node.value.toString()}</div>
+                      <div className="text-lg font-medium">{item}</div>
                       <div className="text-xs text-arena-gray">[{index}]</div>
+                      
+                      {/* Pointer to next node */}
+                      {index < array.length - 1 && (
+                        <div className="absolute -right-4 top-1/2 transform -translate-y-1/2">
+                          <div className="w-6 h-0.5 bg-gray-400"></div>
+                          <div className="absolute -right-1 -top-1 w-2 h-2 border-t-2 border-r-2 border-gray-400 transform rotate-45"></div>
+                        </div>
+                      )}
                     </div>
-                    {index < getLinkedListArray().length - 1 && (
-                      <ArrowRightCircle className="h-5 w-5 text-arena-green mx-1" />
-                    )}
+                    {index < array.length - 1 && <div className="w-4"></div>}
                   </div>
                 ))
               )}
@@ -410,85 +305,58 @@ const LinkedListVisualizer = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Append node */}
+            {/* Add element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-arena-green mr-2" />
-                Append Node
+                Add Element
               </h3>
               <div className="flex">
                 <input
-                  type="text"
+                  type="number"
                   value={newElement}
                   onChange={(e) => setNewElement(e.target.value)}
                   placeholder="Enter value"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
                 <Button
-                  onClick={appendNode}
+                  onClick={addElement}
                   variant="default"
-                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
+                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
                 >
-                  Append
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  Add
                 </Button>
               </div>
             </div>
             
-            {/* Insert at position */}
-            <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Plus className="h-5 w-5 text-arena-green mr-2" />
-                Insert at Position
-              </h3>
-              <div className="grid grid-cols-5 gap-2">
-                <input
-                  type="text"
-                  value={newElement}
-                  onChange={(e) => setNewElement(e.target.value)}
-                  placeholder="Value"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                />
-                <input
-                  type="number"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Position"
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                />
-                <Button
-                  onClick={insertAtPosition}
-                  variant="default"
-                  className="bg-arena-green text-white px-2 py-2 rounded-lg hover:bg-arena-green/90 transition-colors duration-300"
-                >
-                  Insert
-                </Button>
-              </div>
-            </div>
-            
-            {/* Delete at position */}
+            {/* Remove element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Trash className="h-5 w-5 text-arena-green mr-2" />
-                Delete at Position
+                Remove First Element
               </h3>
-              <div className="flex">
-                <input
-                  type="number"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                />
-                <Button
-                  onClick={deleteAtPosition}
-                  variant="default"
-                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
-                >
-                  Delete
-                  <Trash className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                onClick={removeElement}
+                variant="default"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+              >
+                Remove
+              </Button>
+            </div>
+            
+            {/* Clear list */}
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Trash className="h-5 w-5 text-arena-green mr-2" />
+                Clear List
+              </h3>
+              <Button
+                onClick={clearList}
+                variant="default"
+                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+              >
+                Clear
+              </Button>
             </div>
           </div>
 
@@ -510,11 +378,11 @@ const LinkedListVisualizer = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Linked Lists</h2>
           <p className="text-arena-gray mb-4">
-            A linked list is a linear data structure where elements are stored in nodes. Each node points to the next node in the sequence, forming a chain.
+            A linked list is a linear data structure where elements are stored in nodes, and each node contains data and a reference to the next node.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="bg-arena-light p-3 rounded-lg">
@@ -522,8 +390,8 @@ const LinkedListVisualizer = () => {
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
                 <li>Access: O(n)</li>
                 <li>Search: O(n)</li>
-                <li>Insertion: O(1) (with pointer)</li>
-                <li>Deletion: O(1) (with pointer)</li>
+                <li>Insertion: O(1) at head</li>
+                <li>Deletion: O(1) at head</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">

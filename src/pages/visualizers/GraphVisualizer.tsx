@@ -252,19 +252,6 @@ const GraphVisualizer = () => {
     const message = `BFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
     addToLog(message);
     
-    // Animate BFS
-    visitedOrder.forEach((nodeId, index) => {
-      setTimeout(() => {
-        setNodes(prevNodes => 
-          prevNodes.map(node => ({
-            ...node,
-            highlighted: node.id === nodeId
-          }))
-        );
-        setCurrentVisitIndex(index);
-      }, index * 800);
-    });
-    
     toast({
       title: "BFS started",
       description: `Running BFS from node "${sourceNode}"`,
@@ -330,34 +317,34 @@ const GraphVisualizer = () => {
     const message = `DFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
     addToLog(message);
     
-    // Animate DFS
-    visitedOrder.forEach((nodeId, index) => {
-      setTimeout(() => {
-        setNodes(prevNodes => 
-          prevNodes.map(node => ({
-            ...node,
-            highlighted: node.id === nodeId
-          }))
-        );
-        setCurrentVisitIndex(index);
-      }, index * 800);
-    });
-    
     toast({
       title: "DFS started",
       description: `Running DFS from node "${sourceNode}"`,
     });
   };
 
-  // Clear highlights after a delay
+  // Handle traversal animation
   useEffect(() => {
-    if (lastOperation && visitOrder.length > 0) {
+    if (lastOperation && visitOrder.length > 0 && currentVisitIndex >= 0) {
       const timer = setTimeout(() => {
-        resetHighlights();
-      }, (visitOrder.length + 1) * 800);
+        if (currentVisitIndex < visitOrder.length) {
+          setNodes(prevNodes => 
+            prevNodes.map(node => ({
+              ...node,
+              highlighted: node.id === visitOrder[currentVisitIndex]
+            }))
+          );
+          setCurrentVisitIndex(currentVisitIndex + 1);
+        } else {
+          // Traversal complete
+          setTimeout(() => {
+            resetHighlights();
+          }, 1000);
+        }
+      }, 800);
       return () => clearTimeout(timer);
     }
-  }, [lastOperation, visitOrder]);
+  }, [lastOperation, visitOrder, currentVisitIndex]);
 
   useEffect(() => {
     // Add event listeners for mouse events outside the component
@@ -431,8 +418,8 @@ const GraphVisualizer = () => {
           {/* Graph visualization */}
           <div 
             ref={graphRef}
-            className="mb-6 relative bg-arena-light rounded-lg"
-            style={{ height: '400px', overflow: 'hidden', cursor: isDragging ? 'grabbing' : 'default' }}
+            className="mb-6 relative bg-arena-light rounded-lg overflow-hidden"
+            style={{ height: '400px', cursor: isDragging ? 'grabbing' : 'default' }}
           >
             {nodes.length === 0 ? (
               <div className="flex items-center justify-center w-full h-full text-arena-gray">
@@ -448,34 +435,56 @@ const GraphVisualizer = () => {
                     const toNode = nodes.find(node => node.id === edge.to);
                     
                     if (fromNode && toNode) {
-                      const midX = (fromNode.x + toNode.x) / 2;
-                      const midY = (fromNode.y + toNode.y) / 2;
+                      const dx = toNode.x - fromNode.x;
+                      const dy = toNode.y - fromNode.y;
+                      const length = Math.sqrt(dx * dx + dy * dy);
+                      const unitX = dx / length;
+                      const unitY = dy / length;
+                      
+                      // Start from edge of fromNode and end at edge of toNode
+                      const startX = fromNode.x + unitX * 24;
+                      const startY = fromNode.y + unitY * 24;
+                      const endX = toNode.x - unitX * 24;
+                      const endY = toNode.y - unitY * 24;
+                      
+                      const midX = (startX + endX) / 2;
+                      const midY = (startY + endY) / 2;
                       
                       return (
-                        <g key={`${edge.from}-${edge.to}`}>
+                        <g key={`${edge.from}-${edge.to}-${index}`}>
                           <line
-                            x1={fromNode.x}
-                            y1={fromNode.y}
-                            x2={toNode.x}
-                            y2={toNode.y}
-                            stroke={edge.highlighted ? '#ea384c' : '#ccc'}
+                            x1={startX}
+                            y1={startY}
+                            x2={endX}
+                            y2={endY}
+                            stroke={edge.highlighted ? '#ea384c' : '#9ca3af'}
                             strokeWidth={edge.highlighted ? 3 : 2}
                           />
                           {edge.directed && (
                             <polygon
-                              points={`${toNode.x - 5},${toNode.y - 5} ${toNode.x + 5},${toNode.y - 5} ${toNode.x},${toNode.y + 5}`}
-                              fill={edge.highlighted ? '#ea384c' : '#ccc'}
+                              points={`${endX - 8 * unitX - 4 * unitY},${endY - 8 * unitY + 4 * unitX} ${endX - 8 * unitX + 4 * unitY},${endY - 8 * unitY - 4 * unitX} ${endX},${endY}`}
+                              fill={edge.highlighted ? '#ea384c' : '#9ca3af'}
                             />
                           )}
                           {edge.weight !== undefined && (
-                            <text
-                              x={midX}
-                              y={midY}
-                              textAnchor="middle"
-                              className="text-xs fill-gray-600 bg-white"
-                            >
-                              {edge.weight}
-                            </text>
+                            <g>
+                              <circle
+                                cx={midX}
+                                cy={midY}
+                                r="12"
+                                fill="white"
+                                stroke="#d1d5db"
+                                strokeWidth="1"
+                              />
+                              <text
+                                x={midX}
+                                y={midY + 4}
+                                textAnchor="middle"
+                                className="text-xs font-medium fill-gray-700"
+                              >
+                                {edge.weight}
+                              </text>
+                            </g>
                           )}
                         </g>
                       );
@@ -487,18 +496,18 @@ const GraphVisualizer = () => {
                 {/* Render nodes */}
                 {nodes.map(node => {
                   const isBouncing = visitOrder.includes(node.id) && 
-                                   currentVisitIndex >= 0 && 
-                                   visitOrder[currentVisitIndex] === node.id;
+                                   currentVisitIndex > 0 && 
+                                   visitOrder[currentVisitIndex - 1] === node.id;
                   
                   return (
                     <div
                       key={node.id}
                       className={cn(
-                        "absolute w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-md cursor-grab transition-all duration-300",
+                        "absolute w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-md cursor-grab transition-all duration-300 bg-white",
                         {
-                          "bg-arena-red/10 border-arena-red text-arena-red": node.highlighted && !isBouncing,
-                          "bg-white border-gray-300": !node.highlighted && !isBouncing,
-                          "animate-bounce bg-arena-green/20 border-arena-green": isBouncing,
+                          "border-arena-red text-arena-red": node.highlighted && !isBouncing,
+                          "border-gray-300": !node.highlighted && !isBouncing,
+                          "animate-bounce border-arena-green text-arena-green": isBouncing,
                         }
                       )}
                       style={{
@@ -543,7 +552,7 @@ const GraphVisualizer = () => {
                 <Button 
                   variant="default" 
                   onClick={addNode}
-                  className="rounded-r-lg"
+                  className="rounded-r-lg bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Add Node
                 </Button>
@@ -600,7 +609,7 @@ const GraphVisualizer = () => {
                 <Button 
                   variant="default" 
                   onClick={addEdge}
-                  className="w-full"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Add Edge
                 </Button>

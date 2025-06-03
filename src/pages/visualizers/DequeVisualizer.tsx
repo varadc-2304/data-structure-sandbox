@@ -13,9 +13,6 @@ const DequeVisualizer = () => {
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationEnd, setOperationEnd] = useState<'front' | 'rear' | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [showPeekModal, setShowPeekModal] = useState(false);
-  const [peekElement, setPeekElement] = useState<string | number | null>(null);
-  const [peekEnd, setPeekEnd] = useState<'front' | 'rear' | null>(null);
   
   const { toast } = useToast();
 
@@ -137,18 +134,16 @@ const DequeVisualizer = () => {
     }
 
     const frontValue = deque[0];
-    setPeekElement(frontValue);
-    setPeekEnd('front');
-    setShowPeekModal(true);
     setLastOperation('peek');
     setOperationEnd('front');
     
     const message = `Peeked at front element: "${frontValue}"`;
     addToLog(message);
     
-    setTimeout(() => {
-      setShowPeekModal(false);
-    }, 2000);
+    toast({
+      title: "Front element",
+      description: `Front element is "${frontValue}"`,
+    });
   };
 
   const peekRear = () => {
@@ -162,18 +157,16 @@ const DequeVisualizer = () => {
     }
 
     const rearValue = deque[deque.length - 1];
-    setPeekElement(rearValue);
-    setPeekEnd('rear');
-    setShowPeekModal(true);
     setLastOperation('peek');
     setOperationEnd('rear');
     
     const message = `Peeked at rear element: "${rearValue}"`;
     addToLog(message);
     
-    setTimeout(() => {
-      setShowPeekModal(false);
-    }, 2000);
+    toast({
+      title: "Rear element",
+      description: `Rear element is "${rearValue}"`,
+    });
   };
 
   const generateRandomDeque = () => {
@@ -263,7 +256,7 @@ const DequeVisualizer = () => {
           </div>
           
           {/* Deque visualization */}
-          <div className="mb-6 relative">
+          <div className="mb-6 relative overflow-hidden">
             <div className="flex flex-col items-center">
               <div 
                 className="flex items-center bg-arena-light rounded-lg p-4 w-full overflow-x-auto relative"
@@ -325,7 +318,7 @@ const DequeVisualizer = () => {
                   <Button
                     onClick={addFront}
                     variant="default"
-                    className="rounded-r-lg rounded-l-none"
+                    className="rounded-r-lg rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
                   >
                     Add Front
                   </Button>
@@ -333,7 +326,7 @@ const DequeVisualizer = () => {
                 <Button
                   onClick={removeFront}
                   variant="default"
-                  className="w-full"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Remove Front
                 </Button>
@@ -358,7 +351,7 @@ const DequeVisualizer = () => {
                   <Button
                     onClick={addRear}
                     variant="default"
-                    className="rounded-r-lg rounded-l-none"
+                    className="rounded-r-lg rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
                   >
                     Add Rear
                   </Button>
@@ -366,7 +359,7 @@ const DequeVisualizer = () => {
                 <Button
                   onClick={removeRear}
                   variant="default"
-                  className="w-full"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Remove Rear
                 </Button>
@@ -418,16 +411,6 @@ const DequeVisualizer = () => {
           </div>
         </div>
       </div>
-
-      {/* Peek Modal */}
-      {showPeekModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg animate-bounce">
-            <h3 className="text-lg font-semibold mb-2">{peekEnd === 'front' ? 'Front' : 'Rear'} Element</h3>
-            <div className="text-2xl font-bold text-arena-green">{peekElement}</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
