@@ -19,12 +19,16 @@ const LinkedListVisualizer = () => {
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [traversingIndices, setTraversingIndices] = useState<number[]>([]);
+  const [isViewing, setIsViewing] = useState(false);
 
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
+    setTraversingIndices([]);
+    setIsViewing(false);
   };
 
   const addToLog = (message: string) => {
@@ -228,24 +232,41 @@ const LinkedListVisualizer = () => {
       return;
     }
 
-    let current = head;
-    let index = 0;
-    
-    while (current !== null && index < pos) {
-      current = current.next;
-      index++;
-    }
-    
-    setLastOperation('view');
-    setOperationTarget(pos);
-    
-    const message = `Viewed element at position ${pos}: "${current?.value}"`;
-    addToLog(message);
-    
-    toast({
-      title: "Node viewed",
-      description: message,
-    });
+    // Animate traversal to the target position
+    const traverseToPosition = async () => {
+      setIsViewing(true);
+      const traversalPath: number[] = [];
+      
+      for (let i = 0; i <= pos; i++) {
+        traversalPath.push(i);
+        setTraversingIndices([...traversalPath]);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      // Highlight the final target
+      setLastOperation('view');
+      setOperationTarget(pos);
+      setTraversingIndices([]);
+      setPosition('');
+      
+      let current = head;
+      let index = 0;
+      
+      while (current !== null && index < pos) {
+        current = current.next;
+        index++;
+      }
+      
+      const message = `Viewed element at position ${pos}: "${current?.value}"`;
+      addToLog(message);
+      
+      toast({
+        title: "Node viewed",
+        description: message,
+      });
+    };
+
+    traverseToPosition();
   };
 
   const generateRandomLinkedList = () => {
@@ -333,6 +354,21 @@ const LinkedListVisualizer = () => {
                 <Shuffle className="h-4 w-4" />
                 Generate Random List
               </Button>
+              <input
+                type="number"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                placeholder="Position"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+              />
+              <Button
+                onClick={viewAtPosition}
+                variant="outline"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                <Eye className="h-4 w-4" />
+                View at Position
+              </Button>
             </div>
           </div>
           
@@ -354,8 +390,10 @@ const LinkedListVisualizer = () => {
                       className={cn(
                         "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                         {
-                          "border-arena-green bg-arena-green/10 shadow-md": operationTarget === index,
-                          "array-element-highlight": lastOperation === 'view' && operationTarget === index,
+                          "border-arena-green bg-arena-green/10 shadow-md": 
+                            operationTarget === index || traversingIndices.includes(index),
+                          "animate-bounce": 
+                            (isViewing && operationTarget === index) || traversingIndices.includes(index),
                         }
                       )}
                     >
@@ -371,7 +409,7 @@ const LinkedListVisualizer = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Append node */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
@@ -388,6 +426,7 @@ const LinkedListVisualizer = () => {
                 />
                 <Button
                   onClick={appendNode}
+                  variant="default"
                   className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Append
@@ -419,6 +458,7 @@ const LinkedListVisualizer = () => {
                 />
                 <Button
                   onClick={insertAtPosition}
+                  variant="default"
                   className="bg-arena-green text-white px-2 py-2 rounded-lg hover:bg-arena-green/90 transition-colors duration-300"
                 >
                   Insert
@@ -442,34 +482,11 @@ const LinkedListVisualizer = () => {
                 />
                 <Button
                   onClick={deleteAtPosition}
+                  variant="default"
                   className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* View at position */}
-            <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-green mr-2" />
-                View at Position
-              </h3>
-              <div className="flex">
-                <input
-                  type="number"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                />
-                <Button
-                  onClick={viewAtPosition}
-                  className="bg-arena-green text-white px-4 py-2 rounded-r-lg hover:bg-arena-green/90 transition-colors duration-300 flex items-center"
-                >
-                  View
-                  <Eye className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>

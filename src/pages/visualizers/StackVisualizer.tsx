@@ -9,14 +9,19 @@ import { Button } from "@/components/ui/button";
 const StackVisualizer = () => {
   const [stack, setStack] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
+  const [position, setPosition] = useState('');
   const [stackSize, setStackSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
+  const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [isViewing, setIsViewing] = useState(false);
   
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
+    setOperationTarget(null);
+    setIsViewing(false);
   };
 
   const addToLog = (message: string) => {
@@ -37,6 +42,7 @@ const StackVisualizer = () => {
     const newValue = !isNaN(Number(newElement)) ? Number(newElement) : newElement;
     setStack([...stack, newValue]);
     setLastOperation('push');
+    setOperationTarget(stack.length);
     setNewElement('');
     
     const message = `Pushed "${newValue}" to the top of the stack`;
@@ -61,6 +67,7 @@ const StackVisualizer = () => {
     const poppedValue = stack[stack.length - 1];
     setStack(stack.slice(0, -1));
     setLastOperation('pop');
+    setOperationTarget(stack.length - 1);
     
     const message = `Popped "${poppedValue}" from the top of the stack`;
     addToLog(message);
@@ -83,6 +90,7 @@ const StackVisualizer = () => {
 
     const topValue = stack[stack.length - 1];
     setLastOperation('peek');
+    setOperationTarget(stack.length - 1);
     
     const message = `Peeked at top element: "${topValue}"`;
     addToLog(message);
@@ -90,6 +98,41 @@ const StackVisualizer = () => {
     toast({
       title: "Top element",
       description: `Top element is "${topValue}"`,
+    });
+  };
+
+  const viewAtPosition = () => {
+    if (position.trim() === '' || isNaN(Number(position))) {
+      toast({
+        title: "Invalid position",
+        description: "Please enter a valid numeric position",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const pos = Number(position);
+    
+    if (pos < 0 || pos >= stack.length) {
+      toast({
+        title: "Out of bounds",
+        description: `Position must be between 0 and ${stack.length - 1}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLastOperation('view');
+    setOperationTarget(pos);
+    setIsViewing(true);
+    setPosition('');
+    
+    const message = `Viewed element at position ${pos}: "${stack[pos]}"`;
+    addToLog(message);
+    
+    toast({
+      title: "Element viewed",
+      description: `Element at position ${pos} is "${stack[pos]}"`,
     });
   };
 
@@ -107,6 +150,7 @@ const StackVisualizer = () => {
     const randomStack = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
     setStack(randomStack);
     setLastOperation(null);
+    setOperationTarget(null);
     setStackSize('');
     
     const message = `Generated random stack with ${size} elements`;
@@ -160,6 +204,21 @@ const StackVisualizer = () => {
                 <Shuffle className="h-4 w-4" />
                 Generate Random Stack
               </Button>
+              <input
+                type="number"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                placeholder="Position"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+              />
+              <Button
+                onClick={viewAtPosition}
+                variant="outline"
+                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+              >
+                <Eye className="h-4 w-4" />
+                View at Position
+              </Button>
             </div>
           </div>
           
@@ -181,10 +240,8 @@ const StackVisualizer = () => {
                     className={cn(
                       "w-full max-w-xs p-4 m-1 rounded-lg border-2 border-gray-200 flex justify-between items-center transition-all duration-300",
                       {
-                        "border-drona-green bg-drona-green/10 shadow-md": 
-                          (lastOperation === 'push' && index === stack.length - 1) ||
-                          (lastOperation === 'pop' && index === stack.length - 1) ||
-                          (lastOperation === 'peek' && index === stack.length - 1),
+                        "border-drona-green bg-drona-green/10 shadow-md": operationTarget === index,
+                        "animate-bounce": isViewing && operationTarget === index,
                       }
                     )}
                   >
@@ -217,6 +274,7 @@ const StackVisualizer = () => {
                 />
                 <Button
                   onClick={pushElement}
+                  variant="default"
                   className="rounded-l-none bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center"
                 >
                   Push
@@ -233,6 +291,7 @@ const StackVisualizer = () => {
               </h3>
               <Button
                 onClick={popElement}
+                variant="default"
                 className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Pop
@@ -248,6 +307,7 @@ const StackVisualizer = () => {
               </h3>
               <Button
                 onClick={peekElement}
+                variant="default"
                 className="w-full bg-drona-green text-white hover:bg-drona-green/90 transition-colors duration-300 flex items-center justify-center"
               >
                 Peek

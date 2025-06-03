@@ -14,6 +14,7 @@ const ArrayVisualizer = () => {
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationTarget, setOperationTarget] = useState<number | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [isViewing, setIsViewing] = useState(false);
   
   const arrayRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -21,6 +22,7 @@ const ArrayVisualizer = () => {
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationTarget(null);
+    setIsViewing(false);
   };
 
   const addToLog = (message: string) => {
@@ -161,6 +163,8 @@ const ArrayVisualizer = () => {
 
     setLastOperation('view');
     setOperationTarget(pos);
+    setIsViewing(true);
+    setPosition('');
     
     const message = `Viewed element at position ${pos}: "${array[pos]}"`;
     addToLog(message);
@@ -239,6 +243,21 @@ const ArrayVisualizer = () => {
                 <Shuffle className="h-4 w-4" />
                 Generate Random Array
               </Button>
+              <input
+                type="number"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                placeholder="Position"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
+              />
+              <Button
+                onClick={viewAtPosition}
+                variant="outline"
+                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
+              >
+                <Eye className="h-4 w-4" />
+                View at Position
+              </Button>
             </div>
           </div>
           
@@ -262,7 +281,7 @@ const ArrayVisualizer = () => {
                       "flex flex-col min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex-shrink-0 justify-center items-center transition-all duration-300",
                       {
                         "border-drona-green bg-drona-green/10 shadow-md": operationTarget === index,
-                        "array-element-highlight": lastOperation === 'view' && operationTarget === index,
+                        "animate-bounce": isViewing && operationTarget === index,
                       }
                     )}
                   >
@@ -274,7 +293,7 @@ const ArrayVisualizer = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Append element */}
             <div className="bg-drona-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
@@ -291,6 +310,7 @@ const ArrayVisualizer = () => {
                 />
                 <Button
                   onClick={appendElement}
+                  variant="default"
                   className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Append
@@ -322,6 +342,7 @@ const ArrayVisualizer = () => {
                 />
                 <Button
                   onClick={insertAtPosition}
+                  variant="default"
                   className="bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Replace
@@ -345,34 +366,11 @@ const ArrayVisualizer = () => {
                 />
                 <Button
                   onClick={deleteAtPosition}
+                  variant="default"
                   className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
                 >
                   Delete
                   <Trash className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* View at position */}
-            <div className="bg-drona-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-drona-green mr-2" />
-                View at Position
-              </h3>
-              <div className="flex">
-                <input
-                  type="number"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Enter position"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
-                />
-                <Button
-                  onClick={viewAtPosition}
-                  className="rounded-l-none bg-drona-green hover:bg-drona-green/90 text-white"
-                >
-                  View
-                  <Eye className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
