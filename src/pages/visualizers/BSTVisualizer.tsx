@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
 import { Plus, Trash, Eye, AlertCircle, Search, RefreshCw } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 
 interface TreeNode {
@@ -17,7 +17,6 @@ const BSTVisualizer = () => {
   const [newValue, setNewValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [deleteValue, setDeleteValue] = useState('');
-  const [treeSize, setTreeSize] = useState('');
   const [highlightedNode, setHighlightedNode] = useState<number | null>(null);
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [traversalPath, setTraversalPath] = useState<number[]>([]);
@@ -34,8 +33,7 @@ const BSTVisualizer = () => {
   };
 
   const addOperationLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setOperationLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)]);
+    setOperationLogs(prev => [message, ...prev.slice(0, 9)]);
   };
 
   // Helper function to insert a node in BST
@@ -117,37 +115,29 @@ const BSTVisualizer = () => {
 
   // Generate random BST
   const generateRandomBST = () => {
-    if (treeSize.trim() === '' || isNaN(Number(treeSize)) || Number(treeSize) <= 0) {
-      toast({
-        title: "Invalid size",
-        description: "Please enter a valid positive number for BST size",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const size = Math.min(Number(treeSize), 10); // Limit to 10 nodes max
-    let newRoot: TreeNode | null = null;
+    setRoot(null);
+    resetHighlights();
+    
+    const count = Math.floor(Math.random() * 5) + 5; // 5-10 nodes
+    const newRoot = null;
     const usedValues = new Set<number>();
     
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < count; i++) {
       let randomValue: number;
       do {
         randomValue = Math.floor(Math.random() * 100) + 1;
       } while (usedValues.has(randomValue));
       
       usedValues.add(randomValue);
-      newRoot = insertNodeBST(newRoot, randomValue);
+      const updatedRoot = insertNodeBST(newRoot || null, randomValue);
+      setRoot(updatedRoot);
     }
     
-    setRoot(newRoot);
-    setTreeSize('');
-    resetHighlights();
-    addOperationLog(`Generated a random BST with ${size} nodes`);
+    addOperationLog(`Generated a random BST with ${count} nodes`);
     
     toast({
       title: "BST Generated",
-      description: `Created a random Binary Search Tree with ${size} nodes`,
+      description: `Created a random Binary Search Tree with ${count} nodes`,
     });
   };
 
@@ -354,7 +344,7 @@ const BSTVisualizer = () => {
     });
   };
 
-  // Function to render the binary tree with connecting lines
+  // Function to render the binary tree recursively
   const renderTree = (node: TreeNode | null, level: number = 0, position: string = 'root'): JSX.Element => {
     if (node === null) {
       return <div className="invisible w-16 h-16"></div>;
@@ -364,10 +354,10 @@ const BSTVisualizer = () => {
     const isInPath = traversalPath.includes(node.value);
 
     return (
-      <div className="flex flex-col items-center relative">
+      <div className="flex flex-col items-center">
         <div
           className={cn(
-            "w-16 h-16 rounded-full flex items-center justify-center border-2 mb-2 transition-all duration-300 relative z-10 bg-white",
+            "w-16 h-16 rounded-full flex items-center justify-center border-2 mb-2 transition-all duration-300",
             {
               "border-arena-red bg-arena-red/10 shadow-md": isHighlighted,
               "border-drona-green bg-drona-green/10": isInPath && !isHighlighted,
@@ -379,18 +369,6 @@ const BSTVisualizer = () => {
         </div>
         {(node.left !== null || node.right !== null) && (
           <div className="flex items-start space-x-4 relative">
-            {/* Left connecting line */}
-            {node.left && (
-              <div className="absolute left-1/4 top-0 w-px h-8 bg-gray-400 transform -translate-x-1/2"></div>
-            )}
-            {/* Right connecting line */}
-            {node.right && (
-              <div className="absolute right-1/4 top-0 w-px h-8 bg-gray-400 transform translate-x-1/2"></div>
-            )}
-            {/* Horizontal connecting line */}
-            {node.left && node.right && (
-              <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gray-400"></div>
-            )}
             {renderTree(node.left, level + 1, 'left')}
             {renderTree(node.right, level + 1, 'right')}
           </div>
@@ -414,7 +392,7 @@ const BSTVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
+        <div className="mb-10 animate-slide-in">
           <div className="arena-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Binary Search Tree Visualizer</h1>
           <p className="text-arena-gray">
@@ -422,26 +400,17 @@ const BSTVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">BST Visualization</h2>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={treeSize}
-                onChange={(e) => setTreeSize(e.target.value)}
-                placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
-              />
-              <Button 
-                variant="outline" 
-                className="gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
-                onClick={generateRandomBST}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Generate Random BST
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={generateRandomBST}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Generate Random BST
+            </Button>
           </div>
           
           {/* BST visualization */}
@@ -588,7 +557,7 @@ const BSTVisualizer = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
           <h2 className="text-xl font-semibold mb-2">About Binary Search Trees</h2>
           <p className="text-arena-gray mb-4">
             A Binary Search Tree (BST) is a binary tree where each node has a comparable key and satisfies the restriction that the key in any node is larger than the keys in all nodes in that node's left subtree and smaller than the keys in all nodes in that node's right subtree.
@@ -604,11 +573,12 @@ const BSTVisualizer = () => {
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Space Complexity:</span>
+              <span className="font-medium">Common Applications:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Storage: O(n)</li>
-                <li>Auxiliary (recursive): O(h)</li>
-                <li>where h is height of tree</li>
+                <li>Implementing maps and sets</li>
+                <li>Database indexing</li>
+                <li>Priority queues</li>
+                <li>Syntax trees in compilers</li>
               </ul>
             </div>
           </div>

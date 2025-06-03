@@ -2,53 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, ArrowLeft, ArrowRight, Shuffle } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Trash, Eye, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 
 const DequeVisualizer = () => {
   const [deque, setDeque] = useState<(number | string)[]>([]);
   const [newElement, setNewElement] = useState('');
-  const [dequeSize, setDequeSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [operationEnd, setOperationEnd] = useState<'front' | 'rear' | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
 
   const resetHighlights = () => {
     setLastOperation(null);
     setOperationEnd(null);
-  };
-
-  const addToLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
-  };
-
-  const generateRandomDeque = () => {
-    if (dequeSize.trim() === '' || isNaN(Number(dequeSize)) || Number(dequeSize) <= 0) {
-      toast({
-        title: "Invalid size",
-        description: "Please enter a valid positive number for deque size",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const size = Math.min(Number(dequeSize), 15); // Limit to 15 elements max
-    const randomDeque = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
-    setDeque(randomDeque);
-    setLastOperation(null);
-    setDequeSize('');
-    
-    const message = `Generated random deque with ${size} elements`;
-    addToLog(message);
-    
-    toast({
-      title: "Random deque generated",
-      description: message,
-    });
   };
 
   const addFront = () => {
@@ -67,12 +35,9 @@ const DequeVisualizer = () => {
     setOperationEnd('front');
     setNewElement('');
     
-    const message = `Added "${newValue}" to the front of the deque`;
-    addToLog(message);
-    
     toast({
       title: "Element added",
-      description: message,
+      description: `Added "${newValue}" to the front of the deque`,
     });
   };
 
@@ -92,12 +57,9 @@ const DequeVisualizer = () => {
     setOperationEnd('rear');
     setNewElement('');
     
-    const message = `Added "${newValue}" to the rear of the deque`;
-    addToLog(message);
-    
     toast({
       title: "Element added",
-      description: message,
+      description: `Added "${newValue}" to the rear of the deque`,
     });
   };
 
@@ -116,12 +78,9 @@ const DequeVisualizer = () => {
     setLastOperation('remove');
     setOperationEnd('front');
     
-    const message = `Removed "${removedValue}" from the front of the deque`;
-    addToLog(message);
-    
     toast({
       title: "Element removed",
-      description: message,
+      description: `Removed "${removedValue}" from the front of the deque`,
     });
   };
 
@@ -140,12 +99,9 @@ const DequeVisualizer = () => {
     setLastOperation('remove');
     setOperationEnd('rear');
     
-    const message = `Removed "${removedValue}" from the rear of the deque`;
-    addToLog(message);
-    
     toast({
       title: "Element removed",
-      description: message,
+      description: `Removed "${removedValue}" from the rear of the deque`,
     });
   };
 
@@ -162,9 +118,6 @@ const DequeVisualizer = () => {
     const frontValue = deque[0];
     setLastOperation('peek');
     setOperationEnd('front');
-    
-    const message = `Peeked at front element: "${frontValue}"`;
-    addToLog(message);
     
     toast({
       title: "Front element",
@@ -185,9 +138,6 @@ const DequeVisualizer = () => {
     const rearValue = deque[deque.length - 1];
     setLastOperation('peek');
     setOperationEnd('rear');
-    
-    const message = `Peeked at rear element: "${rearValue}"`;
-    addToLog(message);
     
     toast({
       title: "Rear element",
@@ -210,7 +160,7 @@ const DequeVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10">
+        <div className="mb-10 animate-slide-in">
           <div className="arena-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Deque Visualizer</h1>
           <p className="text-arena-gray">
@@ -218,27 +168,8 @@ const DequeVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Deque Visualization</h2>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={dequeSize}
-                onChange={(e) => setDequeSize(e.target.value)}
-                placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-drona-green focus:border-transparent"
-              />
-              <Button 
-                onClick={generateRandomDeque} 
-                variant="outline"
-                className="flex items-center gap-2 border-drona-green text-drona-green hover:bg-drona-green hover:text-white"
-              >
-                <Shuffle className="h-4 w-4" />
-                Generate Random Deque
-              </Button>
-            </div>
-          </div>
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+          <h2 className="text-xl font-semibold mb-4">Deque Visualization</h2>
           
           {/* Deque visualization */}
           <div className="mb-6 relative">
@@ -270,6 +201,9 @@ const DequeVisualizer = () => {
                               (lastOperation === 'remove' && operationEnd === 'rear' && index === deque.length - 1) ||
                               (lastOperation === 'peek' && operationEnd === 'front' && index === 0) ||
                               (lastOperation === 'peek' && operationEnd === 'rear' && index === deque.length - 1),
+                            "animate-scale-in": 
+                              (lastOperation === 'add' && operationEnd === 'front' && index === 0) ||
+                              (lastOperation === 'add' && operationEnd === 'rear' && index === deque.length - 1),
                           }
                         )}
                       >
@@ -377,27 +311,9 @@ const DequeVisualizer = () => {
               </div>
             </div>
           </div>
-
-          {/* Operation Logs */}
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
-              {logs.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-arena-gray">
-                  No operations performed yet
-                </div>
-              ) : (
-                logs.map((log, index) => (
-                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
-                    {log}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
           <h2 className="text-xl font-semibold mb-2">About Deques</h2>
           <p className="text-arena-gray mb-4">
             A deque (double-ended queue) is a linear data structure that allows insertion and removal of elements from both ends.
@@ -413,10 +329,12 @@ const DequeVisualizer = () => {
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Space Complexity:</span>
+              <span className="font-medium">Common Applications:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Storage: O(n)</li>
-                <li>Auxiliary: O(1)</li>
+                <li>Implementing both stack and queue</li>
+                <li>Work-stealing algorithms</li>
+                <li>Palindrome checking</li>
+                <li>Sliding window problems</li>
               </ul>
             </div>
           </div>
