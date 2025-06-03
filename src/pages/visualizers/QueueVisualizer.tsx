@@ -13,7 +13,7 @@ const QueueVisualizer = () => {
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [showPeekModal, setShowPeekModal] = useState(false);
-  const [peekElement, setPeekElement] = useState<string | number | null>(null);
+  const [peekValue, setPeekValue] = useState<string | number | null>(null);
   
   const { toast } = useToast();
 
@@ -23,7 +23,7 @@ const QueueVisualizer = () => {
 
   const addToLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [message, ...prev.slice(0, 9)]);
+    setLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 9)]);
   };
 
   const enqueueElement = () => {
@@ -84,7 +84,7 @@ const QueueVisualizer = () => {
     }
 
     const frontValue = queue[0];
-    setPeekElement(frontValue);
+    setPeekValue(frontValue);
     setShowPeekModal(true);
     setLastOperation('peek');
     
@@ -308,7 +308,7 @@ const QueueVisualizer = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg animate-bounce">
             <h3 className="text-lg font-semibold mb-2">Front Element</h3>
-            <div className="text-2xl font-bold text-arena-green">{peekElement}</div>
+            <div className="text-2xl font-bold text-arena-green">{peekValue}</div>
           </div>
         </div>
       )}
