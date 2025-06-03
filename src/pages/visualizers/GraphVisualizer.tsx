@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, AlertCircle, Search, Share2 } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Plus, Trash, AlertCircle, Search, Share2, ArrowRight } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 
 interface Node {
@@ -16,6 +16,8 @@ interface Node {
 interface Edge {
   from: string;
   to: string;
+  weight?: number;
+  directed: boolean;
   highlighted: boolean;
 }
 
@@ -25,12 +27,15 @@ const GraphVisualizer = () => {
   const [nodeName, setNodeName] = useState('');
   const [fromNode, setFromNode] = useState('');
   const [toNode, setToNode] = useState('');
+  const [edgeWeight, setEdgeWeight] = useState('');
+  const [isDirected, setIsDirected] = useState(false);
   const [sourceNode, setSourceNode] = useState('');
-  const [targetNode, setTargetNode] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [currentDragNode, setCurrentDragNode] = useState<string | null>(null);
   const [visitOrder, setVisitOrder] = useState<string[]>([]);
+  const [currentVisitIndex, setCurrentVisitIndex] = useState(-1);
+  const [logs, setLogs] = useState<string[]>([]);
   
   const graphRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -40,6 +45,11 @@ const GraphVisualizer = () => {
     setEdges(edges.map(edge => ({ ...edge, highlighted: false })));
     setLastOperation(null);
     setVisitOrder([]);
+    setCurrentVisitIndex(-1);
+  };
+
+  const addToLog = (message: string) => {
+    setLogs(prev => [message, ...prev.slice(0, 9)]);
   };
 
   const addNode = () => {
@@ -70,9 +80,12 @@ const GraphVisualizer = () => {
     setNodes([...nodes, { id: nodeName, x, y, highlighted: false }]);
     setNodeName('');
     
+    const message = `Added node "${nodeName}"`;
+    addToLog(message);
+    
     toast({
       title: "Node added",
-      description: `Added node "${nodeName}" to the graph`,
+      description: message,
     });
   };
 
@@ -104,22 +117,40 @@ const GraphVisualizer = () => {
       return;
     }
 
-    if (edges.some(edge => edge.from === fromNode && edge.to === toNode)) {
+    const existingEdge = edges.find(edge => 
+      (edge.from === fromNode && edge.to === toNode) ||
+      (!isDirected && edge.from === toNode && edge.to === fromNode)
+    );
+
+    if (existingEdge) {
       toast({
         title: "Edge exists",
-        description: `Edge from "${fromNode}" to "${toNode}" already exists`,
+        description: `Edge already exists between "${fromNode}" and "${toNode}"`,
         variant: "destructive",
       });
       return;
     }
 
-    setEdges([...edges, { from: fromNode, to: toNode, highlighted: false }]);
+    const weight = edgeWeight.trim() !== '' && !isNaN(Number(edgeWeight)) ? Number(edgeWeight) : undefined;
+    
+    setEdges([...edges, { 
+      from: fromNode, 
+      to: toNode, 
+      weight, 
+      directed: isDirected, 
+      highlighted: false 
+    }]);
+    
     setFromNode('');
     setToNode('');
+    setEdgeWeight('');
+    
+    const message = `Added ${isDirected ? 'directed' : 'undirected'} edge from "${fromNode}" to "${toNode}"${weight !== undefined ? ` with weight ${weight}` : ''}`;
+    addToLog(message);
     
     toast({
       title: "Edge added",
-      description: `Added edge from "${fromNode}" to "${toNode}"`,
+      description: message,
     });
   };
 
@@ -127,9 +158,12 @@ const GraphVisualizer = () => {
     setNodes(nodes.filter(node => node.id !== id));
     setEdges(edges.filter(edge => edge.from !== id && edge.to !== id));
     
+    const message = `Deleted node "${id}" and all connected edges`;
+    addToLog(message);
+    
     toast({
       title: "Node deleted",
-      description: `Deleted node "${id}" and all connected edges`,
+      description: message,
     });
   };
 
@@ -141,8 +175,8 @@ const GraphVisualizer = () => {
   const handleNodeDrag = (e: React.MouseEvent) => {
     if (isDragging && currentDragNode && graphRef.current) {
       const rect = graphRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = Math.max(25, Math.min(e.clientX - rect.left, rect.width - 25));
+      const y = Math.max(25, Math.min(e.clientY - rect.top, rect.height - 25));
       
       setNodes(nodes.map(node => 
         node.id === currentDragNode ? { ...node, x, y } : node
@@ -192,42 +226,14 @@ const GraphVisualizer = () => {
     queue.push(sourceNode);
     visitedOrder.push(sourceNode);
     
-    // Simulate BFS animation
-    const animateBFS = () => {
-      const newNodes = [...nodes];
-      const newEdges = [...edges];
-      
-      // Highlight the nodes in the order they were visited
-      visitedOrder.forEach((nodeId, index) => {
-        setTimeout(() => {
-          const nodeIndex = newNodes.findIndex(node => node.id === nodeId);
-          if (nodeIndex !== -1) {
-            newNodes[nodeIndex].highlighted = true;
-            setNodes([...newNodes]);
-            
-            // Highlight edges if the next node in the visit order is connected
-            if (index < visitedOrder.length - 1) {
-              const nextNodeId = visitedOrder[index + 1];
-              const edgeIndex = newEdges.findIndex(
-                edge => (edge.from === nodeId && edge.to === nextNodeId) ||
-                       (edge.from === nextNodeId && edge.to === nodeId)
-              );
-              if (edgeIndex !== -1) {
-                newEdges[edgeIndex].highlighted = true;
-                setEdges([...newEdges]);
-              }
-            }
-          }
-        }, index * 500);
-      });
-    };
-    
     // Process the queue
     while (queue.length > 0) {
       const current = queue.shift()!;
       
       // Find all adjacent vertices
-      const adjacentEdges = edges.filter(edge => edge.from === current || edge.to === current);
+      const adjacentEdges = edges.filter(edge => 
+        edge.from === current || (!edge.directed && edge.to === current)
+      );
       
       for (const edge of adjacentEdges) {
         const neighbor = edge.from === current ? edge.to : edge.from;
@@ -241,13 +247,28 @@ const GraphVisualizer = () => {
     }
     
     setVisitOrder(visitedOrder);
+    setCurrentVisitIndex(0);
+
+    const message = `BFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
+    addToLog(message);
+    
+    // Animate BFS
+    visitedOrder.forEach((nodeId, index) => {
+      setTimeout(() => {
+        setNodes(prevNodes => 
+          prevNodes.map(node => ({
+            ...node,
+            highlighted: node.id === nodeId
+          }))
+        );
+        setCurrentVisitIndex(index);
+      }, index * 800);
+    });
     
     toast({
       title: "BFS started",
       description: `Running BFS from node "${sourceNode}"`,
     });
-    
-    animateBFS();
   };
 
   // DFS algorithm
@@ -287,7 +308,9 @@ const GraphVisualizer = () => {
       visitedOrder.push(nodeId);
       
       // Find all adjacent vertices
-      const adjacentEdges = edges.filter(edge => edge.from === nodeId || edge.to === nodeId);
+      const adjacentEdges = edges.filter(edge => 
+        edge.from === nodeId || (!edge.directed && edge.to === nodeId)
+      );
       
       for (const edge of adjacentEdges) {
         const neighbor = edge.from === nodeId ? edge.to : edge.from;
@@ -302,43 +325,28 @@ const GraphVisualizer = () => {
     dfs(sourceNode);
     
     setVisitOrder(visitedOrder);
+    setCurrentVisitIndex(0);
+
+    const message = `DFS from "${sourceNode}": [${visitedOrder.join(' → ')}]`;
+    addToLog(message);
     
-    // Simulate DFS animation
-    const animateDFS = () => {
-      const newNodes = [...nodes];
-      const newEdges = [...edges];
-      
-      // Highlight the nodes in the order they were visited
-      visitedOrder.forEach((nodeId, index) => {
-        setTimeout(() => {
-          const nodeIndex = newNodes.findIndex(node => node.id === nodeId);
-          if (nodeIndex !== -1) {
-            newNodes[nodeIndex].highlighted = true;
-            setNodes([...newNodes]);
-            
-            // Highlight edges if the next node in the visit order is connected
-            if (index < visitedOrder.length - 1) {
-              const nextNodeId = visitedOrder[index + 1];
-              const edgeIndex = newEdges.findIndex(
-                edge => (edge.from === nodeId && edge.to === nextNodeId) ||
-                       (edge.from === nextNodeId && edge.to === nodeId)
-              );
-              if (edgeIndex !== -1) {
-                newEdges[edgeIndex].highlighted = true;
-                setEdges([...newEdges]);
-              }
-            }
-          }
-        }, index * 500);
-      });
-    };
+    // Animate DFS
+    visitedOrder.forEach((nodeId, index) => {
+      setTimeout(() => {
+        setNodes(prevNodes => 
+          prevNodes.map(node => ({
+            ...node,
+            highlighted: node.id === nodeId
+          }))
+        );
+        setCurrentVisitIndex(index);
+      }, index * 800);
+    });
     
     toast({
       title: "DFS started",
       description: `Running DFS from node "${sourceNode}"`,
     });
-    
-    animateDFS();
   };
 
   // Clear highlights after a delay
@@ -346,7 +354,7 @@ const GraphVisualizer = () => {
     if (lastOperation && visitOrder.length > 0) {
       const timer = setTimeout(() => {
         resetHighlights();
-      }, (visitOrder.length + 1) * 500);
+      }, (visitOrder.length + 1) * 800);
       return () => clearTimeout(timer);
     }
   }, [lastOperation, visitOrder]);
@@ -379,7 +387,7 @@ const GraphVisualizer = () => {
       <Navbar />
       
       <div className="page-container pt-32">
-        <div className="mb-10 animate-slide-in">
+        <div className="mb-10">
           <div className="arena-chip mb-4">Data Structure Visualization</div>
           <h1 className="text-4xl font-bold text-arena-dark mb-2">Graph Visualizer</h1>
           <p className="text-arena-gray">
@@ -387,8 +395,38 @@ const GraphVisualizer = () => {
           </p>
         </div>
         
-        <div className="mb-8 bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+        <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4">Graph Visualization</h2>
+
+          {/* Algorithm buttons */}
+          <div className="flex gap-2 mb-4">
+            <select
+              value={sourceNode}
+              onChange={(e) => setSourceNode(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+            >
+              <option value="">Select Source Node</option>
+              {nodes.map(node => (
+                <option key={`source-${node.id}`} value={node.id}>{node.id}</option>
+              ))}
+            </select>
+            <Button 
+              onClick={runBFS}
+              variant="outline"
+              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+            >
+              <Search className="h-4 w-4" />
+              Run BFS
+            </Button>
+            <Button 
+              onClick={runDFS}
+              variant="outline"
+              className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+            >
+              <Search className="h-4 w-4" />
+              Run DFS
+            </Button>
+          </div>
           
           {/* Graph visualization */}
           <div 
@@ -410,16 +448,36 @@ const GraphVisualizer = () => {
                     const toNode = nodes.find(node => node.id === edge.to);
                     
                     if (fromNode && toNode) {
+                      const midX = (fromNode.x + toNode.x) / 2;
+                      const midY = (fromNode.y + toNode.y) / 2;
+                      
                       return (
-                        <line
-                          key={`${edge.from}-${edge.to}`}
-                          x1={fromNode.x}
-                          y1={fromNode.y}
-                          x2={toNode.x}
-                          y2={toNode.y}
-                          stroke={edge.highlighted ? '#ea384c' : '#ccc'}
-                          strokeWidth={edge.highlighted ? 3 : 2}
-                        />
+                        <g key={`${edge.from}-${edge.to}`}>
+                          <line
+                            x1={fromNode.x}
+                            y1={fromNode.y}
+                            x2={toNode.x}
+                            y2={toNode.y}
+                            stroke={edge.highlighted ? '#ea384c' : '#ccc'}
+                            strokeWidth={edge.highlighted ? 3 : 2}
+                          />
+                          {edge.directed && (
+                            <polygon
+                              points={`${toNode.x - 5},${toNode.y - 5} ${toNode.x + 5},${toNode.y - 5} ${toNode.x},${toNode.y + 5}`}
+                              fill={edge.highlighted ? '#ea384c' : '#ccc'}
+                            />
+                          )}
+                          {edge.weight !== undefined && (
+                            <text
+                              x={midX}
+                              y={midY}
+                              textAnchor="middle"
+                              className="text-xs fill-gray-600 bg-white"
+                            >
+                              {edge.weight}
+                            </text>
+                          )}
+                        </g>
                       );
                     }
                     return null;
@@ -427,35 +485,42 @@ const GraphVisualizer = () => {
                 </svg>
                 
                 {/* Render nodes */}
-                {nodes.map(node => (
-                  <div
-                    key={node.id}
-                    className={cn(
-                      "absolute w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-md cursor-grab transition-all duration-300",
-                      {
-                        "bg-arena-red/10 border-arena-red text-arena-red": node.highlighted,
-                        "bg-white border-gray-300": !node.highlighted,
-                      }
-                    )}
-                    style={{
-                      left: `${node.x - 24}px`,
-                      top: `${node.y - 24}px`,
-                      cursor: isDragging && currentDragNode === node.id ? 'grabbing' : 'grab',
-                    }}
-                    onMouseDown={() => startNodeDrag(node.id)}
-                  >
-                    <div className="absolute -top-6 text-xs whitespace-nowrap">{node.id}</div>
-                    <button
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteNode(node.id);
+                {nodes.map(node => {
+                  const isBouncing = visitOrder.includes(node.id) && 
+                                   currentVisitIndex >= 0 && 
+                                   visitOrder[currentVisitIndex] === node.id;
+                  
+                  return (
+                    <div
+                      key={node.id}
+                      className={cn(
+                        "absolute w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-md cursor-grab transition-all duration-300",
+                        {
+                          "bg-arena-red/10 border-arena-red text-arena-red": node.highlighted && !isBouncing,
+                          "bg-white border-gray-300": !node.highlighted && !isBouncing,
+                          "animate-bounce bg-arena-green/20 border-arena-green": isBouncing,
+                        }
+                      )}
+                      style={{
+                        left: `${node.x - 24}px`,
+                        top: `${node.y - 24}px`,
+                        cursor: isDragging && currentDragNode === node.id ? 'grabbing' : 'grab',
                       }}
+                      onMouseDown={() => startNodeDrag(node.id)}
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                      <div className="absolute -top-6 text-xs whitespace-nowrap font-medium">{node.id}</div>
+                      <button
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNode(node.id);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>
@@ -481,7 +546,6 @@ const GraphVisualizer = () => {
                   className="rounded-r-lg"
                 >
                   Add Node
-                  <Plus className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -492,117 +556,98 @@ const GraphVisualizer = () => {
                 <Share2 className="h-5 w-5 text-arena-green mr-2" />
                 Add Edge
               </h3>
-              <div className="grid grid-cols-5 gap-2">
-                <select
-                  value={fromNode}
-                  onChange={(e) => setFromNode(e.target.value)}
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                >
-                  <option value="">From Node</option>
-                  {nodes.map(node => (
-                    <option key={`from-${node.id}`} value={node.id}>{node.id}</option>
-                  ))}
-                </select>
-                <select
-                  value={toNode}
-                  onChange={(e) => setToNode(e.target.value)}
-                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                >
-                  <option value="">To Node</option>
-                  {nodes.map(node => (
-                    <option key={`to-${node.id}`} value={node.id}>{node.id}</option>
-                  ))}
-                </select>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={fromNode}
+                    onChange={(e) => setFromNode(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  >
+                    <option value="">From Node</option>
+                    {nodes.map(node => (
+                      <option key={`from-${node.id}`} value={node.id}>{node.id}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={toNode}
+                    onChange={(e) => setToNode(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  >
+                    <option value="">To Node</option>
+                    {nodes.map(node => (
+                      <option key={`to-${node.id}`} value={node.id}>{node.id}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={edgeWeight}
+                    onChange={(e) => setEdgeWeight(e.target.value)}
+                    placeholder="Weight (optional)"
+                    className="flex-grow px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  />
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={isDirected}
+                      onChange={(e) => setIsDirected(e.target.checked)}
+                      className="form-checkbox text-arena-green"
+                    />
+                    <span className="ml-2 text-sm">Directed</span>
+                  </label>
+                </div>
                 <Button 
                   variant="default" 
                   onClick={addEdge}
-                  className="col-span-1"
+                  className="w-full"
                 >
-                  Add
-                </Button>
-              </div>
-            </div>
-            
-            {/* Run BFS */}
-            <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-green mr-2" />
-                Run BFS
-              </h3>
-              <div className="flex">
-                <select
-                  value={sourceNode}
-                  onChange={(e) => setSourceNode(e.target.value)}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                >
-                  <option value="">Select Source Node</option>
-                  {nodes.map(node => (
-                    <option key={`bfs-${node.id}`} value={node.id}>{node.id}</option>
-                  ))}
-                </select>
-                <Button 
-                  variant="default" 
-                  onClick={runBFS}
-                  className="rounded-r-lg"
-                >
-                  Run BFS
-                  <Search className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* Run DFS */}
-            <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-green mr-2" />
-                Run DFS
-              </h3>
-              <div className="flex">
-                <select
-                  value={sourceNode}
-                  onChange={(e) => setSourceNode(e.target.value)}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-                >
-                  <option value="">Select Source Node</option>
-                  {nodes.map(node => (
-                    <option key={`dfs-${node.id}`} value={node.id}>{node.id}</option>
-                  ))}
-                </select>
-                <Button 
-                  variant="default" 
-                  onClick={runDFS}
-                  className="rounded-r-lg"
-                >
-                  Run DFS
-                  <Search className="ml-2 h-4 w-4" />
+                  Add Edge
                 </Button>
               </div>
             </div>
           </div>
+
+          {/* Operation Logs */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-32 overflow-y-auto text-sm">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-arena-gray">
+                  No operations performed yet
+                </div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={index} className="mb-2 p-2 bg-white rounded border-l-4 border-arena-green">
+                    {log}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in" style={{ animationDelay: "0.4s" }}>
+        <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Graphs</h2>
           <p className="text-arena-gray mb-4">
             A graph is a non-linear data structure consisting of nodes (vertices) and edges that connect them. Graphs can be used to represent many types of relationships and networks.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Graph Types:</span>
+              <span className="font-medium">Time Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Directed vs Undirected</li>
-                <li>Weighted vs Unweighted</li>
-                <li>Cyclic vs Acyclic</li>
-                <li>Connected vs Disconnected</li>
+                <li>BFS/DFS: O(V + E)</li>
+                <li>Add Vertex: O(1)</li>
+                <li>Add Edge: O(1)</li>
+                <li>Remove Vertex: O(V + E)</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Common Applications:</span>
+              <span className="font-medium">Space Complexity:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Social networks</li>
-                <li>Web page links</li>
-                <li>Road networks and maps</li>
-                <li>Recommendation systems</li>
+                <li>Adjacency List: O(V + E)</li>
+                <li>Adjacency Matrix: O(V²)</li>
+                <li>BFS/DFS: O(V) auxiliary space</li>
               </ul>
             </div>
           </div>

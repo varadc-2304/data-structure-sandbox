@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, ArrowRight, ArrowLeft, Shuffle } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Plus, Trash, Eye, AlertCircle, Shuffle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 
 const QueueVisualizer = () => {
@@ -12,6 +12,8 @@ const QueueVisualizer = () => {
   const [queueSize, setQueueSize] = useState('');
   const [lastOperation, setLastOperation] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [showPeekModal, setShowPeekModal] = useState(false);
+  const [peekElement, setPeekElement] = useState<string | number | null>(null);
   
   const { toast } = useToast();
 
@@ -21,7 +23,7 @@ const QueueVisualizer = () => {
 
   const addToLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    setLogs(prev => [message, ...prev.slice(0, 9)]);
   };
 
   const enqueueElement = () => {
@@ -82,15 +84,17 @@ const QueueVisualizer = () => {
     }
 
     const frontValue = queue[0];
+    setPeekElement(frontValue);
+    setShowPeekModal(true);
     setLastOperation('peek');
     
     const message = `Peeked at front element: "${frontValue}"`;
     addToLog(message);
     
-    toast({
-      title: "Front element",
-      description: `Front element is "${frontValue}"`,
-    });
+    // Auto close modal after 2 seconds
+    setTimeout(() => {
+      setShowPeekModal(false);
+    }, 2000);
   };
 
   const generateRandomQueue = () => {
@@ -103,18 +107,18 @@ const QueueVisualizer = () => {
       return;
     }
 
-    const size = Math.min(Number(queueSize), 15); // Limit to 15 elements max
+    const size = Math.min(Number(queueSize), 15);
     const randomQueue = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
     setQueue(randomQueue);
     setLastOperation(null);
     setQueueSize('');
     
-    const message = `Generated random queue with ${size} elements`;
+    const message = `Generated random queue with ${size} elements: [${randomQueue.join(', ')}]`;
     addToLog(message);
     
     toast({
       title: "Random queue generated",
-      description: message,
+      description: `Generated random queue with ${size} elements`,
     });
   };
 
@@ -160,19 +164,23 @@ const QueueVisualizer = () => {
                 <Shuffle className="h-4 w-4" />
                 Generate Random Queue
               </Button>
+              <Button
+                onClick={peekElement}
+                variant="outline"
+                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+              >
+                <Eye className="h-4 w-4" />
+                Peek Element
+              </Button>
             </div>
           </div>
           
           {/* Queue visualization */}
           <div className="mb-6 relative">
             <div className="flex flex-col items-center">
-              <div className="flex justify-between w-full max-w-2xl mb-2">
-                <div className="text-arena-gray text-sm">FRONT</div>
-                <div className="text-arena-gray text-sm">REAR</div>
-              </div>
               <div 
-                className="flex items-center bg-arena-light rounded-lg p-4 w-full overflow-x-auto"
-                style={{ minHeight: "100px" }}
+                className="flex items-center bg-arena-light rounded-lg p-4 w-full overflow-x-auto relative"
+                style={{ minHeight: "120px" }}
               >
                 {queue.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-8 text-arena-gray">
@@ -180,33 +188,36 @@ const QueueVisualizer = () => {
                     <span>Queue is empty. Enqueue elements using the controls below.</span>
                   </div>
                 ) : (
-                  queue.map((item, index) => (
-                    <div key={index} className="flex items-center">
-                      <div
-                        className={cn(
-                          "min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300",
-                          {
-                            "border-arena-green bg-arena-green/10 shadow-md": 
-                              (lastOperation === 'enqueue' && index === queue.length - 1) ||
-                              (lastOperation === 'dequeue' && index === 0) ||
-                              (lastOperation === 'peek' && index === 0),
-                          }
-                        )}
-                      >
-                        <div className="text-lg font-medium">{item.toString()}</div>
-                        <div className="text-xs text-arena-gray">[{index}]</div>
+                  <>
+                    {/* FRONT and REAR labels */}
+                    <div className="absolute top-2 left-8 text-arena-gray text-sm font-semibold">FRONT</div>
+                    <div className="absolute top-2 right-8 text-arena-gray text-sm font-semibold">REAR</div>
+                    
+                    {queue.map((item, index) => (
+                      <div key={index} className="flex items-center">
+                        <div
+                          className={cn(
+                            "min-w-[60px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300",
+                            {
+                              "border-arena-green bg-arena-green/10 shadow-md animate-bounce": 
+                                (lastOperation === 'enqueue' && index === queue.length - 1) ||
+                                (lastOperation === 'dequeue' && index === 0) ||
+                                (lastOperation === 'peek' && index === 0),
+                            }
+                          )}
+                        >
+                          <div className="text-lg font-medium">{item.toString()}</div>
+                          <div className="text-xs text-arena-gray">[{index}]</div>
+                        </div>
                       </div>
-                      {index < queue.length - 1 && (
-                        <ArrowRight className="h-5 w-5 text-arena-green mx-1" />
-                      )}
-                    </div>
-                  ))
+                    ))}
+                  </>
                 )}
               </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Enqueue element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
@@ -227,7 +238,6 @@ const QueueVisualizer = () => {
                   className="rounded-l-none rounded-r-lg"
                 >
                   Enqueue
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -244,23 +254,6 @@ const QueueVisualizer = () => {
                 className="w-full"
               >
                 Dequeue
-                <ArrowLeft className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Peek element */}
-            <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Eye className="h-5 w-5 text-arena-green mr-2" />
-                Peek Element
-              </h3>
-              <Button
-                onClick={peekElement}
-                variant="default"
-                className="w-full"
-              >
-                Peek
-                <Eye className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -268,14 +261,14 @@ const QueueVisualizer = () => {
           {/* Operation Logs */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2">Operation Logs</h3>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 h-32 overflow-y-auto text-sm">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-32 overflow-y-auto text-sm">
               {logs.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-arena-gray">
                   No operations performed yet
                 </div>
               ) : (
                 logs.map((log, index) => (
-                  <div key={index} className="mb-1 pb-1 border-b border-gray-100 last:border-0">
+                  <div key={index} className="mb-2 p-2 bg-white rounded border-l-4 border-arena-green">
                     {log}
                   </div>
                 ))
@@ -309,6 +302,16 @@ const QueueVisualizer = () => {
           </div>
         </div>
       </div>
+
+      {/* Peek Modal */}
+      {showPeekModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg animate-bounce">
+            <h3 className="text-lg font-semibold mb-2">Front Element</h3>
+            <div className="text-2xl font-bold text-arena-green">{peekElement}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
