@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -21,39 +23,35 @@ interface DiskRequest {
 const LOOKVisualizer = () => {
   const [diskSize, setDiskSize] = useState<number>(200);
   const [initialHeadPosition, setInitialHeadPosition] = useState<number>(50);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [currentHeadPosition, setCurrentHeadPosition] = useState<number>(50);
   const [requestQueue, setRequestQueue] = useState<DiskRequest[]>([]);
-  const [processedOrder, setProcessedOrder] = useState<DiskRequest[]>([]);
   const [inputPosition, setInputPosition] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [totalSeekTime, setTotalSeekTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-  const [direction, setDirection] = useState<'up' | 'down'>('up');
-  const [initialDirection, setInitialDirection] = useState<'up' | 'down'>('up');
+  const [lookOrder, setLookOrder] = useState<number[]>([]);
 
-  // Initialize simulation
   useEffect(() => {
     resetSimulation();
-  }, [initialHeadPosition, initialDirection]);
+  }, [initialHeadPosition, direction]);
 
-  // Handle play/pause
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || currentStep >= lookOrder.length - 1) return;
 
     const timer = setTimeout(() => {
       nextStep();
     }, 1000 / speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, speed, requestQueue, direction]);
+  }, [isPlaying, currentStep, lookOrder.length, speed]);
 
   const handleAddRequest = () => {
     if (!inputPosition.trim()) return;
     
     try {
-      // Parse comma-separated values or space-separated values
       const newPositions = inputPosition
         .split(/[,\s]+/)
         .filter(Boolean)
@@ -78,14 +76,44 @@ const LOOKVisualizer = () => {
     }
   };
 
+  const calculateLOOKOrder = (requests: DiskRequest[], startPosition: number, initialDirection: 'left' | 'right'): number[] => {
+    const order: number[] = [];
+    const sortedRequests = [...requests].sort((a, b) => a.position - b.position);
+    
+    const leftRequests = sortedRequests.filter(req => req.position < startPosition).reverse();
+    const rightRequests = sortedRequests.filter(req => req.position > startPosition);
+    
+    if (initialDirection === 'right') {
+      rightRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+    } else {
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      rightRequests.reverse().forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+    }
+    
+    return order;
+  };
+
   const resetSimulation = () => {
     setCurrentStep(-1);
     setTotalSeekTime(0);
     setIsPlaying(false);
     setSeekHistory([]);
     setCurrentHeadPosition(initialHeadPosition);
-    setProcessedOrder([]);
-    setDirection(initialDirection);
     
     const resetRequests = requestQueue.map(req => ({
       ...req,
@@ -93,111 +121,114 @@ const LOOKVisualizer = () => {
       current: false
     }));
     setRequestQueue(resetRequests);
+    
+    if (resetRequests.length > 0) {
+      const order = calculateLOOKOrder(resetRequests, initialHeadPosition, direction);
+      setLookOrder(order);
+    } else {
+      setLookOrder([]);
+    }
   };
 
+  useEffect(() => {
+    if (requestQueue.length > 0) {
+      const order = calculateLOOKOrder(requestQueue, initialHeadPosition, direction);
+      setLookOrder(order);
+    }
+  }, [requestQueue, initialHeadPosition, direction]);
+
   const nextStep = () => {
-    // Check if all requests are processed
-    if (requestQueue.every(req => req.processed)) {
+    if (currentStep >= lookOrder.length - 1) {
       setIsPlaying(false);
       return;
     }
     
-    // Get unprocessed requests
-    const unprocessedRequests = requestQueue.filter(req => !req.processed);
+    const nextStep = currentStep + 1;
+    const nextRequestIndex = lookOrder[nextStep];
+    const nextRequest = requestQueue[nextRequestIndex];
     
-    if (unprocessedRequests.length === 0) {
-      setIsPlaying(false);
-      return;
-    }
-    
-    // Find next request according to LOOK algorithm
-    let nextRequest: DiskRequest | null = null;
-    
-    if (direction === 'up') {
-      // Find the closest request that is >= current head position
-      const requestsAhead = unprocessedRequests.filter(req => req.position >= currentHeadPosition);
-      
-      if (requestsAhead.length > 0) {
-        // Sort by position ascending
-        requestsAhead.sort((a, b) => a.position - b.position);
-        nextRequest = requestsAhead[0];
-      } else {
-        // No requests ahead, change direction to 'down'
-        setDirection('down');
-        
-        // Find the closest request that is < current head position
-        const requestsBehind = unprocessedRequests.filter(req => req.position < currentHeadPosition);
-        
-        if (requestsBehind.length > 0) {
-          // Sort by position descending for 'down' direction
-          requestsBehind.sort((a, b) => b.position - a.position);
-          nextRequest = requestsBehind[0];
-        }
-      }
-    } else { // direction === 'down'
-      // Find the closest request that is <= current head position
-      const requestsBehind = unprocessedRequests.filter(req => req.position <= currentHeadPosition);
-      
-      if (requestsBehind.length > 0) {
-        // Sort by position descending
-        requestsBehind.sort((a, b) => b.position - a.position);
-        nextRequest = requestsBehind[0];
-      } else {
-        // No requests behind, change direction to 'up'
-        setDirection('up');
-        
-        // Find the closest request that is > current head position
-        const requestsAhead = unprocessedRequests.filter(req => req.position > currentHeadPosition);
-        
-        if (requestsAhead.length > 0) {
-          // Sort by position ascending for 'up' direction
-          requestsAhead.sort((a, b) => a.position - b.position);
-          nextRequest = requestsAhead[0];
-        }
-      }
-    }
-    
-    if (!nextRequest) {
-      setIsPlaying(false);
-      return;
-    }
-    
-    // Calculate seek distance
     const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
-    // Update history
-    setSeekHistory([
-      ...seekHistory,
-      { 
-        from: currentHeadPosition, 
-        to: nextRequest.position, 
-        distance: seekDistance 
-      }
-    ]);
+    setSeekHistory(prev => [...prev, { 
+      from: currentHeadPosition, 
+      to: nextRequest.position, 
+      distance: seekDistance 
+    }]);
     
-    // Update total seek time
     setTotalSeekTime(prev => prev + seekDistance);
-    
-    // Update head position
     setCurrentHeadPosition(nextRequest.position);
     
-    // Update request as processed
-    const updatedRequests = requestQueue.map(req => ({
+    const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: req.processed || req.position === nextRequest!.position,
-      current: req.position === nextRequest!.position
+      processed: lookOrder.slice(0, nextStep + 1).includes(idx),
+      current: idx === nextRequestIndex
     }));
     setRequestQueue(updatedRequests);
     
-    // Add to processed order
-    setProcessedOrder([...processedOrder, nextRequest]);
+    setCurrentStep(nextStep);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= -1) return;
     
-    // Update current step
-    setCurrentStep(prev => prev + 1);
+    const newStep = currentStep - 1;
+    setCurrentStep(newStep);
+    
+    const newSeekHistory = seekHistory.slice(0, newStep + 1);
+    setSeekHistory(newSeekHistory);
+    
+    const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
+    setTotalSeekTime(newTotalSeekTime);
+    
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: lookOrder.slice(0, newStep + 1).includes(idx),
+      current: newStep >= 0 && lookOrder[newStep] === idx
+    }));
+    setRequestQueue(updatedRequests);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < -1 || step >= lookOrder.length) return;
+    
+    setCurrentStep(step);
+    setIsPlaying(false);
+    
+    // Recalculate state for the target step
+    let newHeadPosition = initialHeadPosition;
+    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    
+    for (let i = 0; i <= step; i++) {
+      const requestIndex = lookOrder[i];
+      const targetPosition = requestQueue[requestIndex].position;
+      
+      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      newSeekHistory.push({
+        from: newHeadPosition,
+        to: targetPosition,
+        distance: seekDistance
+      });
+      
+      newHeadPosition = targetPosition;
+    }
+    
+    setSeekHistory(newSeekHistory);
+    setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: lookOrder.slice(0, step + 1).includes(idx),
+      current: step >= 0 && lookOrder[step] === idx
+    }));
+    setRequestQueue(updatedRequests);
   };
 
   const togglePlayPause = () => {
-    if (requestQueue.every(req => req.processed)) {
+    if (currentStep >= lookOrder.length - 1) {
       resetSimulation();
       setIsPlaying(true);
     } else {
@@ -256,22 +287,15 @@ const LOOKVisualizer = () => {
                   
                   <div>
                     <Label>Initial Direction</Label>
-                    <div className="flex mt-1 space-x-2">
-                      <Button 
-                        variant={initialDirection === 'up' ? 'default' : 'outline'}
-                        className={initialDirection === 'up' ? 'bg-drona-green hover:bg-drona-green/90' : ''}
-                        onClick={() => setInitialDirection('up')}
-                      >
-                        Upward (→)
-                      </Button>
-                      <Button 
-                        variant={initialDirection === 'down' ? 'default' : 'outline'}
-                        className={initialDirection === 'down' ? 'bg-drona-green hover:bg-drona-green/90' : ''}
-                        onClick={() => setInitialDirection('down')}
-                      >
-                        Downward (←)
-                      </Button>
-                    </div>
+                    <Select value={direction} onValueChange={(value: 'left' | 'right') => setDirection(value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
@@ -305,27 +329,56 @@ const LOOKVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="flex space-x-1">
+                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
+                        <SkipBack className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
+                        <Rewind className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        onClick={togglePlayPause}
+                        disabled={lookOrder.length === 0}
+                      >
+                        {isPlaying ? (
+                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
+                        ) : (
+                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= lookOrder.length - 1 ? 'Restart' : 'Play'}</>
+                        )}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(lookOrder.length - 1)}>
+                        <FastForward className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= lookOrder.length - 1}>
+                        <SkipForward className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={resetSimulation}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
-                    <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                      onClick={togglePlayPause}
-                      disabled={requestQueue.length === 0}
-                    >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {requestQueue.every(req => req.processed) ? 'Restart' : 'Play'}</>
-                      )}
-                    </Button>
                   </div>
+                  
+                  {lookOrder.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Step: {currentStep + 1} of {lookOrder.length}</Label>
+                      <Slider
+                        value={[currentStep + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        max={lookOrder.length}
+                        min={0}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -347,14 +400,9 @@ const LOOKVisualizer = () => {
                       {seekHistory.length ? (totalSeekTime / seekHistory.length).toFixed(2) : '0'} cylinders
                     </p>
                   </div>
-                  <div className="bg-drona-light p-4 rounded-lg flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-drona-gray">Current Head Position</p>
-                      <p className="text-2xl font-bold text-drona-dark">{currentHeadPosition}</p>
-                    </div>
-                    <div className="bg-white px-3 py-1 rounded-full text-sm border">
-                      Direction: {direction === 'up' ? 'Upward →' : 'Downward ←'}
-                    </div>
+                  <div className="bg-drona-light p-4 rounded-lg">
+                    <p className="text-sm text-drona-gray">Current Head Position</p>
+                    <p className="text-2xl font-bold text-drona-dark">{currentHeadPosition}</p>
                   </div>
                 </div>
               </CardContent>
@@ -374,32 +422,48 @@ const LOOKVisualizer = () => {
                   <CardHeader>
                     <CardTitle>LOOK Disk Scheduling Visualization</CardTitle>
                     <CardDescription>
-                      Processed: {processedOrder.length} of {requestQueue.length}
+                      Step: {currentStep + 1} of {lookOrder.length}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Disk Visualization</h3>
-                      <div className="relative h-16 bg-drona-light rounded-lg overflow-hidden mb-2">
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
+                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8" style={{ minHeight: "160px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
-                        {/* Initial head position */}
+                        {/* Scale markers */}
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                            <div key={pos} className="flex flex-col items-center">
+                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
+                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Initial head position indicator */}
                         <div 
-                          className="absolute top-0 h-full w-0.5 bg-gray-500"
-                          style={{ left: `${(initialHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                          style={{ 
+                            left: `calc(3rem + ${(initialHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
                             Start: {initialHeadPosition}
                           </div>
                         </div>
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-0 h-full w-1 bg-drona-green transition-all duration-500"
-                          style={{ left: `${(currentHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          style={{ 
+                            left: `calc(3rem + ${(currentHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-drona-green">
+                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -409,37 +473,32 @@ const LOOKVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full",
-                              req.processed ? "bg-drona-green/60" : "bg-gray-400",
-                              req.current && "ring-2 ring-drona-green ring-offset-1"
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
+                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
-                            style={{ left: `${(req.position / diskSize) * 100}%` }}
+                            style={{ 
+                              left: `calc(3rem + ${(req.position / diskSize) * (100 - 6)}%)`
+                            }}
                           >
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs">
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
                               {req.position}
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-between text-xs text-drona-gray">
-                        <span>0</span>
-                        <span>{Math.floor(diskSize / 4)}</span>
-                        <span>{Math.floor(diskSize / 2)}</span>
-                        <span>{Math.floor(3 * diskSize / 4)}</span>
-                        <span>{diskSize - 1}</span>
-                      </div>
                     </div>
                     
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Request Queue</h3>
+                      <h3 className="text-sm font-medium text-drona-gray mb-2">LOOK Order</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {requestQueue.map((request, idx) => (
+                        {lookOrder.map((requestIndex, orderIndex) => (
                           <Badge 
-                            key={idx}
-                            variant={request.current ? "default" : request.processed ? "secondary" : "outline"}
-                            className={request.current ? "bg-drona-green" : ""}
+                            key={orderIndex}
+                            variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
+                            className={orderIndex === currentStep ? "bg-drona-green" : ""}
                           >
-                            {request.position}
+                            {requestQueue[requestIndex]?.position}
                           </Badge>
                         ))}
                       </div>
@@ -458,19 +517,15 @@ const LOOKVisualizer = () => {
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">From</th>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">To</th>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Distance</th>
-                                <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Direction</th>
                               </tr>
                             </thead>
                             <tbody>
                               {seekHistory.map((seek, idx) => (
-                                <tr key={idx} className={idx % 2 === 0 ? '5g-white' : 'bg-gray-50'}>
+                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                   <td className="px-4 py-2 text-sm">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
                                   <td className="px-4 py-2 text-sm">{seek.to}</td>
                                   <td className="px-4 py-2 text-sm">{seek.distance} cylinders</td>
-                                  <td className="px-4 py-2 text-sm">
-                                    {seek.to > seek.from ? 'Upward' : 'Downward'}
-                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -492,10 +547,10 @@ const LOOKVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        LOOK is an improvement over the SCAN algorithm. Like SCAN, it services requests in one direction until no more requests in that direction remain, then reverses direction. However, unlike SCAN, the disk arm only goes as far as the last request in each direction and then reverses, rather than going all the way to the end of the disk.
+                        LOOK is similar to SCAN but instead of going to the end of the disk, the head only goes as far as the last request in each direction, then reverses direction.
                       </p>
                       <p className="text-drona-gray">
-                        This approach reduces unnecessary movement of the disk head beyond the outermost pending requests.
+                        This prevents unnecessary head movement to disk boundaries when there are no requests there.
                       </p>
                     </div>
                     
@@ -503,52 +558,31 @@ const LOOKVisualizer = () => {
                       <h3 className="font-medium text-drona-dark mb-2">Pseudocode</h3>
                       <div className="bg-gray-800 text-white p-4 rounded-md overflow-x-auto">
                         <pre className="font-mono text-sm">
-{`function LOOK_DiskScheduling(requestQueue, initialHeadPosition, initialDirection, diskSize):
+{`function LOOK_DiskScheduling(requestQueue, initialHeadPosition, direction):
     currentHeadPosition = initialHeadPosition
-    direction = initialDirection
     totalSeekTime = 0
-    processedRequests = []
-    remainingRequests = copy of requestQueue
     
-    while remainingRequests is not empty:
-        if direction is "up":
-            // Process all requests from current position to the highest request
-            sortedRequests = sort remainingRequests by position ascending
-            nextRequests = filter sortedRequests where position >= currentHeadPosition
-            
-            for each request in nextRequests:
-                seekDistance = abs(currentHeadPosition - request.position)
-                totalSeekTime = totalSeekTime + seekDistance
-                currentHeadPosition = request.position
-                processedRequests.append(request)
-                remove request from remainingRequests
-            endfor
-            
-            // Change direction if there are still requests
-            if remainingRequests is not empty:
-                direction = "down"
-            endif
-        else: // direction is "down"
-            // Process all requests from current position to the lowest request
-            sortedRequests = sort remainingRequests by position descending
-            nextRequests = filter sortedRequests where position <= currentHeadPosition
-            
-            for each request in nextRequests:
-                seekDistance = abs(currentHeadPosition - request.position)
-                totalSeekTime = totalSeekTime + seekDistance
-                currentHeadPosition = request.position
-                processedRequests.append(request)
-                remove request from remainingRequests
-            endfor
-            
-            // Change direction if there are still requests
-            if remainingRequests is not empty:
-                direction = "up"
-            endif
-        endif
-    endwhile
+    sort requestQueue by position
     
-    return totalSeekTime, processedRequests`}
+    if direction == "right":
+        // Service requests to the right
+        for each request >= currentHeadPosition:
+            seekTime = abs(currentHeadPosition - request.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = request.position
+        endfor
+        
+        // Service remaining requests (to the left) in reverse order
+        for each request < initialHeadPosition (in reverse order):
+            seekTime = abs(currentHeadPosition - request.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = request.position
+        endfor
+    else:
+        // Similar logic for left direction
+    endif
+    
+    return totalSeekTime`}
                         </pre>
                       </div>
                     </div>
@@ -558,18 +592,17 @@ const LOOKVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>More efficient than SCAN as it avoids unnecessary travel to the disk boundaries</li>
-                        <li>Better average seek time than SCAN</li>
-                        <li>Balances between throughput and wait time</li>
-                        <li>Provides reasonable fairness while optimizing seek time</li>
+                        <li>More efficient than SCAN - no unnecessary movement to disk boundaries</li>
+                        <li>Eliminates starvation like SCAN</li>
+                        <li>Better seek time performance than SCAN</li>
+                        <li>Uniform wait times</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Still has the potential for starvation in high-traffic systems</li>
-                        <li>More complex to implement than simpler algorithms like FCFS</li>
-                        <li>Requests at the edges of the disk may wait longer than those in the middle</li>
-                        <li>Performance can degrade in specific workload patterns</li>
+                        <li>Slightly more complex to implement than SCAN</li>
+                        <li>Still may have longer wait times for requests just missed by the head</li>
+                        <li>Performance depends on request distribution</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -589,7 +622,7 @@ const LOOKVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n log n)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        Similar to SCAN, the time complexity is dominated by sorting the requests, which is typically O(n log n). Processing the requests after sorting is O(n).
+                        The time complexity is dominated by the sorting of requests by their positions.
                       </p>
                     </div>
                     
@@ -601,29 +634,30 @@ const LOOKVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        The space required is proportional to the number of requests in the queue.
+                        Space is needed to store and sort the request positions.
                       </p>
                     </div>
                     
                     <Separator className="my-6" />
                     
                     <div>
-                      <h3 className="font-medium text-drona-dark mb-2">Comparison with SCAN</h3>
+                      <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        LOOK generally outperforms SCAN because it avoids unnecessary head movements to the disk boundaries. In real-world systems, there is rarely a request at the exact beginning or end of the disk, so SCAN wastes time traversing all the way to those boundaries.
+                        LOOK provides better performance than SCAN by avoiding unnecessary movement to disk boundaries, while maintaining the advantages of SCAN.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
-                        <h4 className="text-sm font-medium text-drona-dark mb-2">Performance Improvement</h4>
-                        <p className="text-sm text-drona-gray">
-                          The amount of improvement LOOK offers over SCAN depends on:
+                        <h4 className="text-sm font-medium text-drona-dark mb-2">Performance Comparison</h4>
+                        <p className="text-sm text-drona-gray mb-2">
+                          Relative performance ranking (from worst to best):
                         </p>
-                        <ul className="list-disc pl-5 text-sm text-drona-gray mt-2">
-                          <li>The distribution of requests across the disk</li>
-                          <li>How far the outermost pending requests are from the disk boundaries</li>
-                          <li>The frequency and pattern of incoming requests</li>
-                          <li>The disk's physical characteristics and seek time function</li>
-                        </ul>
+                        <ol className="list-decimal pl-5 text-sm text-drona-gray">
+                          <li>FCFS (First-Come-First-Served)</li>
+                          <li>SSTF (Shortest Seek Time First)</li>
+                          <li>SCAN (Elevator)</li>
+                          <li>C-SCAN (Circular SCAN)</li>
+                          <li>LOOK and C-LOOK</li>
+                        </ol>
                       </div>
                     </div>
                   </CardContent>

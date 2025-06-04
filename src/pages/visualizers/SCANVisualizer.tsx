@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -21,39 +23,35 @@ interface DiskRequest {
 const SCANVisualizer = () => {
   const [diskSize, setDiskSize] = useState<number>(200);
   const [initialHeadPosition, setInitialHeadPosition] = useState<number>(50);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [currentHeadPosition, setCurrentHeadPosition] = useState<number>(50);
   const [requestQueue, setRequestQueue] = useState<DiskRequest[]>([]);
-  const [processedOrder, setProcessedOrder] = useState<DiskRequest[]>([]);
   const [inputPosition, setInputPosition] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [totalSeekTime, setTotalSeekTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-  const [direction, setDirection] = useState<'up' | 'down'>('up');
-  const [initialDirection, setInitialDirection] = useState<'up' | 'down'>('up');
+  const [scanOrder, setScanOrder] = useState<(number | 'boundary')[]>([]);
 
-  // Initialize simulation
   useEffect(() => {
     resetSimulation();
-  }, [initialHeadPosition, initialDirection]);
+  }, [initialHeadPosition, direction]);
 
-  // Handle play/pause
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || currentStep >= scanOrder.length - 1) return;
 
     const timer = setTimeout(() => {
       nextStep();
     }, 1000 / speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, speed, requestQueue, direction]);
+  }, [isPlaying, currentStep, scanOrder.length, speed]);
 
   const handleAddRequest = () => {
     if (!inputPosition.trim()) return;
     
     try {
-      // Parse comma-separated values or space-separated values
       const newPositions = inputPosition
         .split(/[,\s]+/)
         .filter(Boolean)
@@ -78,14 +76,52 @@ const SCANVisualizer = () => {
     }
   };
 
+  const calculateSCANOrder = (requests: DiskRequest[], startPosition: number, initialDirection: 'left' | 'right'): (number | 'boundary')[] => {
+    const order: (number | 'boundary')[] = [];
+    const sortedRequests = [...requests].sort((a, b) => a.position - b.position);
+    
+    const leftRequests = sortedRequests.filter(req => req.position < startPosition).reverse();
+    const rightRequests = sortedRequests.filter(req => req.position > startPosition);
+    
+    if (initialDirection === 'right') {
+      rightRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      if (rightRequests.length > 0) {
+        order.push('boundary'); // Go to end of disk
+      }
+      
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+    } else {
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      if (leftRequests.length > 0) {
+        order.push('boundary'); // Go to start of disk
+      }
+      
+      rightRequests.reverse().forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+    }
+    
+    return order;
+  };
+
   const resetSimulation = () => {
     setCurrentStep(-1);
     setTotalSeekTime(0);
     setIsPlaying(false);
     setSeekHistory([]);
     setCurrentHeadPosition(initialHeadPosition);
-    setProcessedOrder([]);
-    setDirection(initialDirection);
     
     const resetRequests = requestQueue.map(req => ({
       ...req,
@@ -93,112 +129,131 @@ const SCANVisualizer = () => {
       current: false
     }));
     setRequestQueue(resetRequests);
+    
+    if (resetRequests.length > 0) {
+      const order = calculateSCANOrder(resetRequests, initialHeadPosition, direction);
+      setScanOrder(order);
+    } else {
+      setScanOrder([]);
+    }
   };
 
+  useEffect(() => {
+    if (requestQueue.length > 0) {
+      const order = calculateSCANOrder(requestQueue, initialHeadPosition, direction);
+      setScanOrder(order);
+    }
+  }, [requestQueue, initialHeadPosition, direction]);
+
   const nextStep = () => {
-    // Check if all requests are processed
-    if (requestQueue.every(req => req.processed)) {
+    if (currentStep >= scanOrder.length - 1) {
       setIsPlaying(false);
       return;
     }
     
-    // Get unprocessed requests
-    const unprocessedRequests = requestQueue.filter(req => !req.processed);
+    const nextStep = currentStep + 1;
+    const nextItem = scanOrder[nextStep];
     
-    if (unprocessedRequests.length === 0) {
-      setIsPlaying(false);
-      return;
+    let targetPosition: number;
+    let seekDistance: number;
+    
+    if (nextItem === 'boundary') {
+      targetPosition = direction === 'right' ? diskSize - 1 : 0;
+      seekDistance = Math.abs(currentHeadPosition - targetPosition);
+    } else {
+      const nextRequest = requestQueue[nextItem as number];
+      targetPosition = nextRequest.position;
+      seekDistance = Math.abs(currentHeadPosition - targetPosition);
     }
     
-    // Find next request according to SCAN algorithm
-    let nextRequest: DiskRequest | null = null;
-    let nextPos: number;
+    setSeekHistory(prev => [...prev, { 
+      from: currentHeadPosition, 
+      to: targetPosition, 
+      distance: seekDistance 
+    }]);
     
-    if (direction === 'up') {
-      // Find the closest request that is >= current head position
-      const requestsAhead = unprocessedRequests.filter(req => req.position >= currentHeadPosition);
-      
-      if (requestsAhead.length > 0) {
-        // Sort by position ascending
-        requestsAhead.sort((a, b) => a.position - b.position);
-        nextRequest = requestsAhead[0];
-      } else {
-        // Reached the end, change direction to 'down'
-        setDirection('down');
-        
-        // Find the closest request that is < current head position
-        const requestsBehind = unprocessedRequests.filter(req => req.position < currentHeadPosition);
-        
-        if (requestsBehind.length > 0) {
-          // Sort by position descending for 'down' direction
-          requestsBehind.sort((a, b) => b.position - a.position);
-          nextRequest = requestsBehind[0];
-        }
-      }
-    } else { // direction === 'down'
-      // Find the closest request that is <= current head position
-      const requestsBehind = unprocessedRequests.filter(req => req.position <= currentHeadPosition);
-      
-      if (requestsBehind.length > 0) {
-        // Sort by position descending
-        requestsBehind.sort((a, b) => b.position - a.position);
-        nextRequest = requestsBehind[0];
-      } else {
-        // Reached the end, change direction to 'up'
-        setDirection('up');
-        
-        // Find the closest request that is > current head position
-        const requestsAhead = unprocessedRequests.filter(req => req.position > currentHeadPosition);
-        
-        if (requestsAhead.length > 0) {
-          // Sort by position ascending for 'up' direction
-          requestsAhead.sort((a, b) => a.position - b.position);
-          nextRequest = requestsAhead[0];
-        }
-      }
-    }
-    
-    if (!nextRequest) {
-      setIsPlaying(false);
-      return;
-    }
-    
-    // Calculate seek distance
-    const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
-    
-    // Update history
-    setSeekHistory([
-      ...seekHistory,
-      { 
-        from: currentHeadPosition, 
-        to: nextRequest.position, 
-        distance: seekDistance 
-      }
-    ]);
-    
-    // Update total seek time
     setTotalSeekTime(prev => prev + seekDistance);
+    setCurrentHeadPosition(targetPosition);
     
-    // Update head position
-    setCurrentHeadPosition(nextRequest.position);
+    if (nextItem !== 'boundary') {
+      const updatedRequests = requestQueue.map((req, idx) => ({
+        ...req,
+        processed: scanOrder.slice(0, nextStep + 1).filter(item => typeof item === 'number').includes(idx),
+        current: idx === nextItem
+      }));
+      setRequestQueue(updatedRequests);
+    }
     
-    // Update request as processed
-    const updatedRequests = requestQueue.map(req => ({
+    setCurrentStep(nextStep);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= -1) return;
+    
+    const newStep = currentStep - 1;
+    setCurrentStep(newStep);
+    
+    const newSeekHistory = seekHistory.slice(0, newStep + 1);
+    setSeekHistory(newSeekHistory);
+    
+    const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
+    setTotalSeekTime(newTotalSeekTime);
+    
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: req.processed || req.position === nextRequest!.position,
-      current: req.position === nextRequest!.position
+      processed: scanOrder.slice(0, newStep + 1).filter(item => typeof item === 'number').includes(idx),
+      current: newStep >= 0 && scanOrder[newStep] === idx
     }));
     setRequestQueue(updatedRequests);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < -1 || step >= scanOrder.length) return;
     
-    // Add to processed order
-    setProcessedOrder([...processedOrder, nextRequest]);
+    setCurrentStep(step);
+    setIsPlaying(false);
     
-    // Update current step
-    setCurrentStep(prev => prev + 1);
+    // Recalculate state for the target step
+    let newHeadPosition = initialHeadPosition;
+    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    
+    for (let i = 0; i <= step; i++) {
+      const item = scanOrder[i];
+      let targetPosition: number;
+      
+      if (item === 'boundary') {
+        targetPosition = direction === 'right' ? diskSize - 1 : 0;
+      } else {
+        targetPosition = requestQueue[item as number].position;
+      }
+      
+      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      newSeekHistory.push({
+        from: newHeadPosition,
+        to: targetPosition,
+        distance: seekDistance
+      });
+      
+      newHeadPosition = targetPosition;
+    }
+    
+    setSeekHistory(newSeekHistory);
+    setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: scanOrder.slice(0, step + 1).filter(item => typeof item === 'number').includes(idx),
+      current: step >= 0 && scanOrder[step] === idx
+    }));
+    setRequestQueue(updatedRequests);
   };
 
   const togglePlayPause = () => {
-    if (requestQueue.every(req => req.processed)) {
+    if (currentStep >= scanOrder.length - 1) {
       resetSimulation();
       setIsPlaying(true);
     } else {
@@ -217,7 +272,7 @@ const SCANVisualizer = () => {
             Back to Disk Scheduling
           </Link>
           <h1 className="text-3xl font-bold text-drona-dark">SCAN Disk Scheduling</h1>
-          <p className="text-drona-gray">Elevator disk scheduling algorithm visualization</p>
+          <p className="text-drona-gray">SCAN (Elevator) disk scheduling algorithm visualization</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
@@ -257,22 +312,15 @@ const SCANVisualizer = () => {
                   
                   <div>
                     <Label>Initial Direction</Label>
-                    <div className="flex mt-1 space-x-2">
-                      <Button 
-                        variant={initialDirection === 'up' ? 'default' : 'outline'}
-                        className={initialDirection === 'up' ? 'bg-drona-green hover:bg-drona-green/90' : ''}
-                        onClick={() => setInitialDirection('up')}
-                      >
-                        Upward (→)
-                      </Button>
-                      <Button 
-                        variant={initialDirection === 'down' ? 'default' : 'outline'}
-                        className={initialDirection === 'down' ? 'bg-drona-green hover:bg-drona-green/90' : ''}
-                        onClick={() => setInitialDirection('down')}
-                      >
-                        Downward (←)
-                      </Button>
-                    </div>
+                    <Select value={direction} onValueChange={(value: 'left' | 'right') => setDirection(value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left (0)</SelectItem>
+                        <SelectItem value="right">Right ({diskSize - 1})</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
@@ -306,27 +354,56 @@ const SCANVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="flex space-x-1">
+                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
+                        <SkipBack className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
+                        <Rewind className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        onClick={togglePlayPause}
+                        disabled={scanOrder.length === 0}
+                      >
+                        {isPlaying ? (
+                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
+                        ) : (
+                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= scanOrder.length - 1 ? 'Restart' : 'Play'}</>
+                        )}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(scanOrder.length - 1)}>
+                        <FastForward className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= scanOrder.length - 1}>
+                        <SkipForward className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={resetSimulation}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
-                    <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                      onClick={togglePlayPause}
-                      disabled={requestQueue.length === 0}
-                    >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {requestQueue.every(req => req.processed) ? 'Restart' : 'Play'}</>
-                      )}
-                    </Button>
                   </div>
+                  
+                  {scanOrder.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Step: {currentStep + 1} of {scanOrder.length}</Label>
+                      <Slider
+                        value={[currentStep + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        max={scanOrder.length}
+                        min={0}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -348,14 +425,9 @@ const SCANVisualizer = () => {
                       {seekHistory.length ? (totalSeekTime / seekHistory.length).toFixed(2) : '0'} cylinders
                     </p>
                   </div>
-                  <div className="bg-drona-light p-4 rounded-lg flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-drona-gray">Current Head Position</p>
-                      <p className="text-2xl font-bold text-drona-dark">{currentHeadPosition}</p>
-                    </div>
-                    <div className="bg-white px-3 py-1 rounded-full text-sm border">
-                      Direction: {direction === 'up' ? 'Upward →' : 'Downward ←'}
-                    </div>
+                  <div className="bg-drona-light p-4 rounded-lg">
+                    <p className="text-sm text-drona-gray">Current Head Position</p>
+                    <p className="text-2xl font-bold text-drona-dark">{currentHeadPosition}</p>
                   </div>
                 </div>
               </CardContent>
@@ -375,32 +447,48 @@ const SCANVisualizer = () => {
                   <CardHeader>
                     <CardTitle>SCAN Disk Scheduling Visualization</CardTitle>
                     <CardDescription>
-                      Processed: {processedOrder.length} of {requestQueue.length}
+                      Step: {currentStep + 1} of {scanOrder.length}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Disk Visualization</h3>
-                      <div className="relative h-16 bg-drona-light rounded-lg overflow-hidden mb-2">
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
+                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8" style={{ minHeight: "160px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
-                        {/* Initial head position */}
+                        {/* Scale markers */}
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                            <div key={pos} className="flex flex-col items-center">
+                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
+                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Initial head position indicator */}
                         <div 
-                          className="absolute top-0 h-full w-0.5 bg-gray-500"
-                          style={{ left: `${(initialHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                          style={{ 
+                            left: `calc(3rem + ${(initialHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
                             Start: {initialHeadPosition}
                           </div>
                         </div>
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-0 h-full w-1 bg-drona-green transition-all duration-500"
-                          style={{ left: `${(currentHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          style={{ 
+                            left: `calc(3rem + ${(currentHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-drona-green">
+                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -410,37 +498,32 @@ const SCANVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full",
-                              req.processed ? "bg-drona-green/60" : "bg-gray-400",
-                              req.current && "ring-2 ring-drona-green ring-offset-1"
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
+                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
-                            style={{ left: `${(req.position / diskSize) * 100}%` }}
+                            style={{ 
+                              left: `calc(3rem + ${(req.position / diskSize) * (100 - 6)}%)`
+                            }}
                           >
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs">
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
                               {req.position}
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-between text-xs text-drona-gray">
-                        <span>0</span>
-                        <span>{Math.floor(diskSize / 4)}</span>
-                        <span>{Math.floor(diskSize / 2)}</span>
-                        <span>{Math.floor(3 * diskSize / 4)}</span>
-                        <span>{diskSize - 1}</span>
-                      </div>
                     </div>
                     
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Request Queue</h3>
+                      <h3 className="text-sm font-medium text-drona-gray mb-2">SCAN Order</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {requestQueue.map((request, idx) => (
+                        {scanOrder.map((item, orderIndex) => (
                           <Badge 
-                            key={idx}
-                            variant={request.current ? "default" : request.processed ? "secondary" : "outline"}
-                            className={request.current ? "bg-drona-green" : ""}
+                            key={orderIndex}
+                            variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
+                            className={orderIndex === currentStep ? "bg-drona-green" : ""}
                           >
-                            {request.position}
+                            {item === 'boundary' ? (direction === 'right' ? diskSize - 1 : 0) : requestQueue[item as number]?.position}
                           </Badge>
                         ))}
                       </div>
@@ -483,16 +566,16 @@ const SCANVisualizer = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>SCAN Disk Scheduling Algorithm</CardTitle>
-                    <CardDescription>Elevator Algorithm</CardDescription>
+                    <CardDescription>SCAN (Elevator Algorithm)</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        The SCAN algorithm, also known as the Elevator algorithm, moves the disk head in one direction (toward the inner or outer edge of the disk) until all requests in that direction are serviced, then reverses direction.
+                        SCAN works like an elevator. The disk arm starts at one end and moves toward the other end, servicing requests along the way until it reaches the other end of the disk, then reverses direction.
                       </p>
                       <p className="text-drona-gray">
-                        This approach is similar to how elevators work in buildings, servicing all requests in one direction before changing direction.
+                        The head continues to move in its current direction until it reaches the boundary, serving all requests in that direction before reversing.
                       </p>
                     </div>
                     
@@ -500,52 +583,36 @@ const SCANVisualizer = () => {
                       <h3 className="font-medium text-drona-dark mb-2">Pseudocode</h3>
                       <div className="bg-gray-800 text-white p-4 rounded-md overflow-x-auto">
                         <pre className="font-mono text-sm">
-{`function SCAN_DiskScheduling(requestQueue, initialHeadPosition, initialDirection, diskSize):
+{`function SCAN_DiskScheduling(requestQueue, initialHeadPosition, direction):
     currentHeadPosition = initialHeadPosition
-    direction = initialDirection
     totalSeekTime = 0
-    processedRequests = []
-    remainingRequests = copy of requestQueue
     
-    while remainingRequests is not empty:
-        if direction is "up":
-            // Process all requests from current position to the end of disk
-            sortedRequests = sort remainingRequests by position ascending
-            nextRequests = filter sortedRequests where position >= currentHeadPosition
-            
-            for each request in nextRequests:
-                seekDistance = abs(currentHeadPosition - request.position)
-                totalSeekTime = totalSeekTime + seekDistance
-                currentHeadPosition = request.position
-                processedRequests.append(request)
-                remove request from remainingRequests
-            endfor
-            
-            // Change direction if there are still requests
-            if remainingRequests is not empty:
-                direction = "down"
-            endif
-        else: // direction is "down"
-            // Process all requests from current position to the beginning of disk
-            sortedRequests = sort remainingRequests by position descending
-            nextRequests = filter sortedRequests where position <= currentHeadPosition
-            
-            for each request in nextRequests:
-                seekDistance = abs(currentHeadPosition - request.position)
-                totalSeekTime = totalSeekTime + seekDistance
-                currentHeadPosition = request.position
-                processedRequests.append(request)
-                remove request from remainingRequests
-            endfor
-            
-            // Change direction if there are still requests
-            if remainingRequests is not empty:
-                direction = "up"
-            endif
-        endif
-    endwhile
+    sort requestQueue by position
     
-    return totalSeekTime, processedRequests`}
+    if direction == "right":
+        // Service requests to the right
+        for each request >= currentHeadPosition:
+            seekTime = abs(currentHeadPosition - request.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = request.position
+        endfor
+        
+        // Go to end of disk
+        seekTime = abs(currentHeadPosition - (diskSize - 1))
+        totalSeekTime += seekTime
+        currentHeadPosition = diskSize - 1
+        
+        // Service remaining requests (to the left)
+        for each request < initialHeadPosition (in reverse order):
+            seekTime = abs(currentHeadPosition - request.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = request.position
+        endfor
+    else:
+        // Similar logic for left direction
+    endif
+    
+    return totalSeekTime`}
                         </pre>
                       </div>
                     </div>
@@ -555,18 +622,17 @@ const SCANVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Provides a good throughput and reasonable response time</li>
-                        <li>More fair than SSTF as it avoids indefinite postponement</li>
-                        <li>Performs well under heavy loads</li>
-                        <li>Takes advantage of locality of reference</li>
+                        <li>Eliminates starvation - all requests are eventually served</li>
+                        <li>Provides better response time than FCFS and SSTF</li>
+                        <li>Simple to implement and understand</li>
+                        <li>Uniform wait times</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>May cause longer wait times for requests just missed by the head</li>
-                        <li>Favors blocks at the extremes of the disk over middle blocks</li>
-                        <li>Does not provide uniform waiting time</li>
-                        <li>More complex to implement than FCFS or SSTF</li>
+                        <li>Longer seek times for requests just missed by the head</li>
+                        <li>Unnecessary movement to disk boundaries even if no requests exist there</li>
+                        <li>More seek time compared to optimized algorithms like C-SCAN</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -586,7 +652,7 @@ const SCANVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n log n)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        The time complexity is dominated by sorting the requests, which is typically O(n log n). Processing the requests after sorting is O(n).
+                        The time complexity is dominated by the sorting of requests by their positions.
                       </p>
                     </div>
                     
@@ -598,29 +664,30 @@ const SCANVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        The space required is proportional to the number of requests in the queue.
+                        Space is needed to store and sort the request positions.
                       </p>
                     </div>
                     
                     <Separator className="my-6" />
                     
                     <div>
-                      <h3 className="font-medium text-drona-dark mb-2">Comparison with Other Algorithms</h3>
+                      <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        SCAN generally performs better than FCFS and SSTF in most real-world scenarios. It provides a good balance between throughput and fairness, making it one of the most widely used disk scheduling algorithms.
+                        SCAN provides better performance than FCFS and SSTF, with uniform wait times and no starvation.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
-                        <h4 className="text-sm font-medium text-drona-dark mb-2">Real-world Applications</h4>
-                        <p className="text-sm text-drona-gray">
-                          SCAN and its variants are commonly used in:
+                        <h4 className="text-sm font-medium text-drona-dark mb-2">Performance Comparison</h4>
+                        <p className="text-sm text-drona-gray mb-2">
+                          Relative performance ranking (from worst to best):
                         </p>
-                        <ul className="list-disc pl-5 text-sm text-drona-gray mt-2">
-                          <li>Operating systems with high disk I/O loads</li>
-                          <li>Database management systems</li>
-                          <li>File servers with multiple concurrent users</li>
-                          <li>Systems where both throughput and fairness are important</li>
-                        </ul>
+                        <ol className="list-decimal pl-5 text-sm text-drona-gray">
+                          <li>FCFS (First-Come-First-Served)</li>
+                          <li>SSTF (Shortest Seek Time First)</li>
+                          <li>SCAN (Elevator)</li>
+                          <li>C-SCAN (Circular SCAN)</li>
+                          <li>LOOK and C-LOOK</li>
+                        </ol>
                       </div>
                     </div>
                   </CardContent>

@@ -75,10 +75,10 @@ const BSTVisualizer = () => {
     node.y = y;
     
     if (node.left) {
-      calculatePositions(node.left, x - spacing, y + 80, spacing * 0.7);
+      calculatePositions(node.left, x - spacing, y + 100, spacing * 0.7);
     }
     if (node.right) {
-      calculatePositions(node.right, x + spacing, y + 80, spacing * 0.7);
+      calculatePositions(node.right, x + spacing, y + 100, spacing * 0.7);
     }
   };
 
@@ -322,7 +322,7 @@ const BSTVisualizer = () => {
 
   useEffect(() => {
     if (root) {
-      calculatePositions(root, 400, 80, 160);
+      calculatePositions(root, 400, 100, 200);
     }
   }, [root]);
 
@@ -377,11 +377,11 @@ const BSTVisualizer = () => {
           <div className="mb-6 relative">
             <div 
               className="bg-arena-light rounded-lg p-6 overflow-auto border-2 border-gray-200"
-              style={{ minHeight: "500px", maxHeight: "600px" }}
+              style={{ minHeight: "600px", maxHeight: "700px" }}
             >
               {root ? (
                 <div className="w-full h-full flex justify-center items-start">
-                  <svg width="800" height="500" viewBox="0 0 800 500" className="overflow-visible">
+                  <svg width="800" height="600" viewBox="0 0 800 600" className="overflow-visible">
                     {renderConnections(root)}
                     {renderTree(root)}
                   </svg>
