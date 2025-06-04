@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Search, Play, Pause } from 'lucide-react';
+import { Plus, Trash, Search, Play, RotateCcw, Minus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface BSTNode {
   id: number;
@@ -17,12 +19,14 @@ interface BSTNode {
 const BSTVisualizer = () => {
   const [root, setRoot] = useState<BSTNode | null>(null);
   const [newValue, setNewValue] = useState('');
+  const [deleteValue, setDeleteValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [traversalOrder, setTraversalOrder] = useState<number[]>([]);
   const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
   const [traversalType, setTraversalType] = useState<'inorder' | 'preorder' | 'postorder' | 'search' | null>(null);
   const [isTraversing, setIsTraversing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [highlightedNode, setHighlightedNode] = useState<number | null>(null);
   
   const { toast } = useToast();
 
@@ -45,6 +49,48 @@ const BSTVisualizer = () => {
     return root;
   };
 
+  const deleteNode = (root: BSTNode | null, value: number): BSTNode | null => {
+    if (!root) return null;
+
+    if (value < root.value) {
+      root.left = deleteNode(root.left, value);
+    } else if (value > root.value) {
+      root.right = deleteNode(root.right, value);
+    } else {
+      // Node to be deleted found
+      if (!root.left && !root.right) {
+        return null;
+      }
+      if (!root.left) {
+        return root.right;
+      }
+      if (!root.right) {
+        return root.left;
+      }
+
+      // Node with two children: get inorder successor
+      const minValueNode = findMinNode(root.right);
+      root.value = minValueNode.value;
+      root.id = minValueNode.id;
+      root.right = deleteNode(root.right, minValueNode.value);
+    }
+    return root;
+  };
+
+  const findMinNode = (node: BSTNode): BSTNode => {
+    while (node.left) {
+      node = node.left;
+    }
+    return node;
+  };
+
+  const searchNode = (root: BSTNode | null, value: number): boolean => {
+    if (!root) return false;
+    if (root.value === value) return true;
+    if (value < root.value) return searchNode(root.left, value);
+    return searchNode(root.right, value);
+  };
+
   const addElement = () => {
     if (newValue.trim() === '') {
       toast({
@@ -56,6 +102,24 @@ const BSTVisualizer = () => {
     }
 
     const value = Number(newValue);
+    if (isNaN(value)) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (root && searchNode(root, value)) {
+      toast({
+        title: "Duplicate value",
+        description: "Value already exists in BST",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setRoot(prev => insertNode(prev, value));
     setNewValue('');
     
@@ -68,6 +132,55 @@ const BSTVisualizer = () => {
     });
   };
 
+  const removeElement = () => {
+    if (deleteValue.trim() === '') {
+      toast({
+        title: "Input required",
+        description: "Please enter a value to delete",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const value = Number(deleteValue);
+    if (isNaN(value)) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!root) {
+      toast({
+        title: "Empty tree",
+        description: "BST is empty, nothing to delete",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!searchNode(root, value)) {
+      toast({
+        title: "Node not found",
+        description: `Node with value ${value} not found in BST`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRoot(deleteNode(root, value));
+    setDeleteValue('');
+    const message = `Deleted node with value ${value}`;
+    addToLog(message);
+    
+    toast({
+      title: "Node deleted",
+      description: message,
+    });
+  };
+
   const calculatePositions = (node: BSTNode | null, x: number, y: number, spacing: number): void => {
     if (!node) return;
     
@@ -75,10 +188,10 @@ const BSTVisualizer = () => {
     node.y = y;
     
     if (node.left) {
-      calculatePositions(node.left, x - spacing, y + 100, spacing * 0.7);
+      calculatePositions(node.left, x - spacing, y + 80, spacing * 0.6);
     }
     if (node.right) {
-      calculatePositions(node.right, x + spacing, y + 100, spacing * 0.7);
+      calculatePositions(node.right, x + spacing, y + 80, spacing * 0.6);
     }
   };
 
@@ -170,6 +283,15 @@ const BSTVisualizer = () => {
     }
 
     const value = Number(searchValue);
+    if (isNaN(value)) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid number",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const path: number[] = [];
     const found = searchPath(root, value, path);
     
@@ -182,20 +304,32 @@ const BSTVisualizer = () => {
     addToLog(message);
   };
 
+  const resetTraversal = () => {
+    setIsTraversing(false);
+    setCurrentTraversal(-1);
+    setTraversalOrder([]);
+    setTraversalType(null);
+    setHighlightedNode(null);
+    addToLog("Reset traversal");
+  };
+
   useEffect(() => {
     if (isTraversing && currentTraversal < traversalOrder.length) {
+      setHighlightedNode(traversalOrder[currentTraversal]);
+      
       const timer = setTimeout(() => {
         if (currentTraversal < traversalOrder.length - 1) {
           setCurrentTraversal(prev => prev + 1);
         } else {
           setIsTraversing(false);
+          setHighlightedNode(null);
           if (traversalType === 'search') {
             const found = searchValue.trim() !== '' && 
                          traversalOrder.length > 0 && 
                          findValue(root, traversalOrder[traversalOrder.length - 1]) === Number(searchValue);
             const message = found ? 
-              `Found value ${searchValue} in the tree!` : 
-              `Value ${searchValue} not found in the tree`;
+              `Found value ${searchValue} in the BST!` : 
+              `Value ${searchValue} not found in the BST`;
             addToLog(message);
             toast({
               title: found ? "Search successful" : "Search failed",
@@ -280,17 +414,16 @@ const BSTVisualizer = () => {
   const renderTree = (node: BSTNode | null): JSX.Element | null => {
     if (!node) return null;
 
-    const isHighlighted = isTraversing && currentTraversal >= 0 && 
-                         traversalOrder[currentTraversal] === node.id;
+    const isHighlighted = highlightedNode === node.id;
 
     return (
       <g key={node.id}>
         <circle
           cx={node.x}
           cy={node.y}
-          r="30"
+          r="25"
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-500",
             {
               "fill-arena-green stroke-arena-green": isHighlighted,
               "fill-white stroke-gray-400": !isHighlighted,
@@ -304,7 +437,7 @@ const BSTVisualizer = () => {
           textAnchor="middle"
           dominantBaseline="central"
           className={cn(
-            "text-sm font-semibold transition-all duration-300 pointer-events-none",
+            "text-sm font-semibold transition-all duration-500 pointer-events-none select-none",
             {
               "fill-white": isHighlighted,
               "fill-gray-700": !isHighlighted,
@@ -322,7 +455,7 @@ const BSTVisualizer = () => {
 
   useEffect(() => {
     if (root) {
-      calculatePositions(root, 400, 100, 200);
+      calculatePositions(root, 400, 60, 150);
     }
   }, [root]);
 
@@ -335,7 +468,7 @@ const BSTVisualizer = () => {
           <div className="arena-chip mb-2">Data Structure Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Binary Search Tree Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize BST operations including insertion, search, and various traversal methods.
+            Visualize BST operations including insertion, deletion, search, and various traversal methods.
           </p>
         </div>
         
@@ -349,7 +482,7 @@ const BSTVisualizer = () => {
                 variant="outline"
                 className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
-                {isTraversing && traversalType === 'inorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                <Play className="h-4 w-4 mr-2" />
                 Inorder
               </Button>
               <Button 
@@ -358,7 +491,7 @@ const BSTVisualizer = () => {
                 variant="outline"
                 className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
-                {isTraversing && traversalType === 'preorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                <Play className="h-4 w-4 mr-2" />
                 Preorder
               </Button>
               <Button 
@@ -367,9 +500,19 @@ const BSTVisualizer = () => {
                 variant="outline"
                 className="border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
               >
-                {isTraversing && traversalType === 'postorder' ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                <Play className="h-4 w-4 mr-2" />
                 Postorder
               </Button>
+              {isTraversing && (
+                <Button 
+                  onClick={resetTraversal}
+                  variant="outline"
+                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+              )}
             </div>
           </div>
           
@@ -377,11 +520,11 @@ const BSTVisualizer = () => {
           <div className="mb-6 relative">
             <div 
               className="bg-arena-light rounded-lg p-6 overflow-auto border-2 border-gray-200"
-              style={{ minHeight: "600px", maxHeight: "700px" }}
+              style={{ minHeight: "500px", maxHeight: "600px" }}
             >
               {root ? (
-                <div className="w-full h-full flex justify-center items-start">
-                  <svg width="800" height="600" viewBox="0 0 800 600" className="overflow-visible">
+                <div className="w-full h-full flex justify-center">
+                  <svg width="800" height="500" viewBox="0 0 800 500" className="overflow-visible">
                     {renderConnections(root)}
                     {renderTree(root)}
                   </svg>
@@ -395,24 +538,24 @@ const BSTVisualizer = () => {
           </div>
           
           {/* Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-arena-green mr-2" />
                 Add Node
               </h3>
-              <div className="flex">
-                <input
+              <div className="space-y-2">
+                <Input
                   type="number"
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder="Enter value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  className="focus:ring-arena-green focus:border-arena-green"
                 />
                 <Button
                   onClick={addElement}
                   variant="default"
-                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
                 >
                   Add
                 </Button>
@@ -421,22 +564,45 @@ const BSTVisualizer = () => {
 
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Search className="h-5 w-5 text-arena-green mr-2" />
+                <Minus className="h-5 w-5 text-red-500 mr-2" />
+                Delete Node
+              </h3>
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  value={deleteValue}
+                  onChange={(e) => setDeleteValue(e.target.value)}
+                  placeholder="Enter value"
+                  className="focus:ring-red-500 focus:border-red-500"
+                />
+                <Button
+                  onClick={removeElement}
+                  variant="default"
+                  className="w-full bg-red-500 text-white hover:bg-red-500/90"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Search className="h-5 w-5 text-blue-500 mr-2" />
                 Search
               </h3>
-              <div className="flex">
-                <input
+              <div className="space-y-2">
+                <Input
                   type="number"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   placeholder="Search value"
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                  className="focus:ring-blue-500 focus:border-blue-500"
                 />
                 <Button
                   onClick={startSearch}
                   disabled={isTraversing}
                   variant="default"
-                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
+                  className="w-full bg-blue-500 text-white hover:bg-blue-500/90"
                 >
                   Search
                 </Button>
@@ -451,10 +617,7 @@ const BSTVisualizer = () => {
               <Button
                 onClick={() => {
                   setRoot(null);
-                  setTraversalOrder([]);
-                  setCurrentTraversal(-1);
-                  setIsTraversing(false);
-                  setTraversalType(null);
+                  resetTraversal();
                   const message = "Cleared the entire BST";
                   addToLog(message);
                   toast({
@@ -465,7 +628,7 @@ const BSTVisualizer = () => {
                 variant="default"
                 className="w-full bg-arena-green text-white hover:bg-arena-green/90"
               >
-                Clear
+                Clear All
               </Button>
             </div>
 
@@ -473,10 +636,14 @@ const BSTVisualizer = () => {
               <h3 className="text-lg font-medium mb-3">Status</h3>
               <div className="text-sm text-arena-gray">
                 {isTraversing ? (
-                  <span className="text-arena-green">
-                    Running {traversalType}... 
-                    ({currentTraversal + 1}/{traversalOrder.length})
-                  </span>
+                  <div className="space-y-1">
+                    <span className="text-arena-green block">
+                      Running {traversalType}...
+                    </span>
+                    <span className="text-xs">
+                      Step: {currentTraversal + 1}/{traversalOrder.length}
+                    </span>
+                  </div>
                 ) : (
                   <span>Ready</span>
                 )}
@@ -515,6 +682,7 @@ const BSTVisualizer = () => {
                 <li>Left subtree values &lt; root</li>
                 <li>Right subtree values &gt; root</li>
                 <li>Inorder gives sorted sequence</li>
+                <li>No duplicate values allowed</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
