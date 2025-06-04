@@ -129,18 +129,37 @@ const FIFOVisualizer = () => {
         };
       } else {
         // All frames are full, use FIFO replacement
-        // Remove the first frame and shift all others
-        for (let i = 0; i < newFrames.length - 1; i++) {
-          newFrames[i] = {
-            ...newFrames[i],
-            page: newFrames[i + 1].page,
-            loaded: newFrames[i + 1].loaded,
-            highlight: false
-          };
+        // Find the oldest page (first loaded) and replace it
+        let oldestFrameIndex = 0;
+        let oldestTime = Infinity;
+        
+        // Simulate finding the oldest frame by tracking when each page was added
+        const frameLoadTimes = new Map();
+        
+        // Reconstruct the loading history to find the oldest frame
+        for (let i = 0; i <= stepIndex; i++) {
+          const historyPage = pageReferences[i];
+          const wasInFrames = i === 0 ? false : pageReferences.slice(0, i).some(p => p === historyPage);
+          
+          if (!wasInFrames) {
+            frameLoadTimes.set(historyPage, i);
+          }
         }
-        // Put new page in the last frame
-        newFrames[newFrames.length - 1] = {
-          ...newFrames[newFrames.length - 1],
+        
+        // Find the frame with the oldest load time
+        for (let i = 0; i < newFrames.length; i++) {
+          if (newFrames[i].page !== null) {
+            const loadTime = frameLoadTimes.get(newFrames[i].page) || 0;
+            if (loadTime < oldestTime) {
+              oldestTime = loadTime;
+              oldestFrameIndex = i;
+            }
+          }
+        }
+        
+        // Replace the oldest frame
+        newFrames[oldestFrameIndex] = {
+          ...newFrames[oldestFrameIndex],
           page: pageRef,
           loaded: true,
           highlight: true

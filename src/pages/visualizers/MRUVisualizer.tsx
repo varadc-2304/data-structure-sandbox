@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipBack, SkipForward, Rewind, FastForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,16 +16,8 @@ import { cn } from '@/lib/utils';
 interface PageFrame {
   id: number;
   page: number | null;
-  lastUsed: number;
   loaded: boolean;
   highlight: boolean;
-}
-
-interface SimulationStep {
-  frames: PageFrame[];
-  faults: number;
-  hits: number;
-  history: { page: number; fault: boolean }[];
 }
 
 const MRUVisualizer = () => {
@@ -38,15 +31,18 @@ const MRUVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [referenceHistory, setReferenceHistory] = useState<{ page: number; fault: boolean }[]>([]);
-  const [simulationSteps, setSimulationSteps] = useState<SimulationStep[]>([]);
-  const [autoPlay, setAutoPlay] = useState<boolean>(false);
+  const [simulationHistory, setSimulationHistory] = useState<{
+    frames: PageFrame[];
+    faults: number;
+    hits: number;
+    history: { page: number; fault: boolean }[];
+  }[]>([]);
 
   // Initialize frames
   useEffect(() => {
     const newFrames = Array(framesCount).fill(null).map((_, index) => ({
       id: index,
       page: null,
-      lastUsed: 0,
       loaded: false,
       highlight: false
     }));
@@ -54,133 +50,16 @@ const MRUVisualizer = () => {
     resetSimulation();
   }, [framesCount]);
 
-  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[]) => {
-    if (stepIndex >= pageReferences.length) return null;
-    
-    const pageRef = pageReferences[stepIndex];
-    const pageInFrames = currentFrames.findIndex(frame => frame.page === pageRef);
-    
-    let newFrames = currentFrames.map(frame => ({ ...frame, highlight: false }));
-    let newFaults = currentFaults;
-    let newHits = currentHits;
-    
-    if (pageInFrames !== -1) {
-      // Page hit
-      newFrames[pageInFrames] = { 
-        ...newFrames[pageInFrames], 
-        lastUsed: stepIndex,
-        highlight: true 
-      };
-      newHits++;
-    } else {
-      // Page fault
-      const emptyFrameIndex = newFrames.findIndex(frame => !frame.loaded);
-      
-      if (emptyFrameIndex !== -1) {
-        newFrames[emptyFrameIndex] = {
-          ...newFrames[emptyFrameIndex],
-          page: pageRef,
-          lastUsed: stepIndex,
-          loaded: true,
-          highlight: true
-        };
-      } else {
-        // Find MRU frame
-        let mruIndex = 0;
-        for (let i = 1; i < newFrames.length; i++) {
-          if (newFrames[i].lastUsed > newFrames[mruIndex].lastUsed) {
-            mruIndex = i;
-          }
-        }
-        
-        newFrames[mruIndex] = {
-          ...newFrames[mruIndex],
-          page: pageRef,
-          lastUsed: stepIndex,
-          highlight: true
-        };
-      }
-      newFaults++;
-    }
-    
-    const newHistory = [...currentHistory, { page: pageRef, fault: pageInFrames === -1 }];
-    
-    return {
-      frames: newFrames,
-      faults: newFaults,
-      hits: newHits,
-      history: newHistory
-    };
-  };
-
-  const precomputeSimulation = () => {
-    const steps: SimulationStep[] = [];
-    let currentFrames = Array(framesCount).fill(null).map((_, index) => ({
-      id: index,
-      page: null,
-      lastUsed: 0,
-      loaded: false,
-      highlight: false
-    }));
-    let currentFaults = 0;
-    let currentHits = 0;
-    let currentHistory: { page: number; fault: boolean }[] = [];
-
-    // Initial state
-    steps.push({
-      frames: [...currentFrames],
-      faults: currentFaults,
-      hits: currentHits,
-      history: [...currentHistory]
-    });
-
-    for (let i = 0; i < pageReferences.length; i++) {
-      const result = simulateStep(i, currentFrames, currentFaults, currentHits, currentHistory);
-      if (result) {
-        currentFrames = result.frames;
-        currentFaults = result.faults;
-        currentHits = result.hits;
-        currentHistory = result.history;
-        
-        steps.push({
-          frames: [...currentFrames],
-          faults: currentFaults,
-          hits: currentHits,
-          history: [...currentHistory]
-        });
-      }
-    }
-
-    setSimulationSteps(steps);
-    return steps;
-  };
-
-  const updateToStep = (stepIndex: number) => {
-    if (stepIndex < 0 || stepIndex >= simulationSteps.length) return;
-    
-    const step = simulationSteps[stepIndex];
-    setFrames(step.frames);
-    setPageFaults(step.faults);
-    setPageHits(step.hits);
-    setReferenceHistory(step.history);
-    setCurrentStep(stepIndex - 1); // Adjust for 0-based indexing
-  };
-
-  // Handle auto-play
+  // Handle play/pause
   useEffect(() => {
-    if (!autoPlay || currentStep >= pageReferences.length - 1) return;
+    if (!isPlaying || currentStep >= pageReferences.length - 1) return;
 
     const timer = setTimeout(() => {
-      const nextStepIndex = currentStep + 2; // +2 because steps include initial state
-      if (nextStepIndex < simulationSteps.length) {
-        updateToStep(nextStepIndex);
-      } else {
-        setAutoPlay(false);
-      }
-    }, 1000 / speed);
+      nextStep();
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
-  }, [autoPlay, currentStep, pageReferences.length, speed, simulationSteps]);
+  }, [isPlaying, currentStep, pageReferences.length, speed]);
 
   const handleAddReference = () => {
     if (!inputReference.trim()) return;
@@ -208,74 +87,190 @@ const MRUVisualizer = () => {
     setCurrentStep(-1);
     setPageFaults(0);
     setPageHits(0);
-    setAutoPlay(false);
+    setIsPlaying(false);
     setReferenceHistory([]);
-    setSimulationSteps([]);
+    setSimulationHistory([]);
     
     const resetFrames = Array(framesCount).fill(null).map((_, index) => ({
       id: index,
       page: null,
-      lastUsed: 0,
       loaded: false,
       highlight: false
     }));
     setFrames(resetFrames);
   };
 
-  const handlePlayPause = () => {
-    if (pageReferences.length === 0) return;
+  const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[]) => {
+    if (stepIndex >= pageReferences.length) return null;
     
-    if (simulationSteps.length === 0) {
-      precomputeSimulation();
+    const pageRef = pageReferences[stepIndex];
+    const pageInFrames = currentFrames.some(frame => frame.page === pageRef);
+    
+    let newFrames = currentFrames.map(frame => ({ ...frame, highlight: false }));
+    let newFaults = currentFaults;
+    let newHits = currentHits;
+    let newHistory = [...currentHistory];
+    
+    if (pageInFrames) {
+      newFrames = newFrames.map(frame => 
+        frame.page === pageRef ? { ...frame, highlight: true } : frame
+      );
+      newHits++;
+    } else {
+      // Check if there's an empty frame first
+      const emptyFrameIndex = newFrames.findIndex(frame => !frame.loaded);
+      
+      if (emptyFrameIndex !== -1) {
+        // Use empty frame
+        newFrames[emptyFrameIndex] = {
+          ...newFrames[emptyFrameIndex],
+          page: pageRef,
+          loaded: true,
+          highlight: true
+        };
+      } else {
+        // All frames are full, use MRU replacement
+        // Find the most recently used page
+        let mostRecentFrameIndex = 0;
+        let mostRecentTime = -1;
+        
+        // Track when each page was last used
+        const pageLastUsed = new Map();
+        
+        // Reconstruct the usage history to find the most recently used frame
+        for (let i = 0; i <= stepIndex; i++) {
+          const historyPage = pageReferences[i];
+          pageLastUsed.set(historyPage, i);
+        }
+        
+        // Find the frame with the most recent usage
+        for (let i = 0; i < newFrames.length; i++) {
+          if (newFrames[i].page !== null) {
+            const lastUsed = pageLastUsed.get(newFrames[i].page) || -1;
+            if (lastUsed > mostRecentTime) {
+              mostRecentTime = lastUsed;
+              mostRecentFrameIndex = i;
+            }
+          }
+        }
+        
+        // Replace the most recently used frame
+        newFrames[mostRecentFrameIndex] = {
+          ...newFrames[mostRecentFrameIndex],
+          page: pageRef,
+          loaded: true,
+          highlight: true
+        };
+      }
+      
+      newFaults++;
     }
     
+    newHistory.push({ page: pageRef, fault: !pageInFrames });
+    
+    return {
+      frames: newFrames,
+      faults: newFaults,
+      hits: newHits,
+      history: newHistory
+    };
+  };
+
+  const nextStep = () => {
+    if (currentStep >= pageReferences.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
+    
+    const nextStepIndex = currentStep + 1;
+    const result = simulateStep(nextStepIndex, frames, pageFaults, pageHits, referenceHistory);
+    
+    if (result) {
+      setFrames(result.frames);
+      setPageFaults(result.faults);
+      setPageHits(result.hits);
+      setReferenceHistory(result.history);
+      setCurrentStep(nextStepIndex);
+      
+      // Save to history
+      const newHistory = [...simulationHistory];
+      newHistory[nextStepIndex] = result;
+      setSimulationHistory(newHistory);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep <= -1) return;
+    
+    const prevStepIndex = currentStep - 1;
+    
+    if (prevStepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    const prevState = simulationHistory[prevStepIndex];
+    if (prevState) {
+      setFrames(prevState.frames);
+      setPageFaults(prevState.faults);
+      setPageHits(prevState.hits);
+      setReferenceHistory(prevState.history);
+      setCurrentStep(prevStepIndex);
+    }
+  };
+
+  const goToStep = (stepIndex: number) => {
+    if (stepIndex < -1 || stepIndex >= pageReferences.length) return;
+    
+    if (stepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    // Simulate from beginning to target step
+    let currentFrames = Array(framesCount).fill(null).map((_, index) => ({
+      id: index,
+      page: null,
+      loaded: false,
+      highlight: false
+    }));
+    let currentFaults = 0;
+    let currentHits = 0;
+    let currentHistory: { page: number; fault: boolean }[] = [];
+    
+    for (let i = 0; i <= stepIndex; i++) {
+      const result = simulateStep(i, currentFrames, currentFaults, currentHits, currentHistory);
+      if (result) {
+        currentFrames = result.frames;
+        currentFaults = result.faults;
+        currentHits = result.hits;
+        currentHistory = result.history;
+      }
+    }
+    
+    setFrames(currentFrames);
+    setPageFaults(currentFaults);
+    setPageHits(currentHits);
+    setReferenceHistory(currentHistory);
+    setCurrentStep(stepIndex);
+  };
+
+  const togglePlayPause = () => {
     if (currentStep >= pageReferences.length - 1) {
       resetSimulation();
-      setTimeout(() => {
-        const steps = precomputeSimulation();
-        setAutoPlay(true);
-        updateToStep(1);
-      }, 100);
+      setIsPlaying(true);
     } else {
-      setAutoPlay(!autoPlay);
+      setIsPlaying(!isPlaying);
     }
   };
 
-  const handleStepForward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    const nextStepIndex = currentStep + 2;
-    if (nextStepIndex < simulationSteps.length) {
-      updateToStep(nextStepIndex);
-    }
+  const fastForward = () => {
+    goToStep(pageReferences.length - 1);
   };
 
-  const handleStepBackward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    const prevStepIndex = Math.max(0, currentStep + 1);
-    updateToStep(prevStepIndex);
+  const rewind = () => {
+    resetSimulation();
   };
-
-  const handleRewind = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    updateToStep(0);
-  };
-
-  const handleFastForward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    updateToStep(simulationSteps.length - 1);
-  };
-
-  const handleSliderChange = (value: number[]) => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    setAutoPlay(false);
-    updateToStep(value[0]);
-  };
-
-  useEffect(() => {
-    if (pageReferences.length > 0 && simulationSteps.length === 0) {
-      precomputeSimulation();
-    }
-  }, [pageReferences]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -324,99 +319,107 @@ const MRUVisualizer = () => {
                         onKeyDown={(e) => e.key === 'Enter' && handleAddReference()}
                         className="rounded-r-none"
                       />
-                      <Button onClick={handleAddReference} className="rounded-l-none">Add</Button>
+                      <Button onClick={handleAddReference} className="rounded-l-none bg-drona-green hover:bg-drona-green/90">Add</Button>
                     </div>
                   </div>
                   
                   <div>
                     <Label>Simulation Speed</Label>
-                    <div className="flex items-center mt-1">
-                      <input 
-                        type="range" 
+                    <div className="mt-2">
+                      <Slider 
+                        value={[speed]} 
+                        onValueChange={(value) => setSpeed(value[0])}
                         min={0.5} 
                         max={3} 
-                        step={0.5} 
-                        value={speed} 
-                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        step={0.5}
                         className="w-full"
                       />
-                      <span className="ml-2 text-sm text-drona-gray">{speed}x</span>
+                      <div className="flex justify-between text-sm text-drona-gray mt-1">
+                        <span>0.5x</span>
+                        <span>{speed}x</span>
+                        <span>3x</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleRewind}
-                        disabled={pageReferences.length === 0}
-                      >
-                        <Rewind className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStepBackward}
-                        disabled={pageReferences.length === 0 || currentStep < 0}
-                      >
-                        <SkipBack className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                        onClick={handlePlayPause}
-                        disabled={pageReferences.length === 0}
-                      >
-                        {autoPlay ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= pageReferences.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStepForward}
-                        disabled={pageReferences.length === 0 || currentStep >= pageReferences.length - 1}
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleFastForward}
-                        disabled={pageReferences.length === 0}
-                      >
-                        <FastForward className="h-4 w-4" />
-                      </Button>
-                    </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Controls */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Playback Controls</CardTitle>
+                <CardDescription>Control the simulation flow</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      className="w-full" 
-                      onClick={resetSimulation}
+                      size="sm"
+                      onClick={rewind}
+                      disabled={currentStep === -1}
+                      className="flex-1"
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset
+                      <Rewind className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={previousStep}
+                      disabled={currentStep <= -1}
+                      className="flex-1"
+                    >
+                      <SkipBack className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={togglePlayPause}
+                      disabled={pageReferences.length === 0}
+                      className="flex-1 bg-drona-green hover:bg-drona-green/90"
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={nextStep}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={fastForward}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <FastForward className="h-4 w-4" />
                     </Button>
                   </div>
                   
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={resetSimulation}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset
+                  </Button>
+
                   {pageReferences.length > 0 && (
                     <div>
-                      <Label>Step Control</Label>
-                      <div className="mt-2">
-                        <Slider
-                          value={[currentStep + 1]}
-                          max={pageReferences.length}
-                          min={0}
-                          step={1}
-                          onValueChange={handleSliderChange}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-drona-gray mt-1">
-                          <span>0</span>
-                          <span>{pageReferences.length}</span>
-                        </div>
-                      </div>
+                      <Label>Step: {currentStep + 1} of {pageReferences.length}</Label>
+                      <Slider 
+                        value={[currentStep + 1]} 
+                        onValueChange={(value) => goToStep(value[0] - 1)}
+                        min={0} 
+                        max={pageReferences.length}
+                        step={1}
+                        className="w-full mt-2"
+                      />
                     </div>
                   )}
                 </div>
@@ -474,12 +477,16 @@ const MRUVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Reference String</h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 rounded-lg overflow-x-auto">
                         {pageReferences.map((page, idx) => (
                           <Badge 
                             key={idx}
                             variant={idx === currentStep ? "default" : "outline"}
-                            className={idx === currentStep ? "bg-drona-green" : ""}
+                            className={cn(
+                              "transition-all duration-200",
+                              idx === currentStep ? "bg-drona-green scale-110" : "",
+                              idx < currentStep ? "opacity-60" : ""
+                            )}
                           >
                             {page}
                           </Badge>
@@ -489,23 +496,23 @@ const MRUVisualizer = () => {
                     
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Memory Frames</h3>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-4 p-4 bg-gray-50 rounded-lg">
                         {frames.map((frame, idx) => (
                           <div 
                             key={frame.id} 
                             className={cn(
-                              "border border-gray-200 rounded-lg p-4 flex items-center justify-center transition-all", 
-                              frame.highlight && "bg-drona-green/10 border-drona-green"
+                              "border-2 rounded-lg p-6 flex items-center justify-center transition-all duration-300 min-h-[80px]", 
+                              frame.highlight ? "bg-drona-green/10 border-drona-green shadow-lg transform scale-105" : "bg-white border-gray-200"
                             )}
                           >
                             <div className="text-center">
-                              <div className="font-medium">Frame {idx}</div>
+                              <div className="font-medium text-sm text-gray-500 mb-1">Frame {idx}</div>
                               {frame.page !== null ? (
-                                <div className={cn("text-2xl font-bold mt-1", frame.highlight && "text-drona-green")}>
-                                  Page {frame.page}
+                                <div className={cn("text-3xl font-bold", frame.highlight ? "text-drona-green" : "text-gray-700")}>
+                                  {frame.page}
                                 </div>
                               ) : (
-                                <div className="text-gray-400 text-2xl mt-1">Empty</div>
+                                <div className="text-gray-400 text-2xl">Empty</div>
                               )}
                             </div>
                           </div>
@@ -559,10 +566,10 @@ const MRUVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        MRU is the opposite of LRU - it replaces the page that has been most recently used. The algorithm keeps track of when each page was last accessed.
+                        MRU (Most Recently Used) is a page replacement algorithm that removes the page that was most recently accessed. This is counter-intuitive compared to LRU, but can be optimal in certain access patterns where the most recently used page is unlikely to be accessed again soon.
                       </p>
                       <p className="text-drona-gray">
-                        When a page fault occurs and all frames are full, the page that was most recently used is evicted and replaced with the new page.
+                        When a page fault occurs and all frames are occupied, the algorithm selects the page that was accessed most recently for replacement.
                       </p>
                     </div>
                     
@@ -572,30 +579,32 @@ const MRUVisualizer = () => {
                         <pre className="font-mono text-sm">
 {`function MRU_PageReplacement(referenceString, frameCount):
     frames = create empty array of size frameCount
-    pageLastUsed = empty map to track when each page was last used
+    accessTime = create empty map
     pageFaults = 0
     currentTime = 0
     
     for each page in referenceString:
-        currentTime++
-        
-        if page is in frames:
-            // Page hit - update last used time
-            pageLastUsed[page] = currentTime
-        else:
-            // Page fault
-            if frames is not full:
-                // Add page to empty frame
-                add page to frames
-            else:
+        if page is not in frames:
+            if frames is full:
                 // Find most recently used page
-                mruPage = page with maximum pageLastUsed value
-                replace mruPage in frames with page
+                mostRecentTime = -1
+                victimPage = null
+                
+                for each framePage in frames:
+                    if accessTime[framePage] > mostRecentTime:
+                        mostRecentTime = accessTime[framePage]
+                        victimPage = framePage
+                    endif
+                endfor
+                
+                remove victimPage from frames
             endif
             
-            pageLastUsed[page] = currentTime
+            add page to frames
             pageFaults++
         endif
+        
+        accessTime[page] = currentTime++
     endfor
     
     return pageFaults`}
@@ -604,22 +613,21 @@ const MRUVisualizer = () => {
                     </div>
                     
                     <div>
-                      <h3 className="font-medium text-drona-dark mb-2">Advantages and Disadvantages</h3>
+                      <h3 className="font-medium text-drona-dark mb-2">Characteristics</h3>
                       
-                      <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
+                      <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Use Cases</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Simple to implement like LRU</li>
-                        <li>Can perform well in certain specific workload patterns</li>
-                        <li>Useful for specific cases where most recently used pages are less likely to be needed again</li>
-                        <li>Works well with cyclic access patterns where oldest pages are needed soon</li>
+                        <li>Sequential access patterns where recently accessed pages won't be needed soon</li>
+                        <li>One-time sequential scans of large datasets</li>
+                        <li>Situations where temporal locality is inverse (anti-locality)</li>
                       </ul>
                       
-                      <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
+                      <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Limitations</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Generally performs worse than LRU in most real-world scenarios</li>
-                        <li>Does not take advantage of temporal locality</li>
-                        <li>May evict pages that are likely to be used again soon</li>
-                        <li>Requires tracking of page access times like LRU</li>
+                        <li>Counter-intuitive behavior - removes recently used pages</li>
+                        <li>Poor performance with typical locality of reference patterns</li>
+                        <li>Not commonly used in practice for general-purpose systems</li>
+                        <li>Requires tracking of access times for all pages</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -636,10 +644,10 @@ const MRUVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">Time Complexity</h3>
                       <p className="text-drona-gray mb-4">
-                        <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> for each page reference operation, where n is the number of frames.
+                        <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> for each page reference, where n is the number of frames.
                       </p>
                       <p className="text-drona-gray">
-                        MRU needs to search through all frames to find the most recently used page when a page fault occurs, similar to LRU.
+                        Unlike FIFO, MRU requires scanning all frames to find the most recently used page during replacement, making it slower than simpler algorithms.
                       </p>
                     </div>
                     
@@ -651,28 +659,27 @@ const MRUVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> where n is the number of page frames.
                       </p>
                       <p className="text-drona-gray">
-                        Additional space is required for storing the "last used" timestamps for each page in memory, just like in LRU.
+                        Requires additional space to track access times or recency information for each page in memory.
                       </p>
                     </div>
                     
                     <Separator className="my-6" />
                     
                     <div>
-                      <h3 className="font-medium text-drona-dark mb-2">When MRU Performs Well</h3>
+                      <h3 className="font-medium text-drona-dark mb-2">Comparison with Other Algorithms</h3>
                       <p className="text-drona-gray mb-4">
-                        MRU can outperform other algorithms in specific workloads:
+                        MRU typically performs worse than LRU and FIFO for most workloads due to its counter-intuitive replacement strategy.
                       </p>
                       
-                      <ul className="list-disc pl-5 text-drona-gray space-y-1 mb-4">
-                        <li>When access patterns are cyclic or reverse to typical patterns</li>
-                        <li>In databases with full table scans where data is unlikely to be reused immediately</li>
-                        <li>When dealing with large sequential arrays that are processed once</li>
-                      </ul>
-                      
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
-                        <h4 className="text-sm font-medium text-drona-dark mb-2">Real-world Example</h4>
+                        <h4 className="text-sm font-medium text-drona-dark mb-2">When MRU might be better</h4>
+                        <p className="text-sm text-drona-gray mb-2">
+                          Consider a sequential scan through a large database:
+                        </p>
                         <p className="text-sm text-drona-gray">
-                          In a database system performing sequential reads of records, the MRU policy can be effective since the most recently used pages are unlikely to be needed again soon, while older pages may be needed for joins or aggregations.
+                          Reference pattern: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12...
+                          <br />
+                          With 3 frames, once frames are full, the most recently accessed page is least likely to be accessed again in this sequential pattern.
                         </p>
                       </div>
                     </div>

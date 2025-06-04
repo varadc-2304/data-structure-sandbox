@@ -82,10 +82,10 @@ const BinaryTreeVisualizer = () => {
     node.y = y;
     
     if (node.left) {
-      calculatePositions(node.left, x - spacing, y + 80, spacing / 2);
+      calculatePositions(node.left, x - spacing, y + 100, spacing / 1.8);
     }
     if (node.right) {
-      calculatePositions(node.right, x + spacing, y + 80, spacing / 2);
+      calculatePositions(node.right, x + spacing, y + 100, spacing / 1.8);
     }
   };
 
@@ -179,6 +179,51 @@ const BinaryTreeVisualizer = () => {
     return values;
   };
 
+  const renderConnections = (node: TreeNode | null): JSX.Element[] => {
+    if (!node) return [];
+    
+    const connections: JSX.Element[] = [];
+    
+    if (node.left && node.x && node.y && node.left.x && node.left.y) {
+      connections.push(
+        <line
+          key={`line-${node.id}-left`}
+          x1={node.x}
+          y1={node.y}
+          x2={node.left.x}
+          y2={node.left.y}
+          stroke="#d1d5db"
+          strokeWidth="2"
+          className="transition-all duration-300"
+        />
+      );
+    }
+    
+    if (node.right && node.x && node.y && node.right.x && node.right.y) {
+      connections.push(
+        <line
+          key={`line-${node.id}-right`}
+          x1={node.x}
+          y1={node.y}
+          x2={node.right.x}
+          y2={node.right.y}
+          stroke="#d1d5db"
+          strokeWidth="2"
+          className="transition-all duration-300"
+        />
+      );
+    }
+    
+    if (node.left) {
+      connections.push(...renderConnections(node.left));
+    }
+    if (node.right) {
+      connections.push(...renderConnections(node.right));
+    }
+    
+    return connections;
+  };
+
   const renderTree = (node: TreeNode | null): JSX.Element | null => {
     if (!node) return null;
 
@@ -186,33 +231,45 @@ const BinaryTreeVisualizer = () => {
                          traversalOrder[currentTraversal] === node.id;
 
     return (
-      <div key={node.id} className="relative">
-        <div
+      <g key={node.id}>
+        <circle
+          cx={node.x}
+          cy={node.y}
+          r="24"
           className={cn(
-            "w-12 h-12 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10",
+            "transition-all duration-300",
             {
-              "border-arena-green bg-arena-green text-white shadow-lg scale-110": isHighlighted,
+              "fill-arena-green stroke-arena-green": isHighlighted,
+              "fill-white stroke-gray-300": !isHighlighted,
             }
           )}
-          style={{
-            position: 'absolute',
-            left: node.x ? `${node.x}px` : '0px',
-            top: node.y ? `${node.y}px` : '0px',
-            transform: 'translate(-50%, -50%)',
-          }}
+          strokeWidth="2"
+        />
+        <text
+          x={node.x}
+          y={node.y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          className={cn(
+            "text-sm font-medium transition-all duration-300",
+            {
+              "fill-white": isHighlighted,
+              "fill-gray-700": !isHighlighted,
+            }
+          )}
         >
           {node.value}
-        </div>
+        </text>
         
         {node.left && renderTree(node.left)}
         {node.right && renderTree(node.right)}
-      </div>
+      </g>
     );
   };
 
   useEffect(() => {
     if (root) {
-      calculatePositions(root, 300, 50, 100);
+      calculatePositions(root, 400, 60, 150);
     }
   }, [root]);
 
@@ -266,13 +323,14 @@ const BinaryTreeVisualizer = () => {
           {/* Tree visualization */}
           <div className="mb-6 relative">
             <div 
-              className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
-              style={{ minHeight: "400px", maxHeight: "500px" }}
+              className="bg-arena-light rounded-lg p-4 overflow-auto relative flex justify-center"
+              style={{ minHeight: "500px", maxHeight: "600px" }}
             >
               {root ? (
-                <div className="relative w-full h-full">
+                <svg width="800" height="500" className="overflow-visible">
+                  {renderConnections(root)}
                   {renderTree(root)}
-                </div>
+                </svg>
               ) : (
                 <div className="flex items-center justify-center h-full text-arena-gray">
                   <span>Tree is empty. Add nodes using the controls below.</span>
