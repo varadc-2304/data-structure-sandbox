@@ -54,11 +54,11 @@ const ArrayVisualizer = () => {
     });
   };
 
-  const insertAtPosition = () => {
+  const replaceAtPosition = () => {
     if (newElement.trim() === '') {
       toast({
         title: "Input required",
-        description: "Please enter a value to insert",
+        description: "Please enter a value to replace",
         variant: "destructive",
       });
       return;
@@ -86,14 +86,15 @@ const ArrayVisualizer = () => {
 
     const newValue = Number(newElement);
     const newArray = [...array];
-    newArray[pos] = newValue; // Replace element at position instead of inserting
+    const oldValue = newArray[pos];
+    newArray[pos] = newValue;
     setArray(newArray);
-    setLastOperation('insert');
+    setLastOperation('replace');
     setOperationTarget(pos);
     setNewElement('');
     setPosition('');
     
-    const message = `Replaced element at position ${pos} with "${newValue}"`;
+    const message = `Replaced element at position ${pos} from "${oldValue}" to "${newValue}"`;
     addToLog(message);
     
     toast({
@@ -219,7 +220,7 @@ const ArrayVisualizer = () => {
           <div className="arena-chip mb-2">Data Structure Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Array Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize and perform operations on arrays. Add, remove, or view elements to see how arrays work.
+            Visualize and perform operations on arrays. Add, replace, remove, or view elements to see how arrays work.
           </p>
         </div>
         
@@ -292,7 +293,7 @@ const ArrayVisualizer = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Add element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
@@ -334,36 +335,59 @@ const ArrayVisualizer = () => {
               </div>
             </div>
             
+            {/* Replace element */}
+            <div className="bg-arena-light rounded-xl p-4">
+              <h3 className="text-lg font-medium mb-3 flex items-center">
+                <Plus className="h-5 w-5 text-arena-green mr-2" />
+                Replace Element
+              </h3>
+              <div className="space-y-2">
+                <input
+                  type="number"
+                  value={newElement}
+                  onChange={(e) => setNewElement(e.target.value)}
+                  placeholder="New value"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <input
+                  type="number"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="Position"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={replaceAtPosition}
+                  variant="default"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Replace
+                </Button>
+              </div>
+            </div>
+            
             {/* Remove element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Trash className="h-5 w-5 text-arena-green mr-2" />
-                Remove Last Element
+                Remove Element
               </h3>
-              <Button
-                onClick={() => {
-                  if (array.length === 0) {
-                    toast({
-                      title: "Array is empty",
-                      description: "Cannot remove from an empty array",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  const removedElement = array[array.length - 1];
-                  setArray(array.slice(0, -1));
-                  const message = `Removed ${removedElement} from the array`;
-                  addToLog(message);
-                  toast({
-                    title: "Element removed",
-                    description: message,
-                  });
-                }}
-                variant="default"
-                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
-              >
-                Remove
-              </Button>
+              <div className="space-y-2">
+                <input
+                  type="number"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="Position"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={deleteAtPosition}
+                  variant="default"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Remove
+                </Button>
+              </div>
             </div>
             
             {/* Clear array */}

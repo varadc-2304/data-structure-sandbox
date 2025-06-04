@@ -20,13 +20,6 @@ interface PageFrame {
   highlight: boolean;
 }
 
-interface SimulationStep {
-  frames: PageFrame[];
-  faults: number;
-  hits: number;
-  history: { page: number; fault: boolean }[];
-}
-
 const LRUVisualizer = () => {
   const [pageReferences, setPageReferences] = useState<number[]>([]);
   const [inputReference, setInputReference] = useState<string>("");
@@ -38,8 +31,12 @@ const LRUVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [referenceHistory, setReferenceHistory] = useState<{ page: number; fault: boolean }[]>([]);
-  const [simulationSteps, setSimulationSteps] = useState<SimulationStep[]>([]);
-  const [autoPlay, setAutoPlay] = useState<boolean>(false);
+  const [simulationHistory, setSimulationHistory] = useState<{
+    frames: PageFrame[];
+    faults: number;
+    hits: number;
+    history: { page: number; fault: boolean }[];
+  }[]>([]);
 
   // Initialize frames
   useEffect(() => {
@@ -53,6 +50,57 @@ const LRUVisualizer = () => {
     setFrames(newFrames);
     resetSimulation();
   }, [framesCount]);
+
+  // Handle play/pause
+  useEffect(() => {
+    if (!isPlaying || currentStep >= pageReferences.length - 1) return;
+
+    const timer = setTimeout(() => {
+      nextStep();
+    }, 2000 / speed);
+
+    return () => clearTimeout(timer);
+  }, [isPlaying, currentStep, pageReferences.length, speed]);
+
+  const handleAddReference = () => {
+    if (!inputReference.trim()) return;
+    
+    try {
+      const newReferences = inputReference
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map(ref => {
+          const parsedRef = parseInt(ref.trim());
+          if (isNaN(parsedRef) || parsedRef < 0) {
+            throw new Error('Invalid reference');
+          }
+          return parsedRef;
+        });
+      
+      setPageReferences([...pageReferences, ...newReferences]);
+      setInputReference("");
+    } catch (error) {
+      console.error("Invalid reference format");
+    }
+  };
+
+  const resetSimulation = () => {
+    setCurrentStep(-1);
+    setPageFaults(0);
+    setPageHits(0);
+    setIsPlaying(false);
+    setReferenceHistory([]);
+    setSimulationHistory([]);
+    
+    const resetFrames = Array(framesCount).fill(null).map((_, index) => ({
+      id: index,
+      page: null,
+      lastUsed: 0,
+      loaded: false,
+      highlight: false
+    }));
+    setFrames(resetFrames);
+  };
 
   const simulateStep = (stepIndex: number, currentFrames: PageFrame[], currentFaults: number, currentHits: number, currentHistory: { page: number; fault: boolean }[]) => {
     if (stepIndex >= pageReferences.length) return null;
@@ -113,8 +161,58 @@ const LRUVisualizer = () => {
     };
   };
 
-  const precomputeSimulation = () => {
-    const steps: SimulationStep[] = [];
+  const nextStep = () => {
+    if (currentStep >= pageReferences.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
+    
+    const nextStepIndex = currentStep + 1;
+    const result = simulateStep(nextStepIndex, frames, pageFaults, pageHits, referenceHistory);
+    
+    if (result) {
+      setFrames(result.frames);
+      setPageFaults(result.faults);
+      setPageHits(result.hits);
+      setReferenceHistory(result.history);
+      setCurrentStep(nextStepIndex);
+      
+      // Save to history
+      const newHistory = [...simulationHistory];
+      newHistory[nextStepIndex] = result;
+      setSimulationHistory(newHistory);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep <= -1) return;
+    
+    const prevStepIndex = currentStep - 1;
+    
+    if (prevStepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    const prevState = simulationHistory[prevStepIndex];
+    if (prevState) {
+      setFrames(prevState.frames);
+      setPageFaults(prevState.faults);
+      setPageHits(prevState.hits);
+      setReferenceHistory(prevState.history);
+      setCurrentStep(prevStepIndex);
+    }
+  };
+
+  const goToStep = (stepIndex: number) => {
+    if (stepIndex < -1 || stepIndex >= pageReferences.length) return;
+    
+    if (stepIndex === -1) {
+      resetSimulation();
+      return;
+    }
+    
+    // Simulate from beginning to target step
     let currentFrames = Array(framesCount).fill(null).map((_, index) => ({
       id: index,
       page: null,
@@ -125,157 +223,40 @@ const LRUVisualizer = () => {
     let currentFaults = 0;
     let currentHits = 0;
     let currentHistory: { page: number; fault: boolean }[] = [];
-
-    // Initial state
-    steps.push({
-      frames: [...currentFrames],
-      faults: currentFaults,
-      hits: currentHits,
-      history: [...currentHistory]
-    });
-
-    for (let i = 0; i < pageReferences.length; i++) {
+    
+    for (let i = 0; i <= stepIndex; i++) {
       const result = simulateStep(i, currentFrames, currentFaults, currentHits, currentHistory);
       if (result) {
         currentFrames = result.frames;
         currentFaults = result.faults;
         currentHits = result.hits;
         currentHistory = result.history;
-        
-        steps.push({
-          frames: [...currentFrames],
-          faults: currentFaults,
-          hits: currentHits,
-          history: [...currentHistory]
-        });
       }
     }
-
-    setSimulationSteps(steps);
-    return steps;
+    
+    setFrames(currentFrames);
+    setPageFaults(currentFaults);
+    setPageHits(currentHits);
+    setReferenceHistory(currentHistory);
+    setCurrentStep(stepIndex);
   };
 
-  const updateToStep = (stepIndex: number) => {
-    if (stepIndex < 0 || stepIndex >= simulationSteps.length) return;
-    
-    const step = simulationSteps[stepIndex];
-    setFrames(step.frames);
-    setPageFaults(step.faults);
-    setPageHits(step.hits);
-    setReferenceHistory(step.history);
-    setCurrentStep(stepIndex - 1); // Adjust for 0-based indexing
-  };
-
-  // Handle auto-play
-  useEffect(() => {
-    if (!autoPlay || currentStep >= pageReferences.length - 1) return;
-
-    const timer = setTimeout(() => {
-      const nextStepIndex = currentStep + 2; // +2 because steps include initial state
-      if (nextStepIndex < simulationSteps.length) {
-        updateToStep(nextStepIndex);
-      } else {
-        setAutoPlay(false);
-      }
-    }, 1000 / speed);
-
-    return () => clearTimeout(timer);
-  }, [autoPlay, currentStep, pageReferences.length, speed, simulationSteps]);
-
-  const handleAddReference = () => {
-    if (!inputReference.trim()) return;
-    
-    try {
-      const newReferences = inputReference
-        .split(/[,\s]+/)
-        .filter(Boolean)
-        .map(ref => {
-          const parsedRef = parseInt(ref.trim());
-          if (isNaN(parsedRef) || parsedRef < 0) {
-            throw new Error('Invalid reference');
-          }
-          return parsedRef;
-        });
-      
-      setPageReferences([...pageReferences, ...newReferences]);
-      setInputReference("");
-    } catch (error) {
-      console.error("Invalid reference format");
-    }
-  };
-
-  const resetSimulation = () => {
-    setCurrentStep(-1);
-    setPageFaults(0);
-    setPageHits(0);
-    setAutoPlay(false);
-    setReferenceHistory([]);
-    setSimulationSteps([]);
-    
-    const resetFrames = Array(framesCount).fill(null).map((_, index) => ({
-      id: index,
-      page: null,
-      lastUsed: 0,
-      loaded: false,
-      highlight: false
-    }));
-    setFrames(resetFrames);
-  };
-
-  const handlePlayPause = () => {
-    if (pageReferences.length === 0) return;
-    
-    if (simulationSteps.length === 0) {
-      precomputeSimulation();
-    }
-    
+  const togglePlayPause = () => {
     if (currentStep >= pageReferences.length - 1) {
       resetSimulation();
-      setTimeout(() => {
-        const steps = precomputeSimulation();
-        setAutoPlay(true);
-        updateToStep(1);
-      }, 100);
+      setIsPlaying(true);
     } else {
-      setAutoPlay(!autoPlay);
+      setIsPlaying(!isPlaying);
     }
   };
 
-  const handleStepForward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    const nextStepIndex = currentStep + 2;
-    if (nextStepIndex < simulationSteps.length) {
-      updateToStep(nextStepIndex);
-    }
+  const fastForward = () => {
+    goToStep(pageReferences.length - 1);
   };
 
-  const handleStepBackward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    const prevStepIndex = Math.max(0, currentStep + 1);
-    updateToStep(prevStepIndex);
+  const rewind = () => {
+    resetSimulation();
   };
-
-  const handleRewind = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    updateToStep(0);
-  };
-
-  const handleFastForward = () => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    updateToStep(simulationSteps.length - 1);
-  };
-
-  const handleSliderChange = (value: number[]) => {
-    if (simulationSteps.length === 0) precomputeSimulation();
-    setAutoPlay(false);
-    updateToStep(value[0]);
-  };
-
-  useEffect(() => {
-    if (pageReferences.length > 0 && simulationSteps.length === 0) {
-      precomputeSimulation();
-    }
-  }, [pageReferences]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -324,99 +305,107 @@ const LRUVisualizer = () => {
                         onKeyDown={(e) => e.key === 'Enter' && handleAddReference()}
                         className="rounded-r-none"
                       />
-                      <Button onClick={handleAddReference} className="rounded-l-none">Add</Button>
+                      <Button onClick={handleAddReference} className="rounded-l-none bg-drona-green hover:bg-drona-green/90">Add</Button>
                     </div>
                   </div>
                   
                   <div>
                     <Label>Simulation Speed</Label>
-                    <div className="flex items-center mt-1">
-                      <input 
-                        type="range" 
+                    <div className="mt-2">
+                      <Slider 
+                        value={[speed]} 
+                        onValueChange={(value) => setSpeed(value[0])}
                         min={0.5} 
                         max={3} 
-                        step={0.5} 
-                        value={speed} 
-                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        step={0.5}
                         className="w-full"
                       />
-                      <span className="ml-2 text-sm text-drona-gray">{speed}x</span>
+                      <div className="flex justify-between text-sm text-drona-gray mt-1">
+                        <span>0.5x</span>
+                        <span>{speed}x</span>
+                        <span>3x</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleRewind}
-                        disabled={pageReferences.length === 0}
-                      >
-                        <Rewind className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStepBackward}
-                        disabled={pageReferences.length === 0 || currentStep < 0}
-                      >
-                        <SkipBack className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                        onClick={handlePlayPause}
-                        disabled={pageReferences.length === 0}
-                      >
-                        {autoPlay ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= pageReferences.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleStepForward}
-                        disabled={pageReferences.length === 0 || currentStep >= pageReferences.length - 1}
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleFastForward}
-                        disabled={pageReferences.length === 0}
-                      >
-                        <FastForward className="h-4 w-4" />
-                      </Button>
-                    </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Controls */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Playback Controls</CardTitle>
+                <CardDescription>Control the simulation flow</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      className="w-full" 
-                      onClick={resetSimulation}
+                      size="sm"
+                      onClick={rewind}
+                      disabled={currentStep === -1}
+                      className="flex-1"
                     >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset
+                      <Rewind className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={previousStep}
+                      disabled={currentStep <= -1}
+                      className="flex-1"
+                    >
+                      <SkipBack className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={togglePlayPause}
+                      disabled={pageReferences.length === 0}
+                      className="flex-1 bg-drona-green hover:bg-drona-green/90"
+                    >
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={nextStep}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <SkipForward className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={fastForward}
+                      disabled={currentStep >= pageReferences.length - 1}
+                      className="flex-1"
+                    >
+                      <FastForward className="h-4 w-4" />
                     </Button>
                   </div>
                   
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={resetSimulation}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset
+                  </Button>
+
                   {pageReferences.length > 0 && (
                     <div>
-                      <Label>Step Control</Label>
-                      <div className="mt-2">
-                        <Slider
-                          value={[currentStep + 1]}
-                          max={pageReferences.length}
-                          min={0}
-                          step={1}
-                          onValueChange={handleSliderChange}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-drona-gray mt-1">
-                          <span>0</span>
-                          <span>{pageReferences.length}</span>
-                        </div>
-                      </div>
+                      <Label>Step: {currentStep + 1} of {pageReferences.length}</Label>
+                      <Slider 
+                        value={[currentStep + 1]} 
+                        onValueChange={(value) => goToStep(value[0] - 1)}
+                        min={0} 
+                        max={pageReferences.length}
+                        step={1}
+                        className="w-full mt-2"
+                      />
                     </div>
                   )}
                 </div>
@@ -474,12 +463,16 @@ const LRUVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Reference String</h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-4 p-4 bg-gray-50 rounded-lg overflow-x-auto">
                         {pageReferences.map((page, idx) => (
                           <Badge 
                             key={idx}
                             variant={idx === currentStep ? "default" : "outline"}
-                            className={idx === currentStep ? "bg-drona-green" : ""}
+                            className={cn(
+                              "transition-all duration-200",
+                              idx === currentStep ? "bg-drona-green scale-110" : "",
+                              idx < currentStep ? "opacity-60" : ""
+                            )}
                           >
                             {page}
                           </Badge>
@@ -489,23 +482,23 @@ const LRUVisualizer = () => {
                     
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Memory Frames</h3>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-4 p-4 bg-gray-50 rounded-lg">
                         {frames.map((frame, idx) => (
                           <div 
                             key={frame.id} 
                             className={cn(
-                              "border border-gray-200 rounded-lg p-4 flex items-center justify-center transition-all", 
-                              frame.highlight && "bg-drona-green/10 border-drona-green"
+                              "border-2 rounded-lg p-6 flex items-center justify-center transition-all duration-300 min-h-[80px]", 
+                              frame.highlight ? "bg-drona-green/10 border-drona-green shadow-lg transform scale-105" : "bg-white border-gray-200"
                             )}
                           >
                             <div className="text-center">
-                              <div className="font-medium">Frame {idx}</div>
+                              <div className="font-medium text-sm text-gray-500 mb-1">Frame {idx}</div>
                               {frame.page !== null ? (
-                                <div className={cn("text-2xl font-bold mt-1", frame.highlight && "text-drona-green")}>
-                                  Page {frame.page}
+                                <div className={cn("text-3xl font-bold", frame.highlight ? "text-drona-green" : "text-gray-700")}>
+                                  {frame.page}
                                 </div>
                               ) : (
-                                <div className="text-gray-400 text-2xl mt-1">Empty</div>
+                                <div className="text-gray-400 text-2xl">Empty</div>
                               )}
                             </div>
                           </div>

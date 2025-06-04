@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipBack, SkipForward, Rewind, FastForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -117,22 +116,35 @@ const FIFOVisualizer = () => {
       );
       newHits++;
     } else {
-      const oldestFrameIndex = newFrames.findIndex(frame => !frame.loaded) !== -1 
-        ? newFrames.findIndex(frame => !frame.loaded) 
-        : 0;
+      // Check if there's an empty frame first
+      const emptyFrameIndex = newFrames.findIndex(frame => !frame.loaded);
       
-      newFrames[oldestFrameIndex] = {
-        ...newFrames[oldestFrameIndex],
-        page: pageRef,
-        loaded: true,
-        highlight: true
-      };
-      
-      if (currentFrames.every(frame => frame.loaded)) {
-        newFrames = [
-          ...newFrames.slice(1),
-          newFrames[0]
-        ];
+      if (emptyFrameIndex !== -1) {
+        // Use empty frame
+        newFrames[emptyFrameIndex] = {
+          ...newFrames[emptyFrameIndex],
+          page: pageRef,
+          loaded: true,
+          highlight: true
+        };
+      } else {
+        // All frames are full, use FIFO replacement
+        // Remove the first frame and shift all others
+        for (let i = 0; i < newFrames.length - 1; i++) {
+          newFrames[i] = {
+            ...newFrames[i],
+            page: newFrames[i + 1].page,
+            loaded: newFrames[i + 1].loaded,
+            highlight: false
+          };
+        }
+        // Put new page in the last frame
+        newFrames[newFrames.length - 1] = {
+          ...newFrames[newFrames.length - 1],
+          page: pageRef,
+          loaded: true,
+          highlight: true
+        };
       }
       
       newFaults++;
@@ -245,6 +257,7 @@ const FIFOVisualizer = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-white">
       <Navbar />
       

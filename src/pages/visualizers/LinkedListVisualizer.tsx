@@ -74,6 +74,62 @@ const LinkedListVisualizer = () => {
     });
   };
 
+  const removeAtPosition = () => {
+    if (position.trim() === '' || isNaN(Number(position))) {
+      toast({
+        title: "Invalid position",
+        description: "Please enter a valid numeric position",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const pos = Number(position);
+    
+    if (pos < 0 || pos >= nodes.length) {
+      toast({
+        title: "Out of bounds",
+        description: `Position must be between 0 and ${nodes.length - 1}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const removedValue = nodes[pos].value;
+    const newNodes = [...nodes];
+    
+    if (pos === 0) {
+      // Remove head
+      newNodes.shift();
+      // Update IDs to maintain sequential order
+      for (let i = 0; i < newNodes.length; i++) {
+        newNodes[i].id = i;
+        newNodes[i].next = i < newNodes.length - 1 ? i + 1 : null;
+      }
+    } else {
+      // Remove from middle or end
+      newNodes.splice(pos, 1);
+      // Update IDs and next pointers
+      for (let i = 0; i < newNodes.length; i++) {
+        newNodes[i].id = i;
+        newNodes[i].next = i < newNodes.length - 1 ? i + 1 : null;
+      }
+    }
+    
+    setNodes(newNodes);
+    setLastOperation('remove');
+    setOperationTarget(pos);
+    setPosition('');
+    
+    const message = `Removed "${removedValue}" from position ${pos}`;
+    addToLog(message);
+    
+    toast({
+      title: "Element removed",
+      description: message,
+    });
+  };
+
   const viewAtPosition = () => {
     if (position.trim() === '' || isNaN(Number(position))) {
       toast({
@@ -296,37 +352,24 @@ const LinkedListVisualizer = () => {
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Trash className="h-5 w-5 text-arena-green mr-2" />
-                Remove Last Element
+                Remove Element
               </h3>
-              <Button
-                onClick={() => {
-                  if (nodes.length === 0) {
-                    toast({
-                      title: "List is empty",
-                      description: "Cannot remove from an empty list",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  const removedElement = nodes[nodes.length - 1].value;
-                  const newNodes = [...nodes];
-                  newNodes.pop();
-                  if (newNodes.length > 0) {
-                    newNodes[newNodes.length - 1].next = null;
-                  }
-                  setNodes(newNodes);
-                  const message = `Removed ${removedElement} from the list`;
-                  addToLog(message);
-                  toast({
-                    title: "Element removed",
-                    description: message,
-                  });
-                }}
-                variant="default"
-                className="w-full bg-arena-green text-white hover:bg-arena-green/90"
-              >
-                Remove
-              </Button>
+              <div className="space-y-2">
+                <input
+                  type="number"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="Position"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={removeAtPosition}
+                  variant="default"
+                  className="w-full bg-arena-green text-white hover:bg-arena-green/90"
+                >
+                  Remove
+                </Button>
+              </div>
             </div>
             
             {/* Clear list */}
