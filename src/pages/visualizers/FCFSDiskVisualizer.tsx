@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -288,27 +287,37 @@ const FCFSDiskVisualizer = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Disk Visualization</h3>
-                      <div className="relative h-16 bg-drona-light rounded-lg overflow-hidden mb-2">
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
+                      <div className="relative bg-drona-light rounded-lg p-8 border-2 border-gray-200" style={{ minHeight: "120px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-400"></div>
+                        <div className="absolute top-1/2 left-8 right-8 h-1 bg-gray-400 rounded"></div>
+                        
+                        {/* Scale markers */}
+                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center" style={{ transform: "translateY(-50%)" }}>
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                            <div key={pos} className="flex flex-col items-center">
+                              <div className="w-0.5 h-4 bg-gray-500 mb-1"></div>
+                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                            </div>
+                          ))}
+                        </div>
                         
                         {/* Initial head position */}
                         <div 
-                          className="absolute top-0 h-full w-0.5 bg-gray-500"
-                          style={{ left: `${(initialHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-1 h-8 bg-gray-500 rounded transform -translate-y-1/2"
+                          style={{ left: `${8 + (initialHeadPosition / diskSize) * (100 - 16)}%` }}
                         >
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
                             Start: {initialHeadPosition}
                           </div>
                         </div>
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-0 h-full w-1 bg-drona-green transition-all duration-500"
-                          style={{ left: `${(currentHeadPosition / diskSize) * 100}%` }}
+                          className="absolute top-1/2 w-2 h-10 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          style={{ left: `${8 + (currentHeadPosition / diskSize) * (100 - 16)}%` }}
                         >
-                          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-drona-green">
+                          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -318,24 +327,17 @@ const FCFSDiskVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-3 h-3 rounded-full",
-                              req.processed ? "bg-drona-green/60" : "bg-gray-400",
-                              req.current && "ring-2 ring-drona-green ring-offset-1"
+                              "absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
+                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
-                            style={{ left: `${(req.position / diskSize) * 100}%` }}
+                            style={{ left: `${8 + (req.position / diskSize) * (100 - 16)}%` }}
                           >
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs">
+                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
                               {req.position}
                             </div>
                           </div>
                         ))}
-                      </div>
-                      <div className="flex justify-between text-xs text-drona-gray">
-                        <span>0</span>
-                        <span>{Math.floor(diskSize / 4)}</span>
-                        <span>{Math.floor(diskSize / 2)}</span>
-                        <span>{Math.floor(3 * diskSize / 4)}</span>
-                        <span>{diskSize - 1}</span>
                       </div>
                     </div>
                     

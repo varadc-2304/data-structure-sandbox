@@ -82,10 +82,10 @@ const BinaryTreeVisualizer = () => {
     node.y = y;
     
     if (node.left) {
-      calculatePositions(node.left, x - spacing, y + 100, spacing / 1.8);
+      calculatePositions(node.left, x - spacing, y + 80, spacing * 0.7);
     }
     if (node.right) {
-      calculatePositions(node.right, x + spacing, y + 100, spacing / 1.8);
+      calculatePositions(node.right, x + spacing, y + 80, spacing * 0.7);
     }
   };
 
@@ -235,12 +235,12 @@ const BinaryTreeVisualizer = () => {
         <circle
           cx={node.x}
           cy={node.y}
-          r="24"
+          r="30"
           className={cn(
             "transition-all duration-300",
             {
               "fill-arena-green stroke-arena-green": isHighlighted,
-              "fill-white stroke-gray-300": !isHighlighted,
+              "fill-white stroke-gray-400": !isHighlighted,
             }
           )}
           strokeWidth="2"
@@ -251,7 +251,7 @@ const BinaryTreeVisualizer = () => {
           textAnchor="middle"
           dominantBaseline="central"
           className={cn(
-            "text-sm font-medium transition-all duration-300",
+            "text-sm font-semibold transition-all duration-300 pointer-events-none",
             {
               "fill-white": isHighlighted,
               "fill-gray-700": !isHighlighted,
@@ -269,7 +269,7 @@ const BinaryTreeVisualizer = () => {
 
   useEffect(() => {
     if (root) {
-      calculatePositions(root, 400, 60, 150);
+      calculatePositions(root, 400, 80, 160);
     }
   }, [root]);
 
@@ -323,17 +323,19 @@ const BinaryTreeVisualizer = () => {
           {/* Tree visualization */}
           <div className="mb-6 relative">
             <div 
-              className="bg-arena-light rounded-lg p-4 overflow-auto relative flex justify-center"
+              className="bg-arena-light rounded-lg p-6 overflow-auto border-2 border-gray-200"
               style={{ minHeight: "500px", maxHeight: "600px" }}
             >
               {root ? (
-                <svg width="800" height="500" className="overflow-visible">
-                  {renderConnections(root)}
-                  {renderTree(root)}
-                </svg>
+                <div className="w-full h-full flex justify-center items-start">
+                  <svg width="800" height="500" viewBox="0 0 800 500" className="overflow-visible">
+                    {renderConnections(root)}
+                    {renderTree(root)}
+                  </svg>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-arena-gray">
-                  <span>Tree is empty. Add nodes using the controls below.</span>
+                  <span className="text-lg">Tree is empty. Add nodes using the controls below.</span>
                 </div>
               )}
             </div>
