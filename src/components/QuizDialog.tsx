@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateQuizQuestions } from '@/utils/geminiApi';
+import { supabase } from '@/lib/supabase';
 
 interface Constraint {
   id: string;
@@ -72,15 +72,37 @@ const QuizDialog: React.FC<QuizDialogProps> = ({ isOpen, onClose }) => {
 
     setIsLoading(true);
     try {
-      const generatedQuestions = await generateQuizQuestions(validConstraints);
-      setQuestions(generatedQuestions);
-      setUserAnswers(new Array(generatedQuestions.length).fill(-1));
+      console.log('Sending constraints to edge function:', validConstraints);
+      
+      const { data, error } = await supabase.functions.invoke('generate-quiz', {
+        body: { constraints: validConstraints }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to generate quiz');
+      }
+
+      if (!data || !data.questions) {
+        console.error('Invalid response data:', data);
+        throw new Error('Invalid response from quiz generator');
+      }
+
+      console.log('Generated questions:', data.questions);
+      setQuestions(data.questions);
+      setUserAnswers(new Array(data.questions.length).fill(-1));
       setStep('quiz');
+      
+      toast({
+        title: "Success",
+        description: `Generated ${data.questions.length} questions successfully!`
+      });
     } catch (error) {
+      console.error('Error generating quiz:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to generate quiz questions. Please try again."
+        description: error.message || "Failed to generate quiz questions. Please try again."
       });
     } finally {
       setIsLoading(false);
