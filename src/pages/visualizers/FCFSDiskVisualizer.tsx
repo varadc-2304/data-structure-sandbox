@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -26,7 +27,7 @@ const FCFSDiskVisualizer = () => {
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [totalSeekTime, setTotalSeekTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1); // seconds
+  const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
 
   // Initialize simulation
@@ -129,6 +130,64 @@ const FCFSDiskVisualizer = () => {
     setCurrentStep(nextStep);
   };
 
+  const prevStep = () => {
+    if (currentStep <= -1) return;
+    
+    const newStep = currentStep - 1;
+    setCurrentStep(newStep);
+    
+    const newSeekHistory = seekHistory.slice(0, newStep + 1);
+    setSeekHistory(newSeekHistory);
+    
+    const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
+    setTotalSeekTime(newTotalSeekTime);
+    
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: idx <= newStep,
+      current: newStep >= 0 && idx === newStep
+    }));
+    setRequestQueue(updatedRequests);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < -1 || step >= requestQueue.length) return;
+    
+    setCurrentStep(step);
+    setIsPlaying(false);
+    
+    // Recalculate state for the target step
+    let newHeadPosition = initialHeadPosition;
+    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    
+    for (let i = 0; i <= step; i++) {
+      const targetPosition = requestQueue[i].position;
+      
+      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      newSeekHistory.push({
+        from: newHeadPosition,
+        to: targetPosition,
+        distance: seekDistance
+      });
+      
+      newHeadPosition = targetPosition;
+    }
+    
+    setSeekHistory(newSeekHistory);
+    setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
+    setCurrentHeadPosition(newHeadPosition);
+    
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: idx <= step,
+      current: step >= 0 && idx === step
+    }));
+    setRequestQueue(updatedRequests);
+  };
+
   const togglePlayPause = () => {
     if (currentStep >= requestQueue.length - 1) {
       resetSimulation();
@@ -218,27 +277,56 @@ const FCFSDiskVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="flex space-x-1">
+                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
+                        <SkipBack className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
+                        <Rewind className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        onClick={togglePlayPause}
+                        disabled={requestQueue.length === 0}
+                      >
+                        {isPlaying ? (
+                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
+                        ) : (
+                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= requestQueue.length - 1 ? 'Restart' : 'Play'}</>
+                        )}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(requestQueue.length - 1)}>
+                        <FastForward className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= requestQueue.length - 1}>
+                        <SkipForward className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={resetSimulation}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
-                    <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                      onClick={togglePlayPause}
-                      disabled={requestQueue.length === 0}
-                    >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {currentStep >= requestQueue.length - 1 ? 'Restart' : 'Play'}</>
-                      )}
-                    </Button>
                   </div>
+                  
+                  {requestQueue.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Step: {currentStep + 1} of {requestQueue.length}</Label>
+                      <Slider
+                        value={[currentStep + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        max={requestQueue.length}
+                        min={0}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -288,36 +376,42 @@ const FCFSDiskVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg p-8 border-2 border-gray-200" style={{ minHeight: "120px" }}>
+                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8" style={{ minHeight: "160px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-1 bg-gray-400 rounded"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center" style={{ transform: "translateY(-50%)" }}>
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
                           {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-4 bg-gray-500 mb-1"></div>
+                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
                               <span className="text-xs text-gray-600 font-medium">{pos}</span>
                             </div>
                           ))}
                         </div>
                         
-                        {/* Initial head position */}
+                        {/* Initial head position indicator */}
                         <div 
-                          className="absolute top-1/2 w-1 h-8 bg-gray-500 rounded transform -translate-y-1/2"
-                          style={{ left: `${8 + (initialHeadPosition / diskSize) * (100 - 16)}%` }}
+                          className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                          style={{ 
+                            left: `calc(3rem + ${(initialHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
+                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
                             Start: {initialHeadPosition}
                           </div>
                         </div>
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-2 h-10 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
-                          style={{ left: `${8 + (currentHeadPosition / diskSize) * (100 - 16)}%` }}
+                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          style={{ 
+                            left: `calc(3rem + ${(currentHeadPosition / diskSize) * (100 - 6)}%)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
                         >
-                          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
+                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -327,13 +421,15 @@ const FCFSDiskVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
                               req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
                               req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
-                            style={{ left: `${8 + (req.position / diskSize) * (100 - 16)}%` }}
+                            style={{ 
+                              left: `calc(3rem + ${(req.position / diskSize) * (100 - 6)}%)`
+                            }}
                           >
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
                               {req.position}
                             </div>
                           </div>
@@ -342,7 +438,7 @@ const FCFSDiskVisualizer = () => {
                     </div>
                     
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Request Queue</h3>
+                      <h3 className="text-sm font-medium text-drona-gray mb-2">Request Queue (FCFS Order)</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {requestQueue.map((request, idx) => (
                           <Badge 
