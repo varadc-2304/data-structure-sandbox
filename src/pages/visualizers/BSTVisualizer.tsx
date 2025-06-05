@@ -1,31 +1,37 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Search, Play, RotateCcw, Minus } from 'lucide-react';
+import { Plus, Trash, Search, Play, RotateCcw, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface BSTNode {
-  id: number;
+  id: string;
   value: number;
-  left: BSTNode | null;
-  right: BSTNode | null;
-  x?: number;
-  y?: number;
+  left: string | null;
+  right: string | null;
+  x: number;
+  y: number;
 }
 
 const BSTVisualizer = () => {
-  const [root, setRoot] = useState<BSTNode | null>(null);
+  const [nodes, setNodes] = useState<BSTNode[]>([]);
   const [newValue, setNewValue] = useState('');
-  const [deleteValue, setDeleteValue] = useState('');
+  const [parentNode, setParentNode] = useState('');
+  const [childNode, setChildNode] = useState('');
+  const [childPosition, setChildPosition] = useState<'left' | 'right'>('left');
   const [searchValue, setSearchValue] = useState('');
-  const [traversalOrder, setTraversalOrder] = useState<number[]>([]);
+  const [traversalOrder, setTraversalOrder] = useState<string[]>([]);
   const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
   const [traversalType, setTraversalType] = useState<'inorder' | 'preorder' | 'postorder' | 'search' | null>(null);
   const [isTraversing, setIsTraversing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [highlightedNode, setHighlightedNode] = useState<number | null>(null);
+  const [highlightedNode, setHighlightedNode] = useState<string | null>(null);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
   
   const { toast } = useToast();
 
@@ -34,98 +40,7 @@ const BSTVisualizer = () => {
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const insertNode = (root: BSTNode | null, value: number): BSTNode => {
-    if (!root) {
-      return { id: Date.now(), value, left: null, right: null };
-    }
-
-    if (value < root.value) {
-      root.left = insertNode(root.left, value);
-    } else if (value > root.value) {
-      root.right = insertNode(root.right, value);
-    }
-    
-    return root;
-  };
-
-  const deleteNode = (root: BSTNode | null, value: number): BSTNode | null => {
-    if (!root) return null;
-
-    if (value < root.value) {
-      root.left = deleteNode(root.left, value);
-    } else if (value > root.value) {
-      root.right = deleteNode(root.right, value);
-    } else {
-      // Node to be deleted found
-      if (!root.left && !root.right) {
-        return null;
-      }
-      if (!root.left) {
-        return root.right;
-      }
-      if (!root.right) {
-        return root.left;
-      }
-
-      // Node with two children: get inorder successor
-      const minValueNode = findMinNode(root.right);
-      root.value = minValueNode.value;
-      root.id = minValueNode.id;
-      root.right = deleteNode(root.right, minValueNode.value);
-    }
-    return root;
-  };
-
-  const findMinNode = (node: BSTNode): BSTNode => {
-    while (node.left) {
-      node = node.left;
-    }
-    return node;
-  };
-
-  const searchNode = (root: BSTNode | null, value: number): boolean => {
-    if (!root) return false;
-    if (root.value === value) return true;
-    if (value < root.value) return searchNode(root.left, value);
-    return searchNode(root.right, value);
-  };
-
-  // Calculate tree dimensions for proper positioning
-  const getTreeWidth = (node: BSTNode | null): number => {
-    if (!node) return 0;
-    if (!node.left && !node.right) return 1;
-    
-    const leftWidth = getTreeWidth(node.left);
-    const rightWidth = getTreeWidth(node.right);
-    return leftWidth + rightWidth + 1;
-  };
-
-  const getTreeHeight = (node: BSTNode | null): number => {
-    if (!node) return 0;
-    return 1 + Math.max(getTreeHeight(node.left), getTreeHeight(node.right));
-  };
-
-  const calculatePositions = (node: BSTNode | null, x: number, y: number, level: number, totalWidth: number): void => {
-    if (!node) return;
-    
-    node.x = x;
-    node.y = y;
-    
-    const levelSpacing = 80;
-    const baseSpacing = Math.max(60, totalWidth * 20 / Math.pow(2, level + 1));
-    
-    if (node.left) {
-      const leftX = x - baseSpacing;
-      calculatePositions(node.left, leftX, y + levelSpacing, level + 1, totalWidth);
-    }
-    
-    if (node.right) {
-      const rightX = x + baseSpacing;
-      calculatePositions(node.right, rightX, y + levelSpacing, level + 1, totalWidth);
-    }
-  };
-
-  const addElement = () => {
+  const addNode = () => {
     if (newValue.trim() === '') {
       toast({
         title: "Input required",
@@ -145,16 +60,27 @@ const BSTVisualizer = () => {
       return;
     }
 
-    if (root && searchNode(root, value)) {
+    // Check for duplicate values in BST
+    if (nodes.some(node => node.value === value)) {
       toast({
         title: "Duplicate value",
-        description: "Value already exists in BST",
+        description: "BST cannot contain duplicate values",
         variant: "destructive",
       });
       return;
     }
 
-    setRoot(prev => insertNode(prev, value));
+    const nodeId = Date.now().toString();
+    const newNode: BSTNode = {
+      id: nodeId,
+      value,
+      left: null,
+      right: null,
+      x: Math.random() * 400 + 200,
+      y: Math.random() * 300 + 100,
+    };
+
+    setNodes([...nodes, newNode]);
     setNewValue('');
     
     const message = `Added node with value ${value}`;
@@ -166,80 +92,180 @@ const BSTVisualizer = () => {
     });
   };
 
-  const removeElement = () => {
-    if (deleteValue.trim() === '') {
+  const validateBSTProperty = (parentValue: number, childValue: number, position: 'left' | 'right'): boolean => {
+    if (position === 'left' && childValue >= parentValue) {
+      return false;
+    }
+    if (position === 'right' && childValue <= parentValue) {
+      return false;
+    }
+    return true;
+  };
+
+  const assignChild = () => {
+    if (!parentNode || !childNode) {
       toast({
         title: "Input required",
-        description: "Please enter a value to delete",
+        description: "Please select both parent and child nodes",
         variant: "destructive",
       });
       return;
     }
 
-    const value = Number(deleteValue);
-    if (isNaN(value)) {
+    const parent = nodes.find(n => n.id === parentNode);
+    const child = nodes.find(n => n.id === childNode);
+
+    if (!parent || !child) {
       toast({
-        title: "Invalid input",
-        description: "Please enter a valid number",
+        title: "Invalid selection",
+        description: "Selected nodes don't exist",
         variant: "destructive",
       });
       return;
     }
 
-    if (!root) {
+    // Validate BST property
+    if (!validateBSTProperty(parent.value, child.value, childPosition)) {
       toast({
-        title: "Empty tree",
-        description: "BST is empty, nothing to delete",
+        title: "BST Property Violation",
+        description: `Cannot assign node ${child.value} as ${childPosition} child of ${parent.value}. In BST: left child < parent < right child`,
         variant: "destructive",
       });
       return;
     }
 
-    if (!searchNode(root, value)) {
+    // Check if child already has a parent
+    const hasParent = nodes.some(n => n.left === childNode || n.right === childNode);
+    if (hasParent) {
       toast({
-        title: "Node not found",
-        description: `Node with value ${value} not found in BST`,
+        title: "Invalid assignment",
+        description: "Child node already has a parent",
         variant: "destructive",
       });
       return;
     }
 
-    setRoot(deleteNode(root, value));
-    setDeleteValue('');
-    const message = `Deleted node with value ${value}`;
+    if (childPosition === 'left' && parent.left) {
+      toast({
+        title: "Position occupied",
+        description: "Left child position is already occupied",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (childPosition === 'right' && parent.right) {
+      toast({
+        title: "Position occupied",
+        description: "Right child position is already occupied",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setNodes(prevNodes =>
+      prevNodes.map(node =>
+        node.id === parentNode
+          ? { ...node, [childPosition]: childNode }
+          : node
+      )
+    );
+
+    const message = `Assigned node ${child.value} as ${childPosition} child of node ${parent.value}`;
     addToLog(message);
     
     toast({
-      title: "Node deleted",
+      title: "Child assigned",
       description: message,
     });
+
+    setParentNode('');
+    setChildNode('');
   };
 
-  const inorderTraversal = (node: BSTNode | null, result: number[]): void => {
+  const handleMouseDown = (nodeId: string, event: React.MouseEvent) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || !svgRef.current) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left - node.x;
+    const offsetY = event.clientY - rect.top - node.y;
+
+    setDraggedNode(nodeId);
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const handleMouseMove = useCallback((event: MouseEvent) => {
+    if (!draggedNode || !svgRef.current) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const newX = event.clientX - rect.left - dragOffset.x;
+    const newY = event.clientY - rect.top - dragOffset.y;
+
+    const constrainedX = Math.max(25, Math.min(775, newX));
+    const constrainedY = Math.max(25, Math.min(575, newY));
+
+    setNodes(prevNodes =>
+      prevNodes.map(node =>
+        node.id === draggedNode
+          ? { ...node, x: constrainedX, y: constrainedY }
+          : node
+      )
+    );
+  }, [draggedNode, dragOffset]);
+
+  const handleMouseUp = useCallback(() => {
+    setDraggedNode(null);
+    setDragOffset({ x: 0, y: 0 });
+  }, []);
+
+  React.useEffect(() => {
+    if (draggedNode) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [draggedNode, handleMouseMove, handleMouseUp]);
+
+  const inorderTraversal = (nodeId: string | null, result: string[]): void => {
+    if (!nodeId) return;
+    const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
+    
     inorderTraversal(node.left, result);
-    result.push(node.id);
+    result.push(nodeId);
     inorderTraversal(node.right, result);
   };
 
-  const preorderTraversal = (node: BSTNode | null, result: number[]): void => {
+  const preorderTraversal = (nodeId: string | null, result: string[]): void => {
+    if (!nodeId) return;
+    const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
-    result.push(node.id);
+    
+    result.push(nodeId);
     preorderTraversal(node.left, result);
     preorderTraversal(node.right, result);
   };
 
-  const postorderTraversal = (node: BSTNode | null, result: number[]): void => {
+  const postorderTraversal = (nodeId: string | null, result: string[]): void => {
+    if (!nodeId) return;
+    const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
+    
     postorderTraversal(node.left, result);
     postorderTraversal(node.right, result);
-    result.push(node.id);
+    result.push(nodeId);
   };
 
-  const searchPath = (node: BSTNode | null, value: number, path: number[]): boolean => {
+  const searchPath = (nodeId: string | null, value: number, path: string[]): boolean => {
+    if (!nodeId) return false;
+    const node = nodes.find(n => n.id === nodeId);
     if (!node) return false;
     
-    path.push(node.id);
+    path.push(nodeId);
     
     if (node.value === value) return true;
     
@@ -250,8 +276,19 @@ const BSTVisualizer = () => {
     }
   };
 
+  const findRoot = (): string | null => {
+    // Find node that is not a child of any other node
+    for (const node of nodes) {
+      const isChild = nodes.some(n => n.left === node.id || n.right === node.id);
+      if (!isChild) {
+        return node.id;
+      }
+    }
+    return nodes.length > 0 ? nodes[0].id : null;
+  };
+
   const startTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
-    if (!root) {
+    if (nodes.length === 0) {
       toast({
         title: "Empty tree",
         description: "Please add some nodes first",
@@ -260,17 +297,20 @@ const BSTVisualizer = () => {
       return;
     }
 
-    const result: number[] = [];
+    const rootId = findRoot();
+    if (!rootId) return;
+
+    const result: string[] = [];
     
     switch (type) {
       case 'inorder':
-        inorderTraversal(root, result);
+        inorderTraversal(rootId, result);
         break;
       case 'preorder':
-        preorderTraversal(root, result);
+        preorderTraversal(rootId, result);
         break;
       case 'postorder':
-        postorderTraversal(root, result);
+        postorderTraversal(rootId, result);
         break;
     }
     
@@ -284,7 +324,7 @@ const BSTVisualizer = () => {
   };
 
   const startSearch = () => {
-    if (!root) {
+    if (nodes.length === 0) {
       toast({
         title: "Empty tree",
         description: "Please add some nodes first",
@@ -312,8 +352,11 @@ const BSTVisualizer = () => {
       return;
     }
 
-    const path: number[] = [];
-    const found = searchPath(root, value, path);
+    const rootId = findRoot();
+    if (!rootId) return;
+
+    const path: string[] = [];
+    const found = searchPath(rootId, value, path);
     
     setTraversalOrder(path);
     setTraversalType('search');
@@ -333,7 +376,7 @@ const BSTVisualizer = () => {
     addToLog("Reset traversal");
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isTraversing && currentTraversal < traversalOrder.length) {
       setHighlightedNode(traversalOrder[currentTraversal]);
       
@@ -346,7 +389,7 @@ const BSTVisualizer = () => {
           if (traversalType === 'search') {
             const found = searchValue.trim() !== '' && 
                          traversalOrder.length > 0 && 
-                         findValue(root, traversalOrder[traversalOrder.length - 1]) === Number(searchValue);
+                         nodes.find(n => n.id === traversalOrder[traversalOrder.length - 1])?.value === Number(searchValue);
             const message = found ? 
               `Found value ${searchValue} in the BST!` : 
               `Value ${searchValue} not found in the BST`;
@@ -357,7 +400,11 @@ const BSTVisualizer = () => {
               variant: found ? "default" : "destructive",
             });
           } else {
-            const message = `Completed ${traversalType} traversal: ${getTraversalValues().join(' -> ')}`;
+            const values = traversalOrder.map(id => {
+              const node = nodes.find(n => n.id === id);
+              return node ? node.value : '';
+            }).join(' -> ');
+            const message = `Completed ${traversalType} traversal: ${values}`;
             addToLog(message);
             toast({
               title: "Traversal completed",
@@ -369,118 +416,67 @@ const BSTVisualizer = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [isTraversing, currentTraversal, traversalOrder]);
+  }, [isTraversing, currentTraversal, traversalOrder, searchValue, traversalType, nodes]);
 
-  const findValue = (node: BSTNode | null, targetId: number): number | null => {
-    if (!node) return null;
-    if (node.id === targetId) return node.value;
-    return findValue(node.left, targetId) || findValue(node.right, targetId);
+  const renderEdge = (from: BSTNode, to: BSTNode) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const nodeRadius = 25;
+    
+    const offsetX = (dx / distance) * nodeRadius;
+    const offsetY = (dy / distance) * nodeRadius;
+    
+    const startX = from.x + offsetX;
+    const startY = from.y + offsetY;
+    const endX = to.x - offsetX;
+    const endY = to.y - offsetY;
+
+    return (
+      <line
+        key={`${from.id}-${to.id}`}
+        x1={startX}
+        y1={startY}
+        x2={endX}
+        y2={endY}
+        stroke="#6B7280"
+        strokeWidth="2"
+        className="transition-all duration-300"
+      />
+    );
   };
 
-  const getTraversalValues = (): number[] => {
-    const values: number[] = [];
-    traversalOrder.forEach(id => {
-      const value = findValue(root, id);
-      if (value !== null) values.push(value);
-    });
-    return values;
-  };
-
-  const renderConnections = (node: BSTNode | null): JSX.Element[] => {
-    if (!node) return [];
-    
-    const connections: JSX.Element[] = [];
-    
-    if (node.left && node.x !== undefined && node.y !== undefined && node.left.x !== undefined && node.left.y !== undefined) {
-      connections.push(
-        <line
-          key={`line-${node.id}-left`}
-          x1={node.x}
-          y1={node.y + 25}
-          x2={node.left.x}
-          y2={node.left.y - 25}
-          stroke="#4a5568"
-          strokeWidth="2"
-          className="transition-all duration-300"
-        />
-      );
-    }
-    
-    if (node.right && node.x !== undefined && node.y !== undefined && node.right.x !== undefined && node.right.y !== undefined) {
-      connections.push(
-        <line
-          key={`line-${node.id}-right`}
-          x1={node.x}
-          y1={node.y + 25}
-          x2={node.right.x}
-          y2={node.right.y - 25}
-          stroke="#4a5568"
-          strokeWidth="2"
-          className="transition-all duration-300"
-        />
-      );
-    }
-    
-    if (node.left) {
-      connections.push(...renderConnections(node.left));
-    }
-    if (node.right) {
-      connections.push(...renderConnections(node.right));
-    }
-    
-    return connections;
-  };
-
-  const renderTree = (node: BSTNode | null): JSX.Element | null => {
-    if (!node) return null;
-
+  const renderNode = (node: BSTNode) => {
     const isHighlighted = highlightedNode === node.id;
 
     return (
-      <g key={node.id}>
+      <g 
+        key={node.id}
+        style={{ cursor: 'grab' }}
+        onMouseDown={(e) => handleMouseDown(node.id, e)}
+      >
         <circle
           cx={node.x}
           cy={node.y}
           r="25"
-          className={cn(
-            "transition-all duration-500",
-            {
-              "fill-arena-green stroke-arena-green": isHighlighted,
-              "fill-white stroke-gray-600": !isHighlighted,
-            }
-          )}
+          fill={isHighlighted ? "#10B981" : "#F9FAFB"}
+          stroke={isHighlighted ? "#10B981" : "#6B7280"}
           strokeWidth="2"
+          className="transition-all duration-300"
         />
         <text
           x={node.x}
-          y={node.y}
+          y={node.y + 4}
           textAnchor="middle"
-          dominantBaseline="central"
-          className={cn(
-            "text-sm font-semibold transition-all duration-500 pointer-events-none select-none",
-            {
-              "fill-white": isHighlighted,
-              "fill-gray-700": !isHighlighted,
-            }
-          )}
+          fontSize="12"
+          fill={isHighlighted ? "white" : "#374151"}
+          className="font-medium pointer-events-none"
         >
           {node.value}
         </text>
-        
-        {node.left && renderTree(node.left)}
-        {node.right && renderTree(node.right)}
       </g>
     );
   };
-
-  useEffect(() => {
-    if (root) {
-      const treeWidth = getTreeWidth(root);
-      const centerX = 400;
-      const startY = 60;
-      calculatePositions(root, centerX, startY, 0, treeWidth);
-    }
-  }, [root]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -491,7 +487,7 @@ const BSTVisualizer = () => {
           <div className="arena-chip mb-2">Data Structure Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Binary Search Tree Visualizer</h1>
           <p className="text-arena-gray">
-            Visualize BST operations including insertion, deletion, search, and various traversal methods.
+            Create BSTs by adding nodes and manually assigning parent-child relationships. BST property validation ensures left child &lt; parent &lt; right child.
           </p>
         </div>
         
@@ -542,32 +538,44 @@ const BSTVisualizer = () => {
           {/* Tree visualization */}
           <div className="mb-6 relative">
             <div 
-              className="bg-arena-light rounded-lg p-6 overflow-auto border-2 border-gray-200"
-              style={{ minHeight: "500px", maxHeight: "600px", overflowX: "auto", overflowY: "auto" }}
+              className="bg-arena-light rounded-lg p-4 overflow-hidden relative"
+              style={{ minHeight: "600px" }}
             >
-              {root ? (
-                <div className="w-full h-full flex justify-center">
-                  <svg 
-                    width="800" 
-                    height={Math.max(500, getTreeHeight(root) * 80 + 100)} 
-                    viewBox={`0 0 800 ${Math.max(500, getTreeHeight(root) * 80 + 100)}`} 
-                    className="overflow-visible"
-                    style={{ minWidth: "800px" }}
-                  >
-                    {renderConnections(root)}
-                    {renderTree(root)}
-                  </svg>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-arena-gray">
-                  <span className="text-lg">BST is empty. Add nodes using the controls below.</span>
+              <svg 
+                ref={svgRef}
+                width="100%" 
+                height="600" 
+                className="border border-gray-200 rounded"
+                style={{ userSelect: 'none' }}
+              >
+                {/* Render edges first */}
+                {nodes.map(node => {
+                  const edges = [];
+                  if (node.left) {
+                    const leftChild = nodes.find(n => n.id === node.left);
+                    if (leftChild) edges.push(renderEdge(node, leftChild));
+                  }
+                  if (node.right) {
+                    const rightChild = nodes.find(n => n.id === node.right);
+                    if (rightChild) edges.push(renderEdge(node, rightChild));
+                  }
+                  return edges;
+                })}
+                
+                {/* Render nodes on top */}
+                {nodes.map(node => renderNode(node))}
+              </svg>
+              
+              {nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-arena-gray">
+                  <span>BST is empty. Add nodes and assign relationships using the controls below.</span>
                 </div>
               )}
             </div>
           </div>
           
           {/* Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-arena-green mr-2" />
@@ -582,34 +590,66 @@ const BSTVisualizer = () => {
                   className="focus:ring-arena-green focus:border-arena-green"
                 />
                 <Button
-                  onClick={addElement}
+                  onClick={addNode}
                   variant="default"
                   className="w-full bg-arena-green text-white hover:bg-arena-green/90"
                 >
-                  Add
+                  Add Node
                 </Button>
               </div>
             </div>
 
             <div className="bg-arena-light rounded-xl p-4">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <Minus className="h-5 w-5 text-red-500 mr-2" />
-                Delete Node
-              </h3>
+              <h3 className="text-lg font-medium mb-3">Assign Child</h3>
               <div className="space-y-2">
-                <Input
-                  type="number"
-                  value={deleteValue}
-                  onChange={(e) => setDeleteValue(e.target.value)}
-                  placeholder="Enter value"
-                  className="focus:ring-red-500 focus:border-red-500"
-                />
-                <Button
-                  onClick={removeElement}
-                  variant="default"
-                  className="w-full bg-red-500 text-white hover:bg-red-500/90"
+                <select
+                  value={parentNode}
+                  onChange={(e) => setParentNode(e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                 >
-                  Delete
+                  <option value="">Select Parent</option>
+                  {nodes.map(node => (
+                    <option key={node.id} value={node.id}>
+                      Node {node.value}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={childNode}
+                  onChange={(e) => setChildNode(e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                >
+                  <option value="">Select Child</option>
+                  {nodes.map(node => (
+                    <option key={node.id} value={node.id}>
+                      Node {node.value}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setChildPosition('left')}
+                    variant={childPosition === 'left' ? 'default' : 'outline'}
+                    className="flex-1 text-xs"
+                  >
+                    <ArrowLeft className="h-3 w-3 mr-1" />
+                    Left
+                  </Button>
+                  <Button
+                    onClick={() => setChildPosition('right')}
+                    variant={childPosition === 'right' ? 'default' : 'outline'}
+                    className="flex-1 text-xs"
+                  >
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Right
+                  </Button>
+                </div>
+                <Button
+                  onClick={assignChild}
+                  variant="default"
+                  className="w-full bg-blue-500 text-white hover:bg-blue-500/90 text-sm"
+                >
+                  Assign
                 </Button>
               </div>
             </div>
@@ -645,7 +685,7 @@ const BSTVisualizer = () => {
               </h3>
               <Button
                 onClick={() => {
-                  setRoot(null);
+                  setNodes([]);
                   resetTraversal();
                   const message = "Cleared the entire BST";
                   addToLog(message);
@@ -702,7 +742,7 @@ const BSTVisualizer = () => {
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Binary Search Trees</h2>
           <p className="text-arena-gray mb-4">
-            A BST is a binary tree where left child values are less than parent and right child values are greater than parent.
+            A BST is a binary tree where for each node: all values in the left subtree are smaller, and all values in the right subtree are larger than the node's value.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="bg-arena-light p-3 rounded-lg">
@@ -715,18 +755,20 @@ const BSTVisualizer = () => {
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Time Complexity:</span>
+              <span className="font-medium">Manual Construction:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Search: O(log n) avg, O(n) worst</li>
-                <li>Insert: O(log n) avg, O(n) worst</li>
-                <li>Delete: O(log n) avg, O(n) worst</li>
+                <li>Add nodes with unique values</li>
+                <li>Manually assign parent-child relationships</li>
+                <li>BST property validation enforced</li>
+                <li>Drag nodes to organize layout</li>
               </ul>
             </div>
             <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Space Complexity:</span>
+              <span className="font-medium">Operations:</span>
               <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Storage: O(n)</li>
-                <li>Auxiliary: O(h) where h is height</li>
+                <li>Search: O(log n) average case</li>
+                <li>Traversals: Inorder, Preorder, Postorder</li>
+                <li>Interactive node positioning</li>
               </ul>
             </div>
           </div>
