@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
@@ -90,6 +89,62 @@ const BinaryTreeVisualizer = () => {
     return searchNode(root.left, value) || searchNode(root.right, value);
   };
 
+  // Calculate tree dimensions for proper positioning
+  const getTreeWidth = (node: TreeNode | null): number => {
+    if (!node) return 0;
+    if (!node.left && !node.right) return 1;
+    
+    const leftWidth = getTreeWidth(node.left);
+    const rightWidth = getTreeWidth(node.right);
+    return leftWidth + rightWidth + 1;
+  };
+
+  const getTreeHeight = (node: TreeNode | null): number => {
+    if (!node) return 0;
+    return 1 + Math.max(getTreeHeight(node.left), getTreeHeight(node.right));
+  };
+
+  const calculatePositions = (node: TreeNode | null, x: number, y: number, level: number, totalWidth: number): void => {
+    if (!node) return;
+    
+    node.x = x;
+    node.y = y;
+    
+    const levelSpacing = 80;
+    const baseSpacing = Math.max(60, totalWidth * 20 / Math.pow(2, level + 1));
+    
+    if (node.left) {
+      const leftX = x - baseSpacing;
+      calculatePositions(node.left, leftX, y + levelSpacing, level + 1, totalWidth);
+    }
+    
+    if (node.right) {
+      const rightX = x + baseSpacing;
+      calculatePositions(node.right, rightX, y + levelSpacing, level + 1, totalWidth);
+    }
+  };
+
+  const inorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
+    inorderTraversal(node.left, result);
+    result.push(node.id);
+    inorderTraversal(node.right, result);
+  };
+
+  const preorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
+    result.push(node.id);
+    preorderTraversal(node.left, result);
+    preorderTraversal(node.right, result);
+  };
+
+  const postorderTraversal = (node: TreeNode | null, result: number[]): void => {
+    if (!node) return;
+    postorderTraversal(node.left, result);
+    postorderTraversal(node.right, result);
+    result.push(node.id);
+  };
+
   const addElement = () => {
     if (newValue.trim() === '') {
       toast({
@@ -175,41 +230,6 @@ const BinaryTreeVisualizer = () => {
       title: "Node deleted",
       description: message,
     });
-  };
-
-  const calculatePositions = (node: TreeNode | null, x: number, y: number, spacing: number): void => {
-    if (!node) return;
-    
-    node.x = x;
-    node.y = y;
-    
-    if (node.left) {
-      calculatePositions(node.left, x - spacing, y + 80, spacing * 0.6);
-    }
-    if (node.right) {
-      calculatePositions(node.right, x + spacing, y + 80, spacing * 0.6);
-    }
-  };
-
-  const inorderTraversal = (node: TreeNode | null, result: number[]): void => {
-    if (!node) return;
-    inorderTraversal(node.left, result);
-    result.push(node.id);
-    inorderTraversal(node.right, result);
-  };
-
-  const preorderTraversal = (node: TreeNode | null, result: number[]): void => {
-    if (!node) return;
-    result.push(node.id);
-    preorderTraversal(node.left, result);
-    preorderTraversal(node.right, result);
-  };
-
-  const postorderTraversal = (node: TreeNode | null, result: number[]): void => {
-    if (!node) return;
-    postorderTraversal(node.left, result);
-    postorderTraversal(node.right, result);
-    result.push(node.id);
   };
 
   const startTraversal = (type: 'inorder' | 'preorder' | 'postorder') => {
@@ -298,30 +318,30 @@ const BinaryTreeVisualizer = () => {
     
     const connections: JSX.Element[] = [];
     
-    if (node.left && node.x && node.y && node.left.x && node.left.y) {
+    if (node.left && node.x !== undefined && node.y !== undefined && node.left.x !== undefined && node.left.y !== undefined) {
       connections.push(
         <line
           key={`line-${node.id}-left`}
           x1={node.x}
-          y1={node.y}
+          y1={node.y + 25}
           x2={node.left.x}
-          y2={node.left.y}
-          stroke="#d1d5db"
+          y2={node.left.y - 25}
+          stroke="#4a5568"
           strokeWidth="2"
           className="transition-all duration-300"
         />
       );
     }
     
-    if (node.right && node.x && node.y && node.right.x && node.right.y) {
+    if (node.right && node.x !== undefined && node.y !== undefined && node.right.x !== undefined && node.right.y !== undefined) {
       connections.push(
         <line
           key={`line-${node.id}-right`}
           x1={node.x}
-          y1={node.y}
+          y1={node.y + 25}
           x2={node.right.x}
-          y2={node.right.y}
-          stroke="#d1d5db"
+          y2={node.right.y - 25}
+          stroke="#4a5568"
           strokeWidth="2"
           className="transition-all duration-300"
         />
@@ -353,7 +373,7 @@ const BinaryTreeVisualizer = () => {
             "transition-all duration-500",
             {
               "fill-arena-green stroke-arena-green": isHighlighted,
-              "fill-white stroke-gray-400": !isHighlighted,
+              "fill-white stroke-gray-600": !isHighlighted,
             }
           )}
           strokeWidth="2"
@@ -382,7 +402,10 @@ const BinaryTreeVisualizer = () => {
 
   useEffect(() => {
     if (root) {
-      calculatePositions(root, 400, 60, 150);
+      const treeWidth = getTreeWidth(root);
+      const centerX = 400;
+      const startY = 60;
+      calculatePositions(root, centerX, startY, 0, treeWidth);
     }
   }, [root]);
 
@@ -447,11 +470,17 @@ const BinaryTreeVisualizer = () => {
           <div className="mb-6 relative">
             <div 
               className="bg-arena-light rounded-lg p-6 overflow-auto border-2 border-gray-200"
-              style={{ minHeight: "500px", maxHeight: "600px" }}
+              style={{ minHeight: "500px", maxHeight: "600px", overflowX: "auto", overflowY: "auto" }}
             >
               {root ? (
                 <div className="w-full h-full flex justify-center">
-                  <svg width="800" height="500" viewBox="0 0 800 500" className="overflow-visible">
+                  <svg 
+                    width="800" 
+                    height={Math.max(500, getTreeHeight(root) * 80 + 100)} 
+                    viewBox={`0 0 800 ${Math.max(500, getTreeHeight(root) * 80 + 100)}`} 
+                    className="overflow-visible"
+                    style={{ minWidth: "800px" }}
+                  >
                     {renderConnections(root)}
                     {renderTree(root)}
                   </svg>
