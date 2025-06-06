@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -329,29 +328,48 @@ const CLOOKVisualizer = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
-                        <SkipBack className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
-                        <Rewind className="h-3 w-3" />
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep} 
+                        disabled={currentStep <= -1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipBack className="h-4 w-4" />
                       </Button>
                       <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(-1)}
+                        className="flex items-center justify-center"
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
                         onClick={togglePlayPause}
                         disabled={clookOrder.length === 0}
+                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
-                        {isPlaying ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= clookOrder.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(clookOrder.length - 1)}>
-                        <FastForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(clookOrder.length - 1)}
+                        className="flex items-center justify-center"
+                      >
+                        <FastForward className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= clookOrder.length - 1}>
-                        <SkipForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep} 
+                        disabled={currentStep >= clookOrder.length - 1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipForward className="h-4 w-4" />
                       </Button>
                     </div>
                     
@@ -427,12 +445,12 @@ const CLOOKVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8" style={{ minHeight: "160px" }}>
+                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-16 right-16 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                        <div className="absolute top-1/2 left-16 right-16 flex justify-between items-center transform -translate-y-1/2">
                           {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
@@ -445,7 +463,7 @@ const CLOOKVisualizer = () => {
                         <div 
                           className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
                           style={{ 
-                            left: `calc(3rem + ${(initialHeadPosition / diskSize) * (100 - 6)}%)`,
+                            left: `calc(4rem + ${Math.min(Math.max((initialHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
                             transform: 'translateY(-50%) translateX(-50%)'
                           }}
                         >
@@ -458,7 +476,7 @@ const CLOOKVisualizer = () => {
                         <div 
                           className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
                           style={{ 
-                            left: `calc(3rem + ${(currentHeadPosition / diskSize) * (100 - 6)}%)`,
+                            left: `calc(4rem + ${Math.min(Math.max((currentHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
                             transform: 'translateY(-50%) translateX(-50%)'
                           }}
                         >
@@ -477,7 +495,7 @@ const CLOOKVisualizer = () => {
                               req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
                             style={{ 
-                              left: `calc(3rem + ${(req.position / diskSize) * (100 - 6)}%)`
+                              left: `calc(4rem + ${Math.min(Math.max((req.position / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`
                             }}
                           >
                             <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
