@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -197,22 +197,14 @@ const FCFSDiskVisualizer = () => {
     }
   };
 
-  // Calculate scale markers based on the current diskSize
-  const getScaleMarkers = () => {
-    const markers = [0];
-    const count = 5; // Number of markers to display
-    
-    for (let i = 1; i < count - 1; i++) {
-      markers.push(Math.round((i / (count - 1)) * diskSize));
-    }
-    
-    markers.push(diskSize - 1);
-    return markers;
-  };
-
   // Calculate position as percentage for visual elements
   const calculatePosition = (position: number) => {
     return (position / (diskSize - 1)) * 100;
+  };
+
+  // Calculate the angle for a given position on the disk
+  const calculateAngle = (position: number) => {
+    return (position / diskSize) * 360;
   };
 
   return (
@@ -413,66 +405,97 @@ const FCFSDiskVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
-                        {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-10 right-10 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
-                        
-                        {/* Scale markers */}
-                        <div className="absolute top-1/2 left-10 right-10 flex justify-between items-center transform -translate-y-1/2">
-                          {getScaleMarkers().map(pos => (
-                            <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
-                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        {/* Initial head position indicator */}
-                        {initialHeadPosition !== currentHeadPosition && (
+                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-4 overflow-hidden" style={{ height: "320px" }}>
+                        {/* Physical Disk Representation */}
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          {/* Disk Platter */}
                           <div 
-                            className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                            className="rounded-full bg-gray-200 border-4 border-gray-400 shadow-lg relative"
                             style={{ 
-                              left: `calc(10% + ${calculatePosition(initialHeadPosition)}%)`,
-                              transform: 'translateY(-50%)'
+                              width: `${Math.min(80, diskSize / 5)}%`, 
+                              height: `${Math.min(80, diskSize / 5)}%`,
+                              maxWidth: "280px",
+                              maxHeight: "280px"
                             }}
                           >
-                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                              Start: {initialHeadPosition}
-                            </div>
+                            {/* Center spindle */}
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-600"></div>
+                            
+                            {/* Disk tracks - concentric circles */}
+                            {[0.8, 0.6, 0.4, 0.2].map((scale, idx) => (
+                              <div 
+                                key={idx}
+                                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-400"
+                                style={{ 
+                                  width: `${scale * 100}%`, 
+                                  height: `${scale * 100}%` 
+                                }}
+                              />
+                            ))}
+
+                            {/* Position labels around the disk */}
+                            {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, idx) => {
+                              const pos = Math.round((deg / 360) * diskSize);
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className="absolute font-mono text-xs font-semibold"
+                                  style={{ 
+                                    top: `${50 - 48 * Math.sin(deg * Math.PI / 180)}%`,
+                                    left: `${50 + 48 * Math.cos(deg * Math.PI / 180)}%`,
+                                    transform: 'translate(-50%, -50%)'
+                                  }}
+                                >
+                                  {pos}
+                                </div>
+                              );
+                            })}
+                            
+                            {/* Request positions as dots on the disk */}
+                            {requestQueue.map((req, idx) => {
+                              const angle = calculateAngle(req.position);
+                              const radians = (angle - 90) * Math.PI / 180;
+                              const distance = 43; // % from center
+
+                              return (
+                                <div 
+                                  key={idx}
+                                  className={cn(
+                                    "absolute w-3 h-3 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300 border-2",
+                                    req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
+                                    req.current ? "ring-2 ring-drona-green/50 scale-125" : ""
+                                  )}
+                                  style={{ 
+                                    top: `${50 + distance * Math.sin(radians)}%`,
+                                    left: `${50 + distance * Math.cos(radians)}%`,
+                                  }}
+                                >
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 text-[10px] font-medium mt-1">
+                                    {req.position}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
-                        
-                        {/* Current head position */}
-                        <div 
-                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
-                          style={{ 
-                            left: `calc(10% + ${calculatePosition(currentHeadPosition)}%)`,
-                            transform: 'translateY(-50%)'
-                          }}
-                        >
-                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
-                            Head: {currentHeadPosition}
+                          
+                          {/* Disk Arm */}
+                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center" style={{ height: '100%' }}>
+                            {/* Arm Base */}
+                            <div className="w-8 h-4 bg-gray-600 rounded-t-md"></div>
+                            
+                            {/* Arm - rotates according to head position */}
+                            <div 
+                              className="w-2 bg-gray-600 origin-top transition-all duration-500"
+                              style={{ 
+                                height: '50%', 
+                                transform: `rotate(${calculateAngle(currentHeadPosition) - 90}deg)`
+                              }}
+                            >
+                              {/* Head at the end of the arm */}
+                              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-drona-green rounded-full"></div>
+                            </div>
                           </div>
                         </div>
-                        
-                        {/* Request positions */}
-                        {requestQueue.map((req, idx) => (
-                          <div 
-                            key={idx}
-                            className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
-                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
-                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
-                            )}
-                            style={{ 
-                              left: `calc(10% + ${calculatePosition(req.position)}%)`
-                            }}
-                          >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
-                              {req.position}
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     </div>
                     
