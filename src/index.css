@@ -76,12 +76,16 @@
   }
 
   .category-card {
-    @apply group relative overflow-hidden bg-gradient-to-br from-white to-gray-50/80 rounded-3xl p-8 shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 backdrop-blur-sm;
+    @apply relative overflow-hidden bg-gradient-to-br from-white to-gray-50/80 rounded-3xl p-8 shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 backdrop-blur-sm;
   }
 
   .category-card::before {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-br from-drona-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none;
+    @apply absolute inset-0 bg-gradient-to-br from-drona-green/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none;
+  }
+
+  .category-card:hover::before {
+    @apply opacity-100;
   }
 
   .hero-gradient {
