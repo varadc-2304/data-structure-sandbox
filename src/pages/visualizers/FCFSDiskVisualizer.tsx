@@ -50,7 +50,6 @@ const FCFSDiskVisualizer = () => {
     if (!inputPosition.trim()) return;
     
     try {
-      // Parse comma-separated values or space-separated values
       const newPositions = inputPosition
         .split(/[,\s]+/)
         .filter(Boolean)
@@ -99,10 +98,8 @@ const FCFSDiskVisualizer = () => {
     const nextStep = currentStep + 1;
     const nextRequest = requestQueue[nextStep];
     
-    // Calculate seek distance
     const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
-    // Update history
     setSeekHistory([
       ...seekHistory,
       { 
@@ -112,13 +109,9 @@ const FCFSDiskVisualizer = () => {
       }
     ]);
     
-    // Update total seek time
     setTotalSeekTime(prev => prev + seekDistance);
-    
-    // Update head position
     setCurrentHeadPosition(nextRequest.position);
     
-    // Update request as processed
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
       processed: idx <= nextStep,
@@ -126,7 +119,6 @@ const FCFSDiskVisualizer = () => {
     }));
     setRequestQueue(updatedRequests);
     
-    // Update current step
     setCurrentStep(nextStep);
   };
 
@@ -159,7 +151,6 @@ const FCFSDiskVisualizer = () => {
     setCurrentStep(step);
     setIsPlaying(false);
     
-    // Recalculate state for the target step
     let newHeadPosition = initialHeadPosition;
     let newSeekHistory: { from: number; to: number; distance: number }[] = [];
     
@@ -197,22 +188,22 @@ const FCFSDiskVisualizer = () => {
     }
   };
 
-  // Calculate scale markers based on the current diskSize
-  const getScaleMarkers = () => {
-    const markers = [0];
-    const count = 5; // Number of markers to display
-    
-    for (let i = 1; i < count - 1; i++) {
-      markers.push(Math.round((i / (count - 1)) * diskSize));
-    }
-    
-    markers.push(diskSize - 1);
-    return markers;
+  // Calculate position as percentage for visual elements - fixed to prevent overflow
+  const calculatePosition = (position: number) => {
+    const percentage = (position / (diskSize - 1)) * 100;
+    // Ensure percentage stays within bounds and add padding
+    return Math.max(0, Math.min(100, percentage));
   };
 
-  // Calculate position as percentage for visual elements
-  const calculatePosition = (position: number) => {
-    return (position / (diskSize - 1)) * 100;
+  // Generate scale markers with proper bounds
+  const getScaleMarkers = () => {
+    const markers = [];
+    const steps = 5;
+    for (let i = 0; i < steps; i++) {
+      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
+      markers.push(position);
+    }
+    return markers;
   };
 
   return (
@@ -412,69 +403,71 @@ const FCFSDiskVisualizer = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
+                      <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-10 right-10 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-10 right-10 flex justify-between items-center transform -translate-y-1/2">
+                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
                           {getScaleMarkers().map(pos => (
                             <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
-                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                              <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
+                              <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
                             </div>
                           ))}
                         </div>
                         
-                        {/* Initial head position indicator */}
+                        {/* Current head position */}
+                        <div 
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
+                          style={{ 
+                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
+                            transform: 'translateY(-50%) translateX(-50%)'
+                          }}
+                        >
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
+                            Head: {currentHeadPosition}
+                          </div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                        
+                        {/* Initial head position indicator (if different) */}
                         {initialHeadPosition !== currentHeadPosition && (
                           <div 
-                            className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                            className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
                             style={{ 
-                              left: `calc(10% + ${calculatePosition(initialHeadPosition)}%)`,
-                              transform: 'translateY(-50%)'
+                              left: `calc(2rem + ${calculatePosition(initialHeadPosition)}% * (100% - 4rem) / 100)`,
+                              transform: 'translateY(-50%) translateX(-50%)'
                             }}
                           >
-                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
                               Start: {initialHeadPosition}
                             </div>
                           </div>
                         )}
-                        
-                        {/* Current head position */}
-                        <div 
-                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
-                          style={{ 
-                            left: `calc(10% + ${calculatePosition(currentHeadPosition)}%)`,
-                            transform: 'translateY(-50%)'
-                          }}
-                        >
-                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
-                            Head: {currentHeadPosition}
-                          </div>
-                        </div>
                         
                         {/* Request positions */}
                         {requestQueue.map((req, idx) => (
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
-                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
-                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
+                              req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(10% + ${calculatePosition(req.position)}%)`
+                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
                             }}
                           >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
                               {req.position}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
+                    
                     
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">Request Queue (FCFS Order)</h3>
@@ -483,7 +476,10 @@ const FCFSDiskVisualizer = () => {
                           <Badge 
                             key={idx}
                             variant={request.current ? "default" : request.processed ? "secondary" : "outline"}
-                            className={request.current ? "bg-drona-green" : ""}
+                            className={cn(
+                              "text-sm px-3 py-1",
+                              request.current && "bg-drona-green text-white"
+                            )}
                           >
                             {request.position}
                           </Badge>
@@ -498,7 +494,7 @@ const FCFSDiskVisualizer = () => {
                           <div className="p-4 text-center text-gray-400">No operations yet</div>
                         ) : (
                           <table className="w-full">
-                            <thead className="bg-drona-light">
+                            <thead className="bg-drona-light sticky top-0">
                               <tr>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Step</th>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">From</th>
@@ -508,11 +504,15 @@ const FCFSDiskVisualizer = () => {
                             </thead>
                             <tbody>
                               {seekHistory.map((seek, idx) => (
-                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-4 py-2 text-sm">{idx + 1}</td>
+                                <tr key={idx} className={cn(
+                                  "transition-colors",
+                                  idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
+                                  idx === currentStep && 'bg-drona-green/10'
+                                )}>
+                                  <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
                                   <td className="px-4 py-2 text-sm">{seek.to}</td>
-                                  <td className="px-4 py-2 text-sm">{seek.distance} cylinders</td>
+                                  <td className="px-4 py-2 text-sm font-medium">{seek.distance} cylinders</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -523,6 +523,7 @@ const FCFSDiskVisualizer = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+              
               
               <TabsContent value="algorithm">
                 <Card>
