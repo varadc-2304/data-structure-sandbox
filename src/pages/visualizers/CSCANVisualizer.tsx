@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -29,14 +30,13 @@ const CSCANVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-  const [direction, setDirection] = useState<'up' | 'down'>('up');
-  const [initialDirection, setInitialDirection] = useState<'up' | 'down'>('up');
+  const [direction] = useState<'up'>('up');
   const [showJump, setShowJump] = useState<boolean>(false);
 
   // Initialize simulation
   useEffect(() => {
     resetSimulation();
-  }, [initialHeadPosition, initialDirection]);
+  }, [initialHeadPosition]);
 
   // Handle play/pause
   useEffect(() => {
@@ -47,7 +47,7 @@ const CSCANVisualizer = () => {
     }, 1000 / speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, speed, requestQueue, direction, showJump]);
+  }, [isPlaying, currentStep, speed, requestQueue, showJump]);
 
   const handleAddRequest = () => {
     if (!inputPosition.trim()) return;
@@ -85,7 +85,6 @@ const CSCANVisualizer = () => {
     setSeekHistory([]);
     setCurrentHeadPosition(initialHeadPosition);
     setProcessedOrder([]);
-    setDirection(initialDirection);
     setShowJump(false);
     
     const resetRequests = requestQueue.map(req => ({
@@ -99,14 +98,12 @@ const CSCANVisualizer = () => {
   const nextStep = () => {
     // Handle the wrap-around animation step
     if (showJump) {
-      if (direction === 'up') {
-        // Jump from end to beginning
-        const seekDistance = currentHeadPosition + (diskSize - currentHeadPosition);
-        setSeekHistory([...seekHistory, { from: currentHeadPosition, to: 0, distance: seekDistance }]);
-        setTotalSeekTime(prev => prev + seekDistance);
-        setCurrentHeadPosition(0);
-        setShowJump(false);
-      }
+      // Jump from end to beginning
+      const seekDistance = diskSize - 1 - 0; // Jump distance from end to beginning
+      setSeekHistory([...seekHistory, { from: diskSize - 1, to: 0, distance: seekDistance }]);
+      setTotalSeekTime(prev => prev + seekDistance);
+      setCurrentHeadPosition(0);
+      setShowJump(false);
       return;
     }
     
@@ -131,29 +128,19 @@ const CSCANVisualizer = () => {
     let nextRequest: DiskRequest | null = null;
     let needsJump = false;
     
-    if (direction === 'up') {
-      // Find the closest request that is >= current head position
-      const requestsAhead = unprocessedRequests.filter(req => req.position >= currentHeadPosition);
-      
-      if (requestsAhead.length > 0) {
-        // Sort by position ascending
-        requestsAhead.sort((a, b) => a.position - b.position);
-        nextRequest = requestsAhead[0];
-      } else {
-        // Reached the end, need to jump to beginning and continue in the same direction
-        needsJump = true;
-        setShowJump(true);
-        
-        // When we execute the next step, we'll have jumped to position 0
-        // and will process the request with the lowest position
-        const lowestPositionRequest = [...unprocessedRequests].sort((a, b) => a.position - b.position)[0];
-        nextRequest = lowestPositionRequest;
-      }
-    }
+    // Find the closest request that is >= current head position
+    const requestsAhead = unprocessedRequests.filter(req => req.position >= currentHeadPosition);
     
-    if (needsJump) {
-      // If we need to jump, we'll show an animation step of the head moving to the end of the disk
-      // and then in the next step, we'll jump to the beginning
+    if (requestsAhead.length > 0) {
+      // Sort by position ascending
+      requestsAhead.sort((a, b) => a.position - b.position);
+      nextRequest = requestsAhead[0];
+    } else {
+      // Reached the end, need to jump to beginning and continue in the same direction
+      needsJump = true;
+      setShowJump(true);
+      
+      // Move to the end of disk first
       const seekToEnd = diskSize - 1 - currentHeadPosition;
       setSeekHistory([...seekHistory, { from: currentHeadPosition, to: diskSize - 1, distance: seekToEnd }]);
       setCurrentHeadPosition(diskSize - 1);
@@ -200,6 +187,27 @@ const CSCANVisualizer = () => {
     setCurrentStep(prev => prev + 1);
   };
 
+  const prevStep = () => {
+    if (currentStep <= -1) return;
+    
+    // TODO: Implement previous step functionality for C-SCAN
+    // This is more complex due to the circular nature and jumps
+    // For now, just reset and replay
+    
+    setIsPlaying(false);
+    resetSimulation();
+  };
+
+  const goToStep = (step: number) => {
+    // TODO: Implement go to step functionality for C-SCAN
+    // For now, just reset and play up to that step
+    
+    setIsPlaying(false);
+    resetSimulation();
+    
+    // Could set a timer to play to the desired step
+  };
+
   const togglePlayPause = () => {
     if (requestQueue.every(req => req.processed)) {
       resetSimulation();
@@ -207,6 +215,24 @@ const CSCANVisualizer = () => {
     } else {
       setIsPlaying(!isPlaying);
     }
+  };
+
+  // Calculate scale markers based on the current diskSize
+  const getScaleMarkers = () => {
+    const markers = [0];
+    const count = 5; // Number of markers to display
+    
+    for (let i = 1; i < count - 1; i++) {
+      markers.push(Math.round((i / (count - 1)) * diskSize));
+    }
+    
+    markers.push(diskSize - 1);
+    return markers;
+  };
+
+  // Calculate position as percentage for visual elements
+  const calculatePosition = (position: number) => {
+    return (position / (diskSize - 1)) * 100;
   };
 
   return (
@@ -302,27 +328,75 @@ const CSCANVisualizer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep} 
+                        disabled={currentStep <= -1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipBack className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => resetSimulation()}
+                        className="flex items-center justify-center"
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={togglePlayPause}
+                        disabled={requestQueue.length === 0}
+                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
+                      >
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={true} // C-SCAN doesn't support instant jump to end
+                        className="flex items-center justify-center"
+                      >
+                        <FastForward className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep}
+                        disabled={requestQueue.every(req => req.processed)}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipForward className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={resetSimulation}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
                     </Button>
-                    <Button 
-                      className="flex-1 bg-drona-green hover:bg-drona-green/90" 
-                      onClick={togglePlayPause}
-                      disabled={requestQueue.length === 0}
-                    >
-                      {isPlaying ? (
-                        <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                      ) : (
-                        <><Play className="mr-2 h-4 w-4" /> {requestQueue.every(req => req.processed) ? 'Restart' : 'Play'}</>
-                      )}
-                    </Button>
                   </div>
+                  
+                  {processedOrder.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Progress: {processedOrder.length} of {requestQueue.length} processed</Label>
+                      <Slider
+                        value={[processedOrder.length]}
+                        max={requestQueue.length}
+                        min={0}
+                        step={1}
+                        disabled={true}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -341,7 +415,7 @@ const CSCANVisualizer = () => {
                   <div className="bg-drona-light p-4 rounded-lg">
                     <p className="text-sm text-drona-gray">Average Seek Time</p>
                     <p className="text-2xl font-bold text-drona-dark">
-                      {seekHistory.length ? (totalSeekTime / processedOrder.length).toFixed(2) : '0'} cylinders
+                      {processedOrder.length ? (totalSeekTime / processedOrder.length).toFixed(2) : '0'} cylinders
                     </p>
                   </div>
                   <div className="bg-drona-light p-4 rounded-lg flex justify-between items-center">
@@ -377,9 +451,9 @@ const CSCANVisualizer = () => {
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg p-8 border-2 border-gray-200" style={{ minHeight: "120px" }}>
+                      <div className="relative bg-drona-light rounded-lg p-8 border-2 border-gray-200" style={{ minHeight: "200px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-1 bg-gray-400 rounded"></div>
+                        <div className="absolute top-1/2 left-10 right-10 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
                         {/* Direction indicator */}
                         <div className="absolute top-4 right-8">
@@ -390,31 +464,39 @@ const CSCANVisualizer = () => {
                         </div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center" style={{ transform: "translateY(-50%)" }}>
-                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                        <div className="absolute top-1/2 left-10 right-10 flex justify-between items-center transform -translate-y-1/2">
+                          {getScaleMarkers().map(pos => (
                             <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-4 bg-gray-500 mb-1"></div>
+                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
                               <span className="text-xs text-gray-600 font-medium">{pos}</span>
                             </div>
                           ))}
                         </div>
                         
                         {/* Initial head position */}
-                        <div 
-                          className="absolute top-1/2 w-1 h-8 bg-gray-500 rounded transform -translate-y-1/2"
-                          style={{ left: `${8 + (initialHeadPosition / diskSize) * (100 - 16)}%` }}
-                        >
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                            Start: {initialHeadPosition}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                            style={{ 
+                              left: `calc(10% + ${calculatePosition(initialHeadPosition)}%)`,
+                              transform: 'translateY(-50%)'
+                            }}
+                          >
+                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
+                              Start: {initialHeadPosition}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-2 h-10 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
-                          style={{ left: `${8 + (currentHeadPosition / diskSize) * (100 - 16)}%` }}
+                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          style={{ 
+                            left: `calc(10% + ${calculatePosition(currentHeadPosition)}%)`,
+                            transform: 'translateY(-50%)'
+                          }}
                         >
-                          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
+                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                         </div>
@@ -424,11 +506,13 @@ const CSCANVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
                               req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
                               req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
-                            style={{ left: `${8 + (req.position / diskSize) * (100 - 16)}%` }}
+                            style={{ 
+                              left: `calc(10% + ${calculatePosition(req.position)}%)` 
+                            }}
                           >
                             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
                               {req.position}
@@ -438,7 +522,7 @@ const CSCANVisualizer = () => {
                         
                         {/* Jump indicator when showing jump */}
                         {showJump && (
-                          <div className="absolute top-1/2 left-8 right-8 transform -translate-y-1/2">
+                          <div className="absolute top-1/2 left-10 right-10 transform -translate-y-1/2">
                             <div className="w-full h-0.5 border-t-2 border-dashed border-orange-500 animate-pulse"></div>
                             <div className="absolute right-0 -top-6 bg-orange-500 text-white px-2 py-1 rounded text-xs">
                               Jump to start

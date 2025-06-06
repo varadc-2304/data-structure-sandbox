@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -30,7 +29,7 @@ const FCFSDiskVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-
+  
   // Initialize simulation
   useEffect(() => {
     resetSimulation();
@@ -196,6 +195,24 @@ const FCFSDiskVisualizer = () => {
     } else {
       setIsPlaying(!isPlaying);
     }
+  };
+
+  // Calculate scale markers based on the current diskSize
+  const getScaleMarkers = () => {
+    const markers = [0];
+    const count = 5; // Number of markers to display
+    
+    for (let i = 1; i < count - 1; i++) {
+      markers.push(Math.round((i / (count - 1)) * diskSize));
+    }
+    
+    markers.push(diskSize - 1);
+    return markers;
+  };
+
+  // Calculate position as percentage for visual elements
+  const calculatePosition = (position: number) => {
+    return (position / (diskSize - 1)) * 100;
   };
 
   return (
@@ -398,11 +415,11 @@ const FCFSDiskVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
                       <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-16 right-16 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-10 right-10 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-16 right-16 flex justify-between items-center transform -translate-y-1/2">
-                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                        <div className="absolute top-1/2 left-10 right-10 flex justify-between items-center transform -translate-y-1/2">
+                          {getScaleMarkers().map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
                               <span className="text-xs text-gray-600 font-medium">{pos}</span>
@@ -411,24 +428,26 @@ const FCFSDiskVisualizer = () => {
                         </div>
                         
                         {/* Initial head position indicator */}
-                        <div 
-                          className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
-                          style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((initialHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
-                          }}
-                        >
-                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                            Start: {initialHeadPosition}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
+                            style={{ 
+                              left: `calc(10% + ${calculatePosition(initialHeadPosition)}%)`,
+                              transform: 'translateY(-50%)'
+                            }}
+                          >
+                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
+                              Start: {initialHeadPosition}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
                         {/* Current head position */}
                         <div 
                           className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
                           style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((currentHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(10% + ${calculatePosition(currentHeadPosition)}%)`,
+                            transform: 'translateY(-50%)'
                           }}
                         >
                           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
@@ -446,7 +465,7 @@ const FCFSDiskVisualizer = () => {
                               req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
                             style={{ 
-                              left: `calc(4rem + ${Math.min(Math.max((req.position / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`
+                              left: `calc(10% + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
