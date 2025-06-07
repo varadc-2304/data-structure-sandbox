@@ -101,7 +101,7 @@ const App = () => (
               <Route path="/disk-scheduling/look" element={<LOOKVisualizer />} />
               <Route path="/disk-scheduling/c-look" element={<CLOOKVisualizer />} />
 
-              /* Algorithms */}
+              {/* Algorithms */}
               <Route path="/algorithms" element={<Algorithms />} />
               <Route path="/algorithms/linear-search" element={<LinearSearchVisualizer />} />
               <Route path="/algorithms/binary-search" element={<BinarySearchVisualizer />} />
