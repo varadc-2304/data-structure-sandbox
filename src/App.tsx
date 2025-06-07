@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,13 +15,11 @@ import CPUScheduling from "./pages/CPUScheduling";
 import DiskScheduling from "./pages/DiskScheduling";
 import PageReplacement from "./pages/PageReplacement";
 import NotFound from "./pages/NotFound";
-import {
-  ArrayVisualizer,
-  LinkedListVisualizer,
-  QueueVisualizer,
-  StackVisualizer,
-  BinaryTreeVisualizer,
-} from "./components/Visualizer";
+import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
+import LinkedListVisualizer from "./pages/visualizers/LinkedListVisualizer";
+import QueueVisualizer from "./pages/visualizers/QueueVisualizer";
+import StackVisualizer from "./pages/visualizers/StackVisualizer";
+import BinaryTreeVisualizer from "./pages/visualizers/BinaryTreeVisualizer";
 
 const queryClient = new QueryClient();
 
