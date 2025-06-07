@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -22,11 +23,13 @@ const FCFSDiskVisualizer = () => {
   const [diskSize, setDiskSize] = useState<number>(200);
   const [initialHeadPosition, setInitialHeadPosition] = useState<number>(50);
   const [currentHeadPosition, setCurrentHeadPosition] = useState<number>(50);
+  const [animatedHeadPosition, setAnimatedHeadPosition] = useState<number>(50);
   const [requestQueue, setRequestQueue] = useState<DiskRequest[]>([]);
   const [inputPosition, setInputPosition] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [totalSeekTime, setTotalSeekTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
   
@@ -35,16 +38,28 @@ const FCFSDiskVisualizer = () => {
     resetSimulation();
   }, [initialHeadPosition]);
 
-  // Handle play/pause
+  // Animate head position changes
   useEffect(() => {
-    if (!isPlaying || currentStep >= requestQueue.length - 1) return;
+    if (currentHeadPosition !== animatedHeadPosition) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setAnimatedHeadPosition(currentHeadPosition);
+        setTimeout(() => setIsAnimating(false), 800); // Animation duration
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentHeadPosition, animatedHeadPosition]);
+
+  // Handle play/pause with animation delay
+  useEffect(() => {
+    if (!isPlaying || currentStep >= requestQueue.length - 1 || isAnimating) return;
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, (1000 / speed) + 800); // Add animation time
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, requestQueue.length, speed]);
+  }, [isPlaying, currentStep, requestQueue.length, speed, isAnimating]);
 
   const handleAddRequest = () => {
     if (!inputPosition.trim()) return;
@@ -78,8 +93,10 @@ const FCFSDiskVisualizer = () => {
     setCurrentStep(-1);
     setTotalSeekTime(0);
     setIsPlaying(false);
+    setIsAnimating(false);
     setSeekHistory([]);
     setCurrentHeadPosition(initialHeadPosition);
+    setAnimatedHeadPosition(initialHeadPosition);
     
     const resetRequests = requestQueue.map(req => ({
       ...req,
@@ -136,6 +153,7 @@ const FCFSDiskVisualizer = () => {
     
     const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
     setCurrentHeadPosition(newHeadPosition);
+    setAnimatedHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -170,6 +188,7 @@ const FCFSDiskVisualizer = () => {
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
     setCurrentHeadPosition(newHeadPosition);
+    setAnimatedHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -292,7 +311,7 @@ const FCFSDiskVisualizer = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={prevStep} 
-                        disabled={currentStep <= -1}
+                        disabled={currentStep <= -1 || isAnimating}
                         className="flex items-center justify-center"
                       >
                         <SkipBack className="h-4 w-4" />
@@ -301,6 +320,7 @@ const FCFSDiskVisualizer = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={() => goToStep(-1)}
+                        disabled={isAnimating}
                         className="flex items-center justify-center"
                       >
                         <Rewind className="h-4 w-4" />
@@ -308,7 +328,7 @@ const FCFSDiskVisualizer = () => {
                       <Button 
                         size="sm"
                         onClick={togglePlayPause}
-                        disabled={requestQueue.length === 0}
+                        disabled={requestQueue.length === 0 || isAnimating}
                         className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
                         {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -317,6 +337,7 @@ const FCFSDiskVisualizer = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={() => goToStep(requestQueue.length - 1)}
+                        disabled={isAnimating}
                         className="flex items-center justify-center"
                       >
                         <FastForward className="h-4 w-4" />
@@ -325,7 +346,7 @@ const FCFSDiskVisualizer = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={nextStep} 
-                        disabled={currentStep >= requestQueue.length - 1}
+                        disabled={currentStep >= requestQueue.length - 1 || isAnimating}
                         className="flex items-center justify-center"
                       >
                         <SkipForward className="h-4 w-4" />
@@ -336,6 +357,7 @@ const FCFSDiskVisualizer = () => {
                       variant="outline" 
                       className="w-full" 
                       onClick={resetSimulation}
+                      disabled={isAnimating}
                     >
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Reset
@@ -352,6 +374,7 @@ const FCFSDiskVisualizer = () => {
                         min={0}
                         step={1}
                         className="w-full"
+                        disabled={isAnimating}
                       />
                     </div>
                   )}
@@ -399,6 +422,7 @@ const FCFSDiskVisualizer = () => {
                     <CardTitle>FCFS Disk Scheduling Visualization</CardTitle>
                     <CardDescription>
                       Step: {currentStep + 1} of {requestQueue.length}
+                      {isAnimating && " (Moving...)"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -418,22 +442,28 @@ const FCFSDiskVisualizer = () => {
                           ))}
                         </div>
                         
-                        {/* Current head position */}
+                        {/* Current head position with smooth animation */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
+                          className={cn(
+                            "absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white",
+                            isAnimating ? "transition-all duration-700 ease-in-out" : "transition-all duration-300"
+                          )}
                           style={{ 
-                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
+                            left: `calc(2rem + ${calculatePosition(animatedHeadPosition)}% * (100% - 4rem) / 100)`,
                             transform: 'translateY(-50%) translateX(-50%)'
                           }}
                         >
                           <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
-                            Head: {currentHeadPosition}
+                            Head: {animatedHeadPosition}
                           </div>
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
+                          {isAnimating && (
+                            <div className="absolute -top-2 -left-2 -right-2 -bottom-2 border-2 border-drona-green rounded-full animate-pulse"></div>
+                          )}
                         </div>
                         
                         {/* Initial head position indicator (if different) */}
-                        {initialHeadPosition !== currentHeadPosition && (
+                        {initialHeadPosition !== animatedHeadPosition && (
                           <div 
                             className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
                             style={{ 
