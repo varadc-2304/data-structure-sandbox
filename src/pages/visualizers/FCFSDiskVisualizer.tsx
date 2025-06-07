@@ -38,25 +38,37 @@ const FCFSDiskVisualizer = () => {
     resetSimulation();
   }, [initialHeadPosition]);
 
-  // Animate head position changes
+  // Animate head position changes with proper timing
   useEffect(() => {
     if (currentHeadPosition !== animatedHeadPosition) {
       setIsAnimating(true);
-      const timer = setTimeout(() => {
+      
+      // Start the animation immediately
+      const animationTimer = setTimeout(() => {
         setAnimatedHeadPosition(currentHeadPosition);
-        setTimeout(() => setIsAnimating(false), 800); // Animation duration
-      }, 100);
-      return () => clearTimeout(timer);
+      }, 50);
+      
+      // End animation state after animation completes
+      const endAnimationTimer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 1000); // 1 second animation duration
+      
+      return () => {
+        clearTimeout(animationTimer);
+        clearTimeout(endAnimationTimer);
+      };
     }
-  }, [currentHeadPosition, animatedHeadPosition]);
+  }, [currentHeadPosition]);
 
-  // Handle play/pause with animation delay
+  // Handle play/pause with proper animation timing
   useEffect(() => {
-    if (!isPlaying || currentStep >= requestQueue.length - 1 || isAnimating) return;
+    if (!isPlaying || currentStep >= requestQueue.length - 1) return;
 
+    const delay = isAnimating ? 1200 : (1000 / speed); // Wait longer if animating
+    
     const timer = setTimeout(() => {
       nextStep();
-    }, (1000 / speed) + 800); // Add animation time
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, requestQueue.length, speed, isAnimating]);
@@ -117,8 +129,8 @@ const FCFSDiskVisualizer = () => {
     
     const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
-    setSeekHistory([
-      ...seekHistory,
+    setSeekHistory(prev => [
+      ...prev,
       { 
         from: currentHeadPosition, 
         to: nextRequest.position, 
@@ -127,8 +139,8 @@ const FCFSDiskVisualizer = () => {
     ]);
     
     setTotalSeekTime(prev => prev + seekDistance);
-    setCurrentHeadPosition(nextRequest.position);
     
+    // Update request states
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
       processed: idx <= nextStep,
@@ -137,6 +149,9 @@ const FCFSDiskVisualizer = () => {
     setRequestQueue(updatedRequests);
     
     setCurrentStep(nextStep);
+    
+    // Move head to new position (this will trigger animation)
+    setCurrentHeadPosition(nextRequest.position);
   };
 
   const prevStep = () => {
@@ -445,8 +460,7 @@ const FCFSDiskVisualizer = () => {
                         {/* Current head position with smooth animation */}
                         <div 
                           className={cn(
-                            "absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white",
-                            isAnimating ? "transition-all duration-700 ease-in-out" : "transition-all duration-300"
+                            "absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           )}
                           style={{ 
                             left: `calc(2rem + ${calculatePosition(animatedHeadPosition)}% * (100% - 4rem) / 100)`,
