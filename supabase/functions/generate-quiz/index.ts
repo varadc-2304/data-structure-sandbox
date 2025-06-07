@@ -20,7 +20,7 @@ interface Question {
 }
 
 const GEMINI_API_KEY = 'AIzaSyA-EF7zhW7KuQtrZLg-mBgvVxXka4kOgFg';
-const GEMINI_MODEL = 'gemini-2.0-flash-latest';
+const GEMINI_MODEL = 'gemini-1.5-flash'; // Changed to a valid model
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -34,6 +34,8 @@ serve(async (req) => {
     if (!constraints || constraints.length === 0) {
       throw new Error('No constraints provided');
     }
+
+    console.log('Generating quiz with constraints:', constraints);
 
     const prompt = createPrompt(constraints);
     
@@ -64,7 +66,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Gemini response:', data);
+    console.log('Gemini response received successfully');
     
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       throw new Error('Invalid response from Gemini API');
@@ -72,6 +74,8 @@ serve(async (req) => {
 
     const generatedText = data.candidates[0].content.parts[0].text;
     const questions = parseQuestions(generatedText);
+    
+    console.log('Successfully parsed', questions.length, 'questions');
     
     return new Response(JSON.stringify({ questions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -95,7 +99,7 @@ serve(async (req) => {
 function createPrompt(constraints: Constraint[]): string {
   let prompt = `Generate multiple choice questions (MCQs) based on the following constraints. Each question should be worth 1 mark.
 
-Return the response in JSON format with the following structure:
+Return ONLY a valid JSON object with the following structure:
 {
   "questions": [
     {
@@ -119,6 +123,7 @@ ${index + 1}. Topic: ${constraint.topic}
   });
 
   prompt += `
+
 Important requirements:
 - Each question must have exactly 4 options
 - Only one option should be correct
@@ -127,7 +132,9 @@ Important requirements:
 - For easy difficulty: Focus on basic concepts and definitions
 - For medium difficulty: Include application-based questions
 - For hard difficulty: Include complex analysis and problem-solving questions
-- Return only the JSON response, no additional text`;
+- Return ONLY the JSON response, no additional text or markdown formatting
+- Do not wrap the response in \`\`\`json blocks
+- Ensure the JSON is valid and properly formatted`;
 
   return prompt;
 }
@@ -135,26 +142,51 @@ Important requirements:
 function parseQuestions(generatedText: string): Question[] {
   try {
     // Clean the generated text to extract JSON
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    let jsonText = generatedText.trim();
+    
+    // Remove markdown code blocks if present
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/```json\s*/, '').replace(/```\s*$/, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/```\s*/, '').replace(/```\s*$/, '');
+    }
+    
+    // Find JSON object
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('No JSON found in response');
     }
     
-    const jsonText = jsonMatch[0];
+    jsonText = jsonMatch[0];
     const parsed = JSON.parse(jsonText);
     
     if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      throw new Error('Invalid response format');
+      throw new Error('Invalid response format - questions array not found');
     }
     
-    return parsed.questions.map((q: any) => ({
-      question: q.question || '',
-      options: Array.isArray(q.options) ? q.options.slice(0, 4) : [],
-      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-      explanation: q.explanation || 'No explanation provided'
-    }));
+    // Validate and clean questions
+    const validQuestions = parsed.questions.map((q: any, index: number) => {
+      if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
+        console.warn(`Question ${index + 1} has invalid format, skipping`);
+        return null;
+      }
+      
+      return {
+        question: q.question || '',
+        options: q.options.slice(0, 4),
+        correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < 4 ? q.correctAnswer : 0,
+        explanation: q.explanation || 'No explanation provided'
+      };
+    }).filter(Boolean);
+    
+    if (validQuestions.length === 0) {
+      throw new Error('No valid questions found in response');
+    }
+    
+    return validQuestions;
   } catch (error) {
     console.error('Error parsing questions:', error);
+    console.error('Generated text:', generatedText);
     // Fallback questions in case of parsing error
     return [
       {
@@ -162,6 +194,12 @@ function parseQuestions(generatedText: string): Question[] {
         options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
         correctAnswer: 1,
         explanation: "Binary search divides the search space in half with each comparison, resulting in O(log n) time complexity."
+      },
+      {
+        question: "Which data structure follows LIFO (Last In First Out) principle?",
+        options: ["Queue", "Stack", "Array", "Linked List"],
+        correctAnswer: 1,
+        explanation: "Stack follows LIFO principle where the last element added is the first one to be removed."
       }
     ];
   }
