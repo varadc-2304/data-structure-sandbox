@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Menu, X, Brain } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import QuizDialog from '@/components/QuizDialog';
+import { navigationItems } from '@/config/navigation';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -27,6 +28,11 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  const handleQuizClick = () => {
+    setIsQuizDialogOpen(true);
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       <nav
@@ -45,57 +51,32 @@ const Navbar = () => {
 
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <button
-                onClick={() => setIsQuizDialogOpen(true)}
-                className="flex items-center font-medium text-drona-dark hover:text-drona-green transition-colors"
-              >
-                <Brain className="mr-1 h-4 w-4" /> Quiz Me
-              </button>
-              <Link
-                to="/data-structures"
-                className={cn(
-                  "font-medium transition-colors hover:text-drona-green", 
-                  location.pathname.includes('/data-structures') ? 'text-drona-green' : 'text-drona-dark'
-                )}
-              >
-                Data Structures
-              </Link>
-              <Link
-                to="/cpu-scheduling"
-                className={cn(
-                  "font-medium transition-colors hover:text-drona-green", 
-                  location.pathname.includes('/cpu-scheduling') ? 'text-drona-green' : 'text-drona-dark'
-                )}
-              >
-                CPU Scheduling
-              </Link>
-              <Link
-                to="/page-replacement"
-                className={cn(
-                  "font-medium transition-colors hover:text-drona-green", 
-                  location.pathname.includes('/page-replacement') ? 'text-drona-green' : 'text-drona-dark'
-                )}
-              >
-                Page Replacement
-              </Link>
-              <Link
-                to="/disk-scheduling"
-                className={cn(
-                  "font-medium transition-colors hover:text-drona-green", 
-                  location.pathname.includes('/disk-scheduling') ? 'text-drona-green' : 'text-drona-dark'
-                )}
-              >
-                Disk Scheduling
-              </Link>
-              <Link
-                to="/algorithms"
-                className={cn(
-                  "font-medium transition-colors hover:text-drona-green", 
-                  location.pathname.includes('/algorithms') ? 'text-drona-green' : 'text-drona-dark'
-                )}
-              >
-                Algorithms
-              </Link>
+              {navigationItems.map((item) => {
+                if (item.title === "Quiz Me") {
+                  return (
+                    <button
+                      key={item.title}
+                      onClick={() => setIsQuizDialogOpen(true)}
+                      className="flex items-center font-medium text-drona-dark hover:text-drona-green transition-colors"
+                    >
+                      <item.icon className="mr-1 h-4 w-4" /> {item.title}
+                    </button>
+                  );
+                }
+                
+                return (
+                  <Link
+                    key={item.title}
+                    to={item.to}
+                    className={cn(
+                      "font-medium transition-colors hover:text-drona-green", 
+                      location.pathname.includes(item.pathMatch) ? 'text-drona-green' : 'text-drona-dark'
+                    )}
+                  >
+                    {item.title}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Mobile menu button */}
@@ -119,66 +100,33 @@ const Navbar = () => {
         {/* Mobile menu, show/hide based on menu state */}
         <div className={cn("md:hidden", isMenuOpen ? "block" : "hidden")}>
           <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 backdrop-blur-lg shadow-lg animate-fade-in">
-            <button
-              onClick={() => {
-                setIsQuizDialogOpen(true);
-                setIsMenuOpen(false);
-              }}
-              className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
-            >
-              <Brain className="mr-2 h-4 w-4" /> Quiz Me
-            </button>
-            
-            <Link
-              to="/data-structures"
-              className={cn(
-                "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
-                location.pathname.includes('/data-structures') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
-              )}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Data Structures
-            </Link>
-            <Link
-              to="/cpu-scheduling"
-              className={cn(
-                "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
-                location.pathname.includes('/cpu-scheduling') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
-              )}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              CPU Scheduling
-            </Link>
-            <Link
-              to="/page-replacement"
-              className={cn(
-                "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
-                location.pathname.includes('/page-replacement') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
-              )}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Page Replacement
-            </Link>
-            <Link
-              to="/disk-scheduling"
-              className={cn(
-                "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
-                location.pathname.includes('/disk-scheduling') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
-              )}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Disk Scheduling
-            </Link>
-            <Link
-              to="/algorithms"
-              className={cn(
-                "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
-                location.pathname.includes('/algorithms') ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
-              )}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Algorithms
-            </Link>
+            {navigationItems.map((item) => {
+              if (item.title === "Quiz Me") {
+                return (
+                  <button
+                    key={item.title}
+                    onClick={handleQuizClick}
+                    className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
+                  >
+                    <item.icon className="mr-2 h-4 w-4" /> {item.title}
+                  </button>
+                );
+              }
+              
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className={cn(
+                    "block px-3 py-2 rounded-md text-base font-medium hover:bg-drona-green/10", 
+                    location.pathname.includes(item.pathMatch) ? 'text-drona-green bg-drona-green/5' : 'text-drona-dark'
+                  )}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.title}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </nav>
