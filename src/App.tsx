@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import AutoLogin from "./pages/AutoLogin";
@@ -80,7 +79,7 @@ const App = () => (
               <Route path="/data-structures/bst" element={<BSTVisualizer />} />
               <Route path="/data-structures/graph" element={<GraphVisualizer />} />
 
-                            {/* CPU Scheduling */}
+              {/* CPU Scheduling */}
               <Route path="/cpu-scheduling" element={<CPUScheduling />} />
               <Route path="/cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
               <Route path="/cpu-scheduling/sjf" element={<SJFVisualizer />} />
@@ -118,8 +117,6 @@ const App = () => (
               <Route path="/algorithms/0-1-knapsack" element={<ZeroOneKnapsackVisualizer />} />
             </Route>
             
-            {/* Redirect root to auth if not logged in */}
-            <Route path="/" element={<Navigate to="/auth" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 const AutoLogin = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { setUser } = useAuth();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(true);
 
@@ -23,7 +23,8 @@ const AutoLogin = () => {
           title: "Invalid Login Link",
           description: "No token provided",
         });
-        navigate('/auth');
+        // Redirect to ikshvaku-innovations.in instead of auth page
+        window.location.href = 'https://ikshvaku-innovations.in';
         return;
       }
 
@@ -41,7 +42,7 @@ const AutoLogin = () => {
             title: "Invalid Token",
             description: "The login token is invalid or has expired",
           });
-          navigate('/auth');
+          window.location.href = 'https://ikshvaku-innovations.in';
           return;
         }
 
@@ -52,7 +53,7 @@ const AutoLogin = () => {
             title: "Token Expired",
             description: "The login token has expired",
           });
-          navigate('/auth');
+          window.location.href = 'https://ikshvaku-innovations.in';
           return;
         }
 
@@ -63,14 +64,14 @@ const AutoLogin = () => {
             title: "Token Already Used",
             description: "This login token has already been used",
           });
-          navigate('/auth');
+          window.location.href = 'https://ikshvaku-innovations.in';
           return;
         }
 
         // Get user details
         const { data: userData, error: userError } = await supabase
           .from('auth')
-          .select('id, email, password')
+          .select('id, email')
           .eq('id', tokenData.user_id)
           .single();
 
@@ -80,7 +81,7 @@ const AutoLogin = () => {
             title: "User Not Found",
             description: "The user associated with this token could not be found",
           });
-          navigate('/auth');
+          window.location.href = 'https://ikshvaku-innovations.in';
           return;
         }
 
@@ -90,8 +91,11 @@ const AutoLogin = () => {
           .update({ used: true })
           .eq('token', token);
 
-        // Sign in the user
-        await signIn(userData.email, userData.password);
+        // Set user in context (this will handle localStorage automatically)
+        setUser({
+          id: userData.id,
+          email: userData.email
+        });
 
         toast({
           title: "Login Successful",
@@ -107,14 +111,14 @@ const AutoLogin = () => {
           title: "Login Failed",
           description: "An error occurred during automatic login",
         });
-        navigate('/auth');
+        window.location.href = 'https://ikshvaku-innovations.in';
       } finally {
         setIsProcessing(false);
       }
     };
 
     processAutoLogin();
-  }, [searchParams, navigate, signIn, toast]);
+  }, [searchParams, navigate, setUser, toast]);
 
   if (isProcessing) {
     return (
