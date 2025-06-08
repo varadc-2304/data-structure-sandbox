@@ -205,7 +205,7 @@ const Navbar = () => {
             >
               Algorithms
             </Link>
-            <button
+{/*             <button
               onClick={() => {
                 handleLogout();
                 setIsMenuOpen(false);
@@ -213,7 +213,7 @@ const Navbar = () => {
               className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-drona-dark hover:bg-drona-green/10 hover:text-drona-green"
             >
               <LogOut className="mr-2 h-4 w-4" /> Logout
-            </button>
+            </button> */}
           </div>
         </div>
       </nav>
