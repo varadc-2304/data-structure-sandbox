@@ -48,6 +48,7 @@ const Index = () => {
             to="/page-replacement"
             delay={300}
           />
+          /*
           <CategoryCard
             title="Disk Scheduling"
             description="Explore disk scheduling algorithms such as FCFS, SSTF, SCAN, C-SCAN, LOOK, and C-LOOK with visual head movements."
@@ -55,6 +56,7 @@ const Index = () => {
             to="/disk-scheduling"
             delay={400}
           />
+          */
           <CategoryCard
             title="Algorithms"
             description="Visualize sorting, searching, and problem-solving algorithms like Binary Search, Quick Sort, and Dynamic Programming."
