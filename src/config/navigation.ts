@@ -33,12 +33,12 @@ export const navigationItems: NavigationItem[] = [
     icon: Folder,
     pathMatch: "/page-replacement"
   },
-  {
+ /* {
     title: "Disk Scheduling",
     to: "/disk-scheduling",
     icon: HardDrive,
     pathMatch: "/disk-scheduling"
-  },
+  },*/
   {
     title: "Algorithms",
     to: "/algorithms",
