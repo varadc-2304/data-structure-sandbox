@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -272,24 +273,26 @@ const JobSequencingVisualizer = () => {
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">Number of Jobs</Label>
-                    <Input
-                      type="number"
-                      value={numJobs}
-                      onChange={(e) => setNumJobs(Math.max(3, Math.min(8, parseInt(e.target.value) || 5)))}
-                      min={3}
-                      max={8}
-                      className="border-2 focus:border-drona-green"
-                    />
+                    <Label className="text-sm font-semibold text-drona-dark">Number of Random Jobs</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={numJobs}
+                        onChange={(e) => setNumJobs(Math.max(1, Math.min(10, parseInt(e.target.value) || 5)))}
+                        min={1}
+                        max={10}
+                        className="flex-1 border-2 focus:border-drona-green"
+                        placeholder="Enter number of jobs"
+                      />
+                      <Button 
+                        onClick={generateRandomJobs} 
+                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                      >
+                        Generate
+                      </Button>
+                    </div>
+                    <p className="text-xs text-drona-gray">Enter a number between 1 and 10</p>
                   </div>
-                  
-                  <Button 
-                    onClick={generateRandomJobs} 
-                    variant="outline"
-                    className="w-full font-semibold border-2 hover:border-drona-green/50"
-                  >
-                    Generate Random Jobs
-                  </Button>
                   
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-drona-dark">
