@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 
@@ -345,7 +345,7 @@ const SelectionSortVisualizer = () => {
                     disabled={sortSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipBack className="h-4 w-4" />
+                    <ChevronsLeft className="h-4 w-4" />
                   </Button>
                   
                   <Button 
@@ -384,7 +384,7 @@ const SelectionSortVisualizer = () => {
                     disabled={sortSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipForward className="h-4 w-4" />
+                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
                 

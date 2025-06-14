@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
-import { Search, Play, Pause, SkipBack, SkipForward, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Search, Play, Pause, SkipBack, SkipForward, RotateCcw, ArrowLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface SearchStep {
@@ -321,7 +321,7 @@ const BinarySearchVisualizer = () => {
                     disabled={searchSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipBack className="h-4 w-4" />
+                    <ChevronsLeft className="h-4 w-4" />
                   </Button>
                   
                   <Button 
@@ -360,7 +360,7 @@ const BinarySearchVisualizer = () => {
                     disabled={searchSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipForward className="h-4 w-4" />
+                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
                 
