@@ -347,6 +347,7 @@ const SelectionSortVisualizer = () => {
                   >
                     <SkipBack className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -356,6 +357,7 @@ const SelectionSortVisualizer = () => {
                   >
                     <SkipBack className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     size="sm"
                     onClick={togglePlayPause}
@@ -364,6 +366,7 @@ const SelectionSortVisualizer = () => {
                   >
                     {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -373,6 +376,7 @@ const SelectionSortVisualizer = () => {
                   >
                     <SkipForward className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -385,12 +389,15 @@ const SelectionSortVisualizer = () => {
                 </div>
                 
                 <Button 
-                  onClick={startSort} 
-                  disabled={isRunning || array.length === 0}
-                  className="w-full bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  onClick={() => {
+                    resetSort();
+                    setIsRunning(false);
+                  }} 
+                  variant="outline" 
+                  disabled={isRunning}
+                  className="w-full border-2 hover:border-drona-green/50"
                 >
-                  <SortAsc className="mr-2 h-4 w-4" /> 
-                  Start Sort
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
 
                 {sortSteps.length > 0 && (
