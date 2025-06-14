@@ -1,370 +1,319 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
-import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, Plus, SkipBack, SkipForward, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Package, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Slider } from '@/components/ui/slider';
 
 interface Item {
   id: number;
   name: string;
   weight: number;
   value: number;
-  ratio: number;
-  fractionTaken?: number;
-  color: string;
+  valuePerWeight: number;
 }
 
-interface Step {
-  message: string;
+interface KnapsackStep {
   items: Item[];
-  knapsackItems: Item[];
+  currentItemIndex: number;
+  selectedItems: Item[];
+  remainingCapacity: number;
   totalValue: number;
-  totalWeight: number;
-  currentItemId?: number;
-  action?: 'sort' | 'add_full' | 'add_partial' | 'complete';
 }
 
 const FractionalKnapsackVisualizer = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [capacity, setCapacity] = useState<number>(20);
-  const [name, setName] = useState<string>("");
-  const [weight, setWeight] = useState<string>("");
-  const [value, setValue] = useState<string>("");
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [currentStep, setCurrentStep] = useState<number>(-1);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1);
-  
-  const colors = [
-    'bg-red-500', 'bg-blue-500', 'bg-green-500',
-    'bg-yellow-500', 'bg-purple-500', 'bg-pink-500',
-    'bg-indigo-500', 'bg-orange-500', 'bg-teal-500'
-  ];
+  const [customItemsInput, setCustomItemsInput] = useState<string>('');
+  const [currentItemIndex, setCurrentItemIndex] = useState<number>(-1);
+  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+  const [remainingCapacity, setRemainingCapacity] = useState<number>(capacity);
+  const [totalValue, setTotalValue] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [knapsackSteps, setKnapsackSteps] = useState<KnapsackStep[]>([]);
+  const [currentStep, setCurrentStep] = useState(-1);
 
-  // Generate steps when items or capacity change
   useEffect(() => {
-    if (items.length > 0) {
-      generateSteps();
-    } else {
-      setSteps([]);
-      setCurrentStep(-1);
+    if (!isRunning) return;
+    
+    if (currentStep >= knapsackSteps.length - 1) {
+      setIsRunning(false);
+      return;
     }
-  }, [items, capacity]);
 
-  const addItem = () => {
-    if (name && weight && value) {
-      const newItem: Item = {
-        id: items.length + 1,
-        name: name,
-        weight: parseInt(weight),
-        value: parseInt(value),
-        ratio: parseFloat((parseInt(value) / parseInt(weight)).toFixed(2)),
-        color: colors[items.length % colors.length]
-      };
-      setItems([...items, newItem]);
-      setName("");
-      setWeight("");
-      setValue("");
-    }
-  };
+    const timer = setTimeout(() => {
+      nextStep();
+    }, 2000 / speed);
 
-  const removeItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
-  };
+    return () => clearTimeout(timer);
+  }, [isRunning, currentStep, knapsackSteps.length, speed]);
 
   const generateRandomItems = () => {
-    resetVisualization();
+    const newItems = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1,
+      name: `Item ${i + 1}`,
+      weight: Math.floor(Math.random() * 10) + 1,
+      value: Math.floor(Math.random() * 50) + 1,
+      valuePerWeight: 0,
+    }));
     
-    const count = Math.floor(Math.random() * 3) + 5; // 5-7 items
-    const newItems: Item[] = [];
+    const itemsWithValuePerWeight = newItems.map(item => ({
+      ...item,
+      valuePerWeight: item.value / item.weight,
+    }));
     
-    for (let i = 0; i < count; i++) {
-      const weight = Math.floor(Math.random() * 10) + 5; // 5-14
-      const value = Math.floor(Math.random() * 50) + 10; // 10-59
-      newItems.push({
-        id: i + 1,
-        name: `Item ${i + 1}`,
-        weight: weight,
-        value: value,
-        ratio: parseFloat((value / weight).toFixed(2)),
-        color: colors[i % colors.length]
-      });
-    }
-    
-    setItems(newItems);
+    setItems(itemsWithValuePerWeight);
+    resetKnapsack();
   };
 
-  const generateSteps = () => {
-    if (items.length === 0) return;
-
-    const steps: Step[] = [];
+  const generateCustomItems = () => {
+    if (!customItemsInput.trim()) return;
     
-    // Step 1: Initial state
-    steps.push({
-      message: "Initial items with their weights, values, and value-to-weight ratios.",
-      items: [...items],
-      knapsackItems: [],
-      totalValue: 0,
-      totalWeight: 0,
-      action: 'sort'
-    });
-
-    // Step 2: Sort items by ratio
-    const sortedItems = [...items].sort((a, b) => b.ratio - a.ratio);
-    steps.push({
-      message: "Items sorted by value-to-weight ratio in descending order. We always take items with the highest ratio first.",
-      items: sortedItems,
-      knapsackItems: [],
-      totalValue: 0,
-      totalWeight: 0,
-      action: 'sort'
-    });
-
-    // Process each item
-    let totalWeight = 0;
-    let totalValue = 0;
-    const knapsackItems: Item[] = [];
-
-    for (const item of sortedItems) {
-      if (totalWeight + item.weight <= capacity) {
-        // Take the whole item
-        const fullItem = { ...item, fractionTaken: 1 };
-        knapsackItems.push(fullItem);
-        totalWeight += item.weight;
-        totalValue += item.value;
-        
-        steps.push({
-          message: `Taking the entire ${item.name} (Weight: ${item.weight}, Value: ${item.value}). Current total: Weight ${totalWeight}/${capacity}, Value ${totalValue.toFixed(2)}`,
-          items: sortedItems,
-          knapsackItems: [...knapsackItems],
-          totalValue: parseFloat(totalValue.toFixed(2)),
-          totalWeight: parseFloat(totalWeight.toFixed(2)),
-          currentItemId: item.id,
-          action: 'add_full'
-        });
-      } else {
-        // Take a fraction of the item
-        const remainingCapacity = capacity - totalWeight;
-        if (remainingCapacity > 0) {
-          const fraction = remainingCapacity / item.weight;
-          const fractionalItem = { ...item, fractionTaken: fraction };
-          knapsackItems.push(fractionalItem);
-          totalWeight += remainingCapacity;
-          totalValue += item.value * fraction;
+    try {
+      const newItems = customItemsInput
+        .split(';')
+        .filter(Boolean)
+        .map((itemStr, i) => {
+          const [name, weightStr, valueStr] = itemStr.split(',').map(s => s.trim());
+          const weight = parseInt(weightStr || '');
+          const value = parseInt(valueStr || '');
           
-          steps.push({
-            message: `Taking ${(fraction * 100).toFixed(0)}% of ${item.name} (Weight: ${remainingCapacity.toFixed(2)}, Value: ${(item.value * fraction).toFixed(2)}). Knapsack is now full.`,
-            items: sortedItems,
-            knapsackItems: [...knapsackItems],
-            totalValue: parseFloat(totalValue.toFixed(2)),
-            totalWeight: parseFloat(totalWeight.toFixed(2)),
-            currentItemId: item.id,
-            action: 'add_partial'
-          });
-        }
+          if (!name || isNaN(weight) || isNaN(value)) {
+            throw new Error('Invalid item format');
+          }
+          
+          return {
+            id: i + 1,
+            name,
+            weight,
+            value,
+            valuePerWeight: 0,
+          };
+        });
+        
+      const itemsWithValuePerWeight = newItems.map(item => ({
+        ...item,
+        valuePerWeight: item.value / item.weight,
+      }));
+      
+      setItems(itemsWithValuePerWeight);
+      setCustomItemsInput('');
+      resetKnapsack();
+    } catch (error) {
+      console.error("Invalid items format");
+    }
+  };
+
+  const resetKnapsack = () => {
+    setCurrentItemIndex(-1);
+    setSelectedItems([]);
+    setRemainingCapacity(capacity);
+    setTotalValue(0);
+    setIsRunning(false);
+    setKnapsackSteps([]);
+    setCurrentStep(-1);
+  };
+
+  const calculateKnapsackSteps = (initialItems: Item[], initialCapacity: number) => {
+    const steps: KnapsackStep[] = [];
+    let currentCapacity = initialCapacity;
+    let currentValue = 0;
+    const sortedItems = [...initialItems].sort((a, b) => b.valuePerWeight - a.valuePerWeight);
+    const selected: Item[] = [];
+    
+    steps.push({
+      items: [...sortedItems],
+      currentItemIndex: -1,
+      selectedItems: [...selected],
+      remainingCapacity: currentCapacity,
+      totalValue: currentValue,
+    });
+    
+    for (let i = 0; i < sortedItems.length; i++) {
+      const item = sortedItems[i];
+      
+      steps.push({
+        items: [...sortedItems],
+        currentItemIndex: i,
+        selectedItems: [...selected],
+        remainingCapacity: currentCapacity,
+        totalValue: currentValue,
+      });
+      
+      if (currentCapacity >= item.weight) {
+        selected.push(item);
+        currentValue += item.value;
+        currentCapacity -= item.weight;
+      } else {
+        const fraction = currentCapacity / item.weight;
+        const fractionalItem = { ...item, fraction: fraction };
+        selected.push(fractionalItem);
+        currentValue += item.value * fraction;
+        currentCapacity = 0;
+      }
+      
+      steps.push({
+        items: [...sortedItems],
+        currentItemIndex: i,
+        selectedItems: [...selected],
+        remainingCapacity: currentCapacity,
+        totalValue: currentValue,
+      });
+      
+      if (currentCapacity === 0) {
         break;
       }
     }
-
-    // Final step
+    
     steps.push({
-      message: `Algorithm complete! Maximum value achieved: ${totalValue.toFixed(2)} with total weight: ${totalWeight.toFixed(2)}/${capacity}`,
-      items: sortedItems,
-      knapsackItems: [...knapsackItems],
-      totalValue: parseFloat(totalValue.toFixed(2)),
-      totalWeight: parseFloat(totalWeight.toFixed(2)),
-      action: 'complete'
+      items: [...sortedItems],
+      currentItemIndex: sortedItems.length,
+      selectedItems: [...selected],
+      remainingCapacity: currentCapacity,
+      totalValue: currentValue,
     });
-
-    setSteps(steps);
+    
+    return steps;
   };
 
-  const resetVisualization = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
+  const startKnapsack = () => {
+    if (items.length === 0 || isRunning) return;
+    
+    resetKnapsack();
+    const steps = calculateKnapsackSteps(items, capacity);
+    setKnapsackSteps(steps);
+    setIsRunning(true);
   };
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (currentStep >= knapsackSteps.length - 1) {
+      setIsRunning(false);
+      return;
     }
+    
+    const nextStepIndex = currentStep + 1;
+    setCurrentStep(nextStepIndex);
+    
+    const step = knapsackSteps[nextStepIndex];
+    setItems(step.items);
+    setCurrentItemIndex(step.currentItemIndex);
+    setSelectedItems(step.selectedItems);
+    setRemainingCapacity(step.remainingCapacity);
+    setTotalValue(step.totalValue);
   };
 
   const prevStep = () => {
-    if (currentStep > -1) {
-      setCurrentStep(currentStep - 1);
+    if (currentStep <= 0) return;
+    
+    const prevStepIndex = currentStep - 1;
+    setCurrentStep(prevStepIndex);
+    
+    const step = knapsackSteps[prevStepIndex];
+    setItems(step.items);
+    setCurrentItemIndex(step.currentItemIndex);
+    setSelectedItems(step.selectedItems);
+    setRemainingCapacity(step.remainingCapacity);
+    setTotalValue(step.totalValue);
+  };
+
+  const togglePlayPause = () => {
+    if (currentStep >= knapsackSteps.length - 1) {
+      startKnapsack();
+    } else {
+      setIsRunning(!isRunning);
     }
   };
 
-  const toggleRunning = () => {
-    if (currentStep === steps.length - 1) {
-      setCurrentStep(-1);
-    }
-    setIsRunning(!isRunning);
-  };
-
-  const skipToStart = () => {
+  const goToStep = (step: number) => {
+    if (step < 0 || step >= knapsackSteps.length) return;
+    
+    setCurrentStep(step);
     setIsRunning(false);
-    setCurrentStep(-1);
+    
+    const knapsackStep = knapsackSteps[step];
+    setItems(knapsackStep.items);
+    setCurrentItemIndex(knapsackStep.currentItemIndex);
+    setSelectedItems(knapsackStep.selectedItems);
+    setRemainingCapacity(knapsackStep.remainingCapacity);
+    setTotalValue(knapsackStep.totalValue);
   };
-
-  const skipToEnd = () => {
-    setIsRunning(false);
-    setCurrentStep(steps.length - 1);
-  };
-
-  const handleStepChange = (value: number[]) => {
-    setIsRunning(false);
-    setCurrentStep(value[0]);
-  };
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (isRunning && currentStep < steps.length - 1) {
-      timer = setTimeout(() => {
-        setCurrentStep(current => current + 1);
-      }, 2000 / speed);
-    } else if (currentStep >= steps.length - 1) {
-      setIsRunning(false);
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isRunning, currentStep, steps.length, speed]);
-
-  const currentStepData = currentStep >= 0 && steps.length > 0 ? steps[currentStep] : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
       
       <div className="page-container mt-20">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="section-title mb-2">Fractional Knapsack Visualization</h1>
-          <p className="text-drona-gray mb-8">
-            The Fractional Knapsack Problem involves selecting fractions of items to maximize value while staying within a weight constraint.
-            Unlike the 0/1 knapsack, items can be broken into fractions.
+        <div className="mb-8">
+          <Link to="/algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Algorithms
+          </Link>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">Fractional Knapsack Visualization</h1>
+          <p className="text-lg text-drona-gray">
+            The Fractional Knapsack problem uses a greedy approach by selecting items with the highest value-to-weight ratio.
+            <span className="font-semibold text-drona-green"> Time Complexity: O(n log n)</span>
           </p>
-          
-          <div className="flex flex-col space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Problem Setup</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="mb-4">
-                    <label className="text-sm font-medium mb-1 block">Knapsack Capacity:</label>
-                    <input
+        </div>
+        
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Controls Panel */}
+          <div className="xl:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Items Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Capacity</Label>
+                    <Input
                       type="number"
                       value={capacity}
-                      onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
-                      className="border border-gray-300 rounded px-3 py-2 w-full"
-                      min="1"
-                      disabled={isRunning}
+                      onChange={(e) => setCapacity(Math.max(10, Math.min(30, parseInt(e.target.value) || 20)))}
+                      min={10}
+                      max={30}
+                      className="border-2 focus:border-drona-green"
                     />
                   </div>
                   
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Add New Item</label>
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
+                  <Button 
+                    onClick={generateRandomItems} 
+                    variant="outline"
+                    className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  >
+                    Generate Random Items
+                  </Button>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Custom Items (name, weight, value; ...)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g., Item1, 5, 60; Item2, 10, 100"
+                        value={customItemsInput}
+                        onChange={(e) => setCustomItemsInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && generateCustomItems()}
+                        className="flex-1 border-2 focus:border-drona-green"
                       />
-                      <input
-                        type="number"
-                        placeholder="Weight"
-                        min="1"
-                        value={weight}
-                        onChange={(e) => setWeight(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Value"
-                        min="1"
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
-                      />
+                      <Button 
+                        onClick={generateCustomItems}
+                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                      >
+                        Set
+                      </Button>
                     </div>
-                    <Button onClick={addItem} disabled={isRunning || !name || !weight || !value} className="w-full mb-2">
-                      <Plus className="h-4 w-4 mr-2" /> Add Item
-                    </Button>
-                    <Button onClick={generateRandomItems} variant="outline" className="w-full">
-                      Generate Random Items
-                    </Button>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Available Items</h3>
-                  <div className="overflow-auto max-h-60 border border-gray-300 rounded">
-                    <table className="min-w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Weight</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ratio</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {items.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
-                              No items added yet. Add items to get started.
-                            </td>
-                          </tr>
-                        ) : (
-                          (currentStepData?.items || items).map((item) => {
-                            const isCurrentItem = currentStepData?.currentItemId === item.id;
-                            return (
-                              <tr key={item.id} className={isCurrentItem ? 'bg-yellow-100' : ''}>
-                                <td className="px-4 py-2">
-                                  <div className="flex items-center">
-                                    <div className={`w-4 h-4 rounded-full ${item.color} mr-2`}></div>
-                                    {item.name}
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2">{item.weight}</td>
-                                <td className="px-4 py-2">{item.value}</td>
-                                <td className="px-4 py-2">{item.ratio}</td>
-                                <td className="px-4 py-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => removeItem(item.id)}
-                                    disabled={isRunning}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-drona-dark">
+                  <Label className="text-sm font-semibold text-drona-dark">
                     Animation Speed: {speed}x
-                  </label>
+                  </Label>
                   <div className="flex items-center mt-1">
                     <input 
                       type="range" 
@@ -374,7 +323,6 @@ const FractionalKnapsackVisualizer = () => {
                       value={speed} 
                       onChange={(e) => setSpeed(Number(e.target.value))}
                       className="w-full"
-                      disabled={isRunning}
                     />
                   </div>
                   <div className="flex justify-between text-xs text-drona-gray">
@@ -382,157 +330,194 @@ const FractionalKnapsackVisualizer = () => {
                     <span>Faster</span>
                   </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Button 
-                    onClick={skipToStart} 
-                    disabled={steps.length === 0 || currentStep === -1}
-                    size="sm"
-                  >
-                    <SkipBack className="h-4 w-4 mr-1" /> Start
-                  </Button>
-                  
-                  <Button 
-                    onClick={prevStep} 
-                    disabled={steps.length === 0 || currentStep <= -1}
-                    size="sm"
-                  >
-                    ← Prev
-                  </Button>
-                  
-                  <Button 
-                    onClick={toggleRunning} 
-                    disabled={steps.length === 0}
-                    size="sm"
-                  >
-                    {isRunning ? (
-                      <><Pause className="h-4 w-4 mr-1" /> Pause</>
-                    ) : (
-                      <><Play className="h-4 w-4 mr-1" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
-                    )}
-                  </Button>
-                  
-                  <Button 
-                    onClick={nextStep} 
-                    disabled={steps.length === 0 || currentStep >= steps.length - 1}
-                    size="sm"
-                  >
-                    Next →
-                  </Button>
-                  
-                  <Button 
-                    onClick={skipToEnd} 
-                    disabled={steps.length === 0 || currentStep === steps.length - 1}
-                    size="sm"
-                  >
-                    <SkipForward className="h-4 w-4 mr-1" /> End
-                  </Button>
-                  
-                  <Button 
-                    onClick={resetVisualization} 
-                    variant="outline" 
-                    disabled={currentStep === -1}
-                    size="sm"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" /> Reset
-                  </Button>
-                </div>
-              </div>
-              
-              {steps.length > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">Step:</span>
-                    <Slider
-                      value={[currentStep]}
-                      onValueChange={handleStepChange}
-                      min={-1}
-                      max={steps.length - 1}
-                      step={1}
-                      className="flex-1"
-                      disabled={isRunning}
-                    />
-                    <span className="text-sm text-gray-500 w-16">
-                      {currentStep + 1}/{steps.length}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {currentStepData && (
-                <div className="mt-4 bg-gray-100 p-3 rounded-md">
-                  <p className="font-medium">Current step: {currentStepData.message}</p>
-                </div>
-              )}
+              </CardContent>
             </Card>
-            
-            {items.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Knapsack Visualization</h2>
-                
-                <div className="mb-4">
-                  <div className="flex justify-between mb-2">
-                    <div>Capacity: {capacity}</div>
-                    <div>Used: {currentStepData?.totalWeight || 0}/{capacity}</div>
-                  </div>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(0)}
+                    disabled={knapsackSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
                   
-                  <div className="relative w-full h-6 bg-gray-200 rounded-full mb-4">
-                    <div 
-                      className="absolute top-0 left-0 h-6 bg-drona-green rounded-full transition-all duration-500"
-                      style={{ width: `${((currentStepData?.totalWeight || 0) / capacity) * 100}%` }}
-                    ></div>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    disabled={items.length === 0}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep}
+                    disabled={currentStep >= knapsackSteps.length - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(knapsackSteps.length - 1)}
+                    disabled={knapsackSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
                 
-                {currentStepData?.knapsackItems && currentStepData.knapsackItems.length > 0 ? (
-                  <div>
-                    <div className="mb-2 font-medium">Selected Items:</div>
-                    <div className="space-y-2">
-                      {currentStepData.knapsackItems.map((item, index) => (
-                        <div key={index} className="flex items-center">
-                          <div className={`w-4 h-4 rounded-full ${item.color} mr-2`}></div>
-                          <span>{item.name}: </span>
-                          {item.fractionTaken === 1 ? (
-                            <span className="ml-1">Whole item (W: {item.weight}, V: {item.value})</span>
-                          ) : (
-                            <span className="ml-1">
-                              {(item.fractionTaken! * 100).toFixed(0)}% of item 
-                              (W: {(item.weight * item.fractionTaken!).toFixed(2)}, 
-                              V: {(item.value * item.fractionTaken!).toFixed(2)})
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4 font-medium">
-                      Total Value: {currentStepData.totalValue}
+                <Button 
+                  onClick={() => {
+                    resetKnapsack();
+                    setIsRunning(false);
+                  }} 
+                  variant="outline" 
+                  disabled={isRunning}
+                  className="w-full border-2 hover:border-drona-green/50"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+
+                {knapsackSteps.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Step: {currentStep + 1} of {knapsackSteps.length}
+                    </Label>
+                    <Slider
+                      value={[currentStep + 1]}
+                      onValueChange={([value]) => goToStep(value - 1)}
+                      max={knapsackSteps.length}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
+                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Value</p>
+                    <p className="text-3xl font-bold text-drona-dark">{totalValue.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Remaining Capacity</p>
+                    <p className="text-xl font-bold text-drona-dark">{remainingCapacity.toFixed(2)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Visualization Panel */}
+          <div className="xl:col-span-3">
+            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">Knapsack Visualization</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                {items.length === 0 ? (
+                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                    <div className="text-center">
+                      <Package className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                      <p className="text-xl font-semibold">Generate items to start visualization</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500">
-                    {items.length === 0 ? "Add items to get started" : "Empty knapsack"}
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {items.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={`
+                            p-4 rounded-lg border-2 shadow-md
+                            ${index === currentItemIndex ? 'border-drona-green/70 bg-drona-light' : 'border-drona-green/20'}
+                          `}
+                        >
+                          <h3 className="text-lg font-semibold text-drona-dark">{item.name}</h3>
+                          <p className="text-drona-gray">Weight: {item.weight}</p>
+                          <p className="text-drona-gray">Value: {item.value}</p>
+                          <p className="text-drona-gray">Value/Weight: {item.valuePerWeight.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mb-4">
+                      <h2 className="text-xl font-bold text-drona-dark mb-2">Selected Items</h2>
+                      {selectedItems.length === 0 ? (
+                        <p className="text-drona-gray">No items selected yet.</p>
+                      ) : (
+                        <ul className="list-disc list-inside space-y-2">
+                          {selectedItems.map((item, index) => (
+                            <li key={index} className="text-drona-gray">
+                              {item.name} - Weight: {item.weight}, Value: {item.value}
+                              {item.fraction && `, Fraction: ${item.fraction.toFixed(2)}`}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
+                      <div>
+                        <p className="text-lg font-semibold text-drona-dark">Total Value:</p>
+                        <p className="text-2xl font-bold text-drona-green">{totalValue.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-semibold text-drona-dark">Remaining Capacity:</p>
+                        <p className="text-2xl font-bold text-drona-green">{remainingCapacity.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    
+                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">How Fractional Knapsack Works</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                          <li>Calculate the value-to-weight ratio for each item.</li>
+                          <li>Sort items in descending order based on this ratio.</li>
+                          <li>Select items with the highest ratio until the knapsack is full.</li>
+                          <li>If an item cannot fit entirely, take a fraction of it to fill the remaining capacity.</li>
+                        </ol>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
-              </Card>
-            )}
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-3">How Fractional Knapsack Works</h2>
-              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
-                <li>Calculate the value-to-weight ratio for each item.</li>
-                <li>Sort items by value-to-weight ratio in descending order.</li>
-                <li>Take items with the highest ratio first, until the knapsack is full.</li>
-                <li>If an item can't fit completely, take the fraction that fits.</li>
-              </ol>
-              
-              <div className="mt-4">
-                <h3 className="font-medium mb-2">Greedy Approach</h3>
-                <p className="text-drona-gray">
-                  Fractional Knapsack uses a greedy approach, always taking the item with the highest value-to-weight ratio first.
-                  This approach guarantees an optimal solution for the fractional knapsack problem, unlike the 0/1 knapsack problem where items cannot be divided.
-                </p>
-              </div>
+              </CardContent>
             </Card>
           </div>
         </div>

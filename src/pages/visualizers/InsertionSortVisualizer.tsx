@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 
@@ -93,12 +93,12 @@ const InsertionSortVisualizer = () => {
       array: [...arrCopy],
       currentIndex: -1,
       comparing: -1,
-      sortedIndices: [0],
-      comparison: 'Starting Insertion Sort - First element is considered sorted'
+      sortedIndices: [],
+      comparison: 'Starting Insertion Sort'
     });
     
     for (let i = 1; i < n; i++) {
-      const key = arrCopy[i];
+      let key = arrCopy[i];
       let j = i - 1;
       
       steps.push({
@@ -106,7 +106,7 @@ const InsertionSortVisualizer = () => {
         currentIndex: i,
         comparing: -1,
         sortedIndices: Array.from({ length: i }, (_, k) => k),
-        comparison: `Taking element ${key} at position ${i} to insert into sorted portion`
+        comparison: `Inserting element ${key} at index ${i} into the sorted sequence`
       });
       
       while (j >= 0 && arrCopy[j] > key) {
@@ -117,40 +117,30 @@ const InsertionSortVisualizer = () => {
           currentIndex: i,
           comparing: j,
           sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Comparing ${key} with ${arrCopy[j]} - ${key} is smaller, shifting ${arrCopy[j]} right`
+          comparison: `Comparing ${arrCopy[j]} with ${key}`
         });
         
         arrCopy[j + 1] = arrCopy[j];
-        j--;
         
-        steps.push({
-          array: [...arrCopy],
-          currentIndex: i,
-          comparing: j >= 0 ? j : -1,
-          sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Shifted ${arrCopy[j + 2]} to position ${j + 2}`
-        });
-      }
-      
-      if (j >= 0) {
-        compCount++;
         steps.push({
           array: [...arrCopy],
           currentIndex: i,
           comparing: j,
           sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Comparing ${key} with ${arrCopy[j]} - ${key} is not smaller, found correct position`
+          comparison: `${arrCopy[j]} is greater than ${key}, moving ${arrCopy[j]} to the right`
         });
+        
+        j = j - 1;
       }
       
       arrCopy[j + 1] = key;
       
       steps.push({
         array: [...arrCopy],
-        currentIndex: -1,
+        currentIndex: j + 1,
         comparing: -1,
         sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
-        comparison: `Inserted ${key} at position ${j + 1}. First ${i + 1} elements are now sorted`
+        comparison: `Inserted ${key} at index ${j + 1}`
       });
     }
     
@@ -205,6 +195,12 @@ const InsertionSortVisualizer = () => {
     setComparisons(prevStepIndex);
   };
 
+  const getBarHeight = (value: number) => {
+    const maxHeight = 200;
+    const maxValue = Math.max(...array, 1);
+    return (value / maxValue) * maxHeight;
+  };
+
   const goToStep = (step: number) => {
     if (step < 0 || step >= sortSteps.length) return;
     
@@ -217,20 +213,6 @@ const InsertionSortVisualizer = () => {
     setComparing(sortStep.comparing);
     setSortedIndices(sortStep.sortedIndices);
     setComparisons(step);
-  };
-
-  const togglePlayPause = () => {
-    if (currentStep >= sortSteps.length - 1) {
-      startSort();
-    } else {
-      setIsRunning(!isRunning);
-    }
-  };
-
-  const getBarHeight = (value: number) => {
-    const maxHeight = 200;
-    const maxValue = Math.max(...array, 1);
-    return (value / maxValue) * maxHeight;
   };
 
   return (
@@ -335,8 +317,9 @@ const InsertionSortVisualizer = () => {
                     disabled={sortSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipBack className="h-4 w-4" />
+                    <ChevronsLeft className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -346,6 +329,7 @@ const InsertionSortVisualizer = () => {
                   >
                     <SkipBack className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     size="sm"
                     onClick={togglePlayPause}
@@ -354,6 +338,7 @@ const InsertionSortVisualizer = () => {
                   >
                     {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -363,6 +348,7 @@ const InsertionSortVisualizer = () => {
                   >
                     <SkipForward className="h-4 w-4" />
                   </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -370,17 +356,20 @@ const InsertionSortVisualizer = () => {
                     disabled={sortSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipForward className="h-4 w-4" />
+                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
                 
                 <Button 
-                  onClick={startSort} 
-                  disabled={isRunning || array.length === 0}
-                  className="w-full bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  onClick={() => {
+                    resetSort();
+                    setIsRunning(false);
+                  }} 
+                  variant="outline" 
+                  disabled={isRunning}
+                  className="w-full border-2 hover:border-drona-green/50"
                 >
-                  <SortAsc className="mr-2 h-4 w-4" /> 
-                  Start Sort
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
 
                 {sortSteps.length > 0 && (
@@ -446,8 +435,8 @@ const InsertionSortVisualizer = () => {
                           key={index}
                           className={`
                             w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${index === currentIndex ? 'bg-red-500 scale-110 shadow-lg' : 
-                              index === comparing ? 'bg-orange-500 scale-110 shadow-lg' :
+                            ${index === comparing ? 'bg-orange-500 scale-110 shadow-lg' : 
+                              index === currentIndex ? 'bg-red-500 scale-110 shadow-lg' :
                               sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
                           `}
                           style={{ 
@@ -474,7 +463,7 @@ const InsertionSortVisualizer = () => {
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current Element</span>
+                        <span className="font-medium">Current Index</span>
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
@@ -492,11 +481,11 @@ const InsertionSortVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Start with the second element (first element is considered sorted).</li>
-                          <li>Compare the current element with elements in the sorted portion.</li>
-                          <li>Shift larger elements to the right to make space.</li>
-                          <li>Insert the current element in its correct position.</li>
-                          <li>Repeat until all elements are processed.</li>
+                          <li>Start with the second element of the array.</li>
+                          <li>Compare the current element to the elements in the sorted portion.</li>
+                          <li>Shift elements greater than the current element to the right.</li>
+                          <li>Insert the current element into its correct position.</li>
+                          <li>Repeat until the entire array is sorted.</li>
                         </ol>
                       </CardContent>
                     </Card>

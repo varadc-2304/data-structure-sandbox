@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
-import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, Plus, SkipBack, SkipForward, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Package, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Slider } from '@/components/ui/slider';
 
 interface Item {
   id: number;
@@ -12,329 +15,283 @@ interface Item {
   value: number;
 }
 
-interface Step {
-  table: number[][];
-  currentItem?: Item;
-  currentWeight?: number;
-  selected?: boolean;
-  message: string;
+interface KnapsackStep {
+  dpTable: number[][];
+  currentItem: number;
+  currentWeight: number;
+  selectedItems: number[];
 }
 
 const ZeroOneKnapsackVisualizer = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [capacity, setCapacity] = useState<number>(10);
-  const [name, setName] = useState<string>("");
-  const [weight, setWeight] = useState<string>("");
-  const [value, setValue] = useState<string>("");
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [currentStep, setCurrentStep] = useState<number>(-1);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1);
-  const [optimalValue, setOptimalValue] = useState<number>(0);
-  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+  const [customItemsInput, setCustomItemsInput] = useState<string>('');
+  const [dpTable, setDpTable] = useState<number[][]>([[]]);
+  const [currentItem, setCurrentItem] = useState<number>(-1);
+  const [currentWeight, setCurrentWeight] = useState<number>(0);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [knapsackSteps, setKnapsackSteps] = useState<KnapsackStep[]>([]);
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [comparisons, setComparisons] = useState(0);
 
-  // Initialize solution when items or capacity change
   useEffect(() => {
-    if (items.length > 0) {
-      solveKnapsack();
-    } else {
-      setSteps([]);
-      setOptimalValue(0);
-      setSelectedItems([]);
-      setCurrentStep(-1);
-    }
-  }, [items, capacity]);
-
-  const addItem = () => {
-    if (name && weight && value) {
-      const newItem: Item = {
-        id: items.length + 1,
-        name: name,
-        weight: parseInt(weight),
-        value: parseInt(value),
-      };
-      setItems([...items, newItem]);
-      setName("");
-      setWeight("");
-      setValue("");
-    }
-  };
-
-  const removeItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
-  };
-
-  const solveKnapsack = () => {
-    if (items.length === 0) return;
-
-    setIsRunning(false);
-    setCurrentStep(-1);
-
-    const n = items.length;
-    const w = capacity;
+    if (!isRunning) return;
     
-    // Create a table for DP
-    const dp: number[][] = Array(n + 1)
-      .fill(0)
-      .map(() => Array(w + 1).fill(0));
-
-    const steps: Step[] = [
-      {
-        table: JSON.parse(JSON.stringify(dp)),
-        message: "Initializing the DP table with zeros. Each cell dp[i][j] will represent the maximum value that can be obtained with first i items and a capacity of j."
-      }
-    ];
-
-    // Fill the dp table
-    for (let i = 1; i <= n; i++) {
-      const currentItem = items[i - 1];
-      
-      for (let j = 0; j <= w; j++) {
-        // If the weight of the current item is more than the current capacity, we can't include it
-        if (currentItem.weight > j) {
-          dp[i][j] = dp[i - 1][j];
-          steps.push({
-            table: JSON.parse(JSON.stringify(dp)),
-            currentItem: currentItem,
-            currentWeight: j,
-            selected: false,
-            message: `Item ${currentItem.name} weighs ${currentItem.weight}, which is more than the current capacity ${j}. We can't include it, so we take the value from the previous row: dp[${i}][${j}] = dp[${i - 1}][${j}] = ${dp[i][j]}`
-          });
-        } else {
-          // If we include the current item, we add its value to the optimal value from the remaining capacity
-          const includeItem = currentItem.value + dp[i - 1][j - currentItem.weight];
-          
-          // If we don't include the current item, we take the value from the previous calculation
-          const excludeItem = dp[i - 1][j];
-          
-          // Take the maximum of both choices
-          dp[i][j] = Math.max(includeItem, excludeItem);
-          
-          const selected = includeItem > excludeItem;
-          steps.push({
-            table: JSON.parse(JSON.stringify(dp)),
-            currentItem: currentItem,
-            currentWeight: j,
-            selected: selected,
-            message: selected 
-              ? `Include ${currentItem.name}: ${currentItem.value} + dp[${i - 1}][${j - currentItem.weight}] = ${currentItem.value} + ${dp[i - 1][j - currentItem.weight]} = ${includeItem} > Exclude: ${excludeItem}. So dp[${i}][${j}] = ${dp[i][j]}`
-              : `Exclude ${currentItem.name}: dp[${i - 1}][${j}] = ${excludeItem} >= Include: ${includeItem}. So dp[${i}][${j}] = ${dp[i][j]}`
-          });
-        }
-      }
+    if (currentStep >= knapsackSteps.length - 1) {
+      setIsRunning(false);
+      return;
     }
 
-    // Determine which items were selected
-    const selected: Item[] = [];
-    let remainingCapacity = w;
-    for (let i = n; i > 0; i--) {
-      if (dp[i][remainingCapacity] !== dp[i - 1][remainingCapacity]) {
-        selected.push(items[i - 1]);
-        remainingCapacity -= items[i - 1].weight;
-      }
-    }
+    const timer = setTimeout(() => {
+      nextStep();
+    }, 2000 / speed);
 
-    steps.push({
-      table: JSON.parse(JSON.stringify(dp)),
-      message: `Final solution: Maximum value = ${dp[n][w]}. Selected items: ${selected.map(item => item.name).join(", ")}.`
-    });
+    return () => clearTimeout(timer);
+  }, [isRunning, currentStep, knapsackSteps.length, speed]);
 
-    setSteps(steps);
-    setOptimalValue(dp[n][w]);
-    setSelectedItems(selected);
+  const generateRandomItems = () => {
+    const newItems = Array.from({ length: 5 }, (_, i) => ({
+      id: i + 1,
+      name: `Item ${i + 1}`,
+      weight: Math.floor(Math.random() * 8) + 1,
+      value: Math.floor(Math.random() * 20) + 1,
+    }));
+    setItems(newItems);
+    resetKnapsack();
   };
 
-  const resetVisualization = () => {
+  const generateCustomItems = () => {
+    if (!customItemsInput.trim()) return;
+    
+    try {
+      const newItems = customItemsInput
+        .split(';')
+        .filter(Boolean)
+        .map((itemStr, i) => {
+          const [name, weightStr, valueStr] = itemStr.split(',').map(s => s.trim());
+          const weight = parseInt(weightStr || '');
+          const value = parseInt(valueStr || '');
+          
+          if (!name || isNaN(weight) || isNaN(value)) {
+            throw new Error('Invalid item format');
+          }
+          
+          return {
+            id: i + 1,
+            name,
+            weight,
+            value,
+          };
+        });
+      
+      setItems(newItems);
+      setCustomItemsInput('');
+      resetKnapsack();
+    } catch (error) {
+      console.error("Invalid items format");
+    }
+  };
+
+  const resetKnapsack = () => {
+    setDpTable([[]]);
+    setCurrentItem(-1);
+    setCurrentWeight(0);
+    setSelectedItems([]);
     setIsRunning(false);
+    setKnapsackSteps([]);
     setCurrentStep(-1);
+    setComparisons(0);
+  };
+
+  const calculateKnapsackSteps = (items: Item[], capacity: number) => {
+    const steps: KnapsackStep[] = [];
+    const n = items.length;
+    let compCount = 0;
+    
+    const initialDpTable = Array(n + 1).fill(null).map(() => Array(capacity + 1).fill(0));
+    steps.push({
+      dpTable: initialDpTable.map(row => [...row]),
+      currentItem: -1,
+      currentWeight: 0,
+      selectedItems: [],
+    });
+    
+    const dpTable = Array(n + 1).fill(null).map(() => Array(capacity + 1).fill(0));
+    
+    for (let i = 1; i <= n; i++) {
+      for (let w = 0; w <= capacity; w++) {
+        compCount++;
+        
+        const item = items[i - 1];
+        
+        if (item.weight <= w) {
+          dpTable[i][w] = Math.max(
+            item.value + dpTable[i - 1][w - item.weight],
+            dpTable[i - 1][w]
+          );
+        } else {
+          dpTable[i][w] = dpTable[i - 1][w];
+        }
+        
+        steps.push({
+          dpTable: dpTable.map(row => [...row]),
+          currentItem: i - 1,
+          currentWeight: w,
+          selectedItems: [],
+        });
+      }
+    }
+    
+    const selected: number[] = [];
+    let w = capacity;
+    for (let i = n; i > 0 && w > 0; i--) {
+      if (dpTable[i][w] !== dpTable[i - 1][w]) {
+        selected.push(i - 1);
+        w -= items[i - 1].weight;
+      }
+    }
+    
+    steps.forEach(step => step.selectedItems = [...selected]);
+    
+    return { steps, totalComparisons: compCount };
+  };
+
+  const startKnapsack = () => {
+    if (items.length === 0 || isRunning) return;
+    
+    resetKnapsack();
+    const { steps } = calculateKnapsackSteps(items, capacity);
+    setKnapsackSteps(steps);
+    setIsRunning(true);
   };
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (currentStep >= knapsackSteps.length - 1) {
+      setIsRunning(false);
+      return;
     }
+    
+    const nextStepIndex = currentStep + 1;
+    setCurrentStep(nextStepIndex);
+    
+    const step = knapsackSteps[nextStepIndex];
+    setDpTable(step.dpTable);
+    setCurrentItem(step.currentItem);
+    setCurrentWeight(step.currentWeight);
+    setSelectedItems(step.selectedItems);
+    setComparisons(nextStepIndex);
   };
 
   const prevStep = () => {
-    if (currentStep > -1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const toggleRunning = () => {
-    if (currentStep === steps.length - 1) {
-      setCurrentStep(-1);
-    }
-    setIsRunning(!isRunning);
-  };
-
-  const skipToStart = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
-  };
-
-  const skipToEnd = () => {
-    setIsRunning(false);
-    setCurrentStep(steps.length - 1);
-  };
-
-  const handleStepChange = (value: number[]) => {
-    setIsRunning(false);
-    setCurrentStep(value[0]);
-  };
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (isRunning && currentStep < steps.length - 1) {
-      timer = setTimeout(() => {
-        setCurrentStep(current => current + 1);
-      }, 2000 / speed);
-    } else if (currentStep >= steps.length - 1) {
-      setIsRunning(false);
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isRunning, currentStep, steps.length, speed]);
-
-  // Get the current step to display
-  const currentTable = currentStep >= 0 && steps.length > 0
-    ? steps[currentStep].table
-    : Array(items.length + 1).fill(0).map(() => Array(capacity + 1).fill(0));
+    if (currentStep <= 0) return;
     
-  const currentMessage = currentStep >= 0 && steps.length > 0
-    ? steps[currentStep].message
-    : items.length === 0 
-    ? "Add items to start the visualization."
-    : "Click 'Start Visualization' to see the 0/1 Knapsack algorithm in action.";
+    const prevStepIndex = currentStep - 1;
+    setCurrentStep(prevStepIndex);
+    
+    const step = knapsackSteps[prevStepIndex];
+    setDpTable(step.dpTable);
+    setCurrentItem(step.currentItem);
+    setCurrentWeight(step.currentWeight);
+    setSelectedItems(step.selectedItems);
+    setComparisons(prevStepIndex);
+  };
 
-  const currentHighlight = currentStep >= 0 && steps.length > 0 && steps[currentStep].currentItem
-    ? { item: steps[currentStep].currentItem, weight: steps[currentStep].currentWeight, selected: steps[currentStep].selected }
-    : null;
+  const togglePlayPause = () => {
+    if (currentStep >= knapsackSteps.length - 1) {
+      startKnapsack();
+    } else {
+      setIsRunning(!isRunning);
+    }
+  };
+
+  const goToStep = (step: number) => {
+    if (step < 0 || step >= knapsackSteps.length) return;
+    
+    setCurrentStep(step);
+    setIsRunning(false);
+    
+    const knapsackStep = knapsackSteps[step];
+    setDpTable(knapsackStep.dpTable);
+    setCurrentItem(knapsackStep.currentItem);
+    setCurrentWeight(knapsackStep.currentWeight);
+    setSelectedItems(knapsackStep.selectedItems);
+    setComparisons(step);
+  };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
       
       <div className="page-container mt-20">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="section-title mb-2">0-1 Knapsack Problem Visualization</h1>
-          <p className="text-drona-gray mb-8">
-            The 0-1 Knapsack problem is a classic optimization problem where we need to maximize the value 
-            of items placed in a knapsack without exceeding its weight capacity.
+        <div className="mb-8">
+          <Link to="/algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Algorithms
+          </Link>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">0/1 Knapsack Visualization</h1>
+          <p className="text-lg text-drona-gray">
+            The 0/1 Knapsack problem uses dynamic programming to find the optimal selection of items.
+            <span className="font-semibold text-drona-green"> Time Complexity: O(n×W)</span>
           </p>
-          
-          <div className="flex flex-col space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Problem Setup</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Knapsack Capacity</label>
-                    <input
+        </div>
+        
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Controls Panel */}
+          <div className="xl:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Items Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Capacity</Label>
+                    <Input
                       type="number"
-                      min="1"
                       value={capacity}
-                      onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
-                      disabled={isRunning}
+                      onChange={(e) => setCapacity(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
+                      min={5}
+                      max={20}
+                      className="border-2 focus:border-drona-green"
                     />
                   </div>
                   
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Add New Item</label>
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
+                  <Button 
+                    onClick={generateRandomItems} 
+                    variant="outline"
+                    className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  >
+                    Generate Random Items
+                  </Button>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Custom Items (name, weight, value; separated by semicolons)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g., Item1,5,6; Item2,3,4"
+                        value={customItemsInput}
+                        onChange={(e) => setCustomItemsInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && generateCustomItems()}
+                        className="flex-1 border-2 focus:border-drona-green"
                       />
-                      <input
-                        type="number"
-                        placeholder="Weight"
-                        min="1"
-                        value={weight}
-                        onChange={(e) => setWeight(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Value"
-                        min="1"
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-2"
-                        disabled={isRunning}
-                      />
+                      <Button 
+                        onClick={generateCustomItems}
+                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                      >
+                        Set
+                      </Button>
                     </div>
-                    <Button onClick={addItem} disabled={isRunning || !name || !weight || !value} className="w-full">
-                      <Plus className="h-4 w-4 mr-2" /> Add Item
-                    </Button>
                   </div>
                 </div>
                 
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Available Items</h3>
-                  <div className="overflow-auto max-h-60 border border-gray-300 rounded">
-                    <table className="min-w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Weight</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {items.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                              No items added yet. Add items to get started.
-                            </td>
-                          </tr>
-                        ) : (
-                          items.map((item) => (
-                            <tr key={item.id} className={
-                              currentHighlight && currentHighlight.item.id === item.id
-                                ? currentHighlight.selected
-                                  ? 'bg-green-100'
-                                  : 'bg-red-100'
-                                : ''
-                            }>
-                              <td className="px-4 py-2">{item.name}</td>
-                              <td className="px-4 py-2">{item.weight}</td>
-                              <td className="px-4 py-2">{item.value}</td>
-                              <td className="px-4 py-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => removeItem(item.id)}
-                                  disabled={isRunning}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-drona-dark">
+                  <Label className="text-sm font-semibold text-drona-dark">
                     Animation Speed: {speed}x
-                  </label>
+                  </Label>
                   <div className="flex items-center mt-1">
                     <input 
                       type="range" 
@@ -344,7 +301,6 @@ const ZeroOneKnapsackVisualizer = () => {
                       value={speed} 
                       onChange={(e) => setSpeed(Number(e.target.value))}
                       className="w-full"
-                      disabled={isRunning}
                     />
                   </div>
                   <div className="flex justify-between text-xs text-drona-gray">
@@ -352,167 +308,219 @@ const ZeroOneKnapsackVisualizer = () => {
                     <span>Faster</span>
                   </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Button 
-                    onClick={skipToStart} 
-                    disabled={steps.length === 0 || currentStep === -1}
-                    size="sm"
-                  >
-                    <SkipBack className="h-4 w-4 mr-1" /> Start
-                  </Button>
-                  
-                  <Button 
-                    onClick={prevStep} 
-                    disabled={steps.length === 0 || currentStep <= -1}
-                    size="sm"
-                  >
-                    ← Prev
-                  </Button>
-                  
-                  <Button 
-                    onClick={toggleRunning} 
-                    disabled={steps.length === 0}
-                    size="sm"
-                  >
-                    {isRunning ? (
-                      <><Pause className="h-4 w-4 mr-1" /> Pause</>
-                    ) : (
-                      <><Play className="h-4 w-4 mr-1" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
-                    )}
-                  </Button>
-                  
-                  <Button 
-                    onClick={nextStep} 
-                    disabled={steps.length === 0 || currentStep >= steps.length - 1}
-                    size="sm"
-                  >
-                    Next →
-                  </Button>
-                  
-                  <Button 
-                    onClick={skipToEnd} 
-                    disabled={steps.length === 0 || currentStep === steps.length - 1}
-                    size="sm"
-                  >
-                    <SkipForward className="h-4 w-4 mr-1" /> End
-                  </Button>
-                  
-                  <Button 
-                    onClick={resetVisualization} 
-                    variant="outline" 
-                    disabled={currentStep === -1}
-                    size="sm"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-1" /> Reset
-                  </Button>
-                </div>
-              </div>
-              
-              {steps.length > 0 && (
-                <div className="mt-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">Step:</span>
-                    <Slider
-                      value={[currentStep]}
-                      onValueChange={handleStepChange}
-                      min={-1}
-                      max={steps.length - 1}
-                      step={1}
-                      className="flex-1"
-                      disabled={isRunning}
-                    />
-                    <span className="text-sm text-gray-500 w-16">
-                      {currentStep + 1}/{steps.length}
-                    </span>
-                  </div>
-                </div>
-              )}
+              </CardContent>
             </Card>
-            
-            
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Dynamic Programming Table</h2>
-                
-                <div className="overflow-auto">
-                  <table className="border-collapse border border-gray-300 mb-4">
-                    <thead>
-                      <tr>
-                        <th className="border border-gray-300 px-4 py-2 bg-gray-50">Item \ Weight</th>
-                        {Array.from({ length: capacity + 1 }, (_, i) => (
-                          <th 
-                            key={i} 
-                            className={`
-                              border border-gray-300 px-4 py-2 bg-gray-50
-                              ${currentHighlight && currentHighlight.weight === i ? 'bg-yellow-100' : ''}
-                            `}>
-                            {i}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentTable.map((row, i) => (
-                        <tr key={i}>
-                          <td className={`
-                            border border-gray-300 px-4 py-2 font-medium
-                            ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 ? 'bg-yellow-100' : ''}
-                          `}>
-                            {i === 0 ? '0' : items[i-1].name}
-                          </td>
-                          {row.map((cell, j) => (
-                            <td
-                              key={j}
-                              className={`
-                                border border-gray-300 px-4 py-2 text-center
-                                ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 && j === currentHighlight.weight ? 'bg-yellow-200 font-bold' : ''}
-                              `}
-                            >
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(0)}
+                    disabled={knapsackSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    disabled={items.length === 0}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep}
+                    disabled={currentStep >= knapsackSteps.length - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(knapsackSteps.length - 1)}
+                    disabled={knapsackSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded">
-                  <p className="text-sm text-gray-700">{currentMessage}</p>
-                </div>
-                
-                {currentStep === steps.length - 1 && (
-                  <div className="mt-4 p-4 bg-green-50 rounded border border-green-200">
-                    <h3 className="font-semibold text-green-800">Final Solution</h3>
-                    <p className="text-green-700">Maximum value: {optimalValue}</p>
-                    <p className="text-green-700">
-                      Selected items: {selectedItems.length > 0 ? selectedItems.map(item => item.name).join(", ") : "None"}
-                    </p>
+                <Button 
+                  onClick={() => {
+                    resetKnapsack();
+                    setIsRunning(false);
+                  }} 
+                  variant="outline" 
+                  disabled={isRunning}
+                  className="w-full border-2 hover:border-drona-green/50"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+
+                {knapsackSteps.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Step: {currentStep + 1} of {knapsackSteps.length}
+                    </Label>
+                    <Slider
+                      value={[currentStep + 1]}
+                      onValueChange={([value]) => goToStep(value - 1)}
+                      max={knapsackSteps.length}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
                   </div>
                 )}
-              </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-3">0-1 Knapsack Problem Explanation</h2>
-              <p className="text-drona-gray mb-4">
-                In the 0-1 Knapsack problem, we have a set of items, each with a weight and a value.
-                We need to determine which items to include in the knapsack such that the total weight is less than or equal to the given capacity,
-                and the total value is as large as possible.
-              </p>
-              
-              <h3 className="text-lg font-semibold mt-4 mb-2">Dynamic Programming Solution</h3>
-              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
-                <li>Create a table dp[n+1][capacity+1] where dp[i][j] represents the maximum value that can be obtained using the first i items with a capacity of j.</li>
-                <li>Initialize the first row and column with 0 (no items or no capacity means 0 value).</li>
-                <li>For each item i and each capacity j, decide whether to include the item or not:
-                  <ul className="list-disc list-inside pl-6 mt-1">
-                    <li>If the item's weight {'>'} j, we cannot include it: dp[i][j] = dp[i-1][j]</li>
-                    <li>Otherwise, we take the maximum of including or excluding the item:
-                      dp[i][j] = max(dp[i-1][j], value[i-1] + dp[i-1][j-weight[i-1]])</li>
-                  </ul>
-                </li>
-                <li>The final answer is in dp[n][capacity], which gives the maximum value possible.</li>
-              </ol>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
+                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Number of Items</p>
+                    <p className="text-3xl font-bold text-drona-dark">{items.length}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
+                    <p className="text-xl font-bold text-drona-dark">{knapsackSteps.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Visualization Panel */}
+          <div className="xl:col-span-3">
+            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">Knapsack Visualization</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                {items.length === 0 ? (
+                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                    <div className="text-center">
+                      <Package className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                      <p className="text-xl font-semibold">Generate items to start visualization</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Items List */}
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-drona-dark">Items:</h3>
+                        <ul className="space-y-2">
+                          {items.map((item, index) => (
+                            <li
+                              key={item.id}
+                              className={`p-3 rounded-lg border-2 ${
+                                index === currentItem ? 'border-drona-green shadow-md' : 'border-drona-green/20'
+                              }`}
+                            >
+                              <span className="font-semibold">{item.name}</span> - Weight: {item.weight}, Value: {item.value}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      {/* DP Table */}
+                      <div>
+                        <h3 className="text-xl font-bold text-drona-dark">DP Table:</h3>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full border-collapse border border-drona-green/20">
+                            <thead>
+                              <tr>
+                                <th className="border border-drona-green/20 p-2">Item</th>
+                                {[...Array(capacity + 1)].map((_, i) => (
+                                  <th key={i} className="border border-drona-green/20 p-2">Weight: {i}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dpTable.map((row, i) => (
+                                <tr key={i}>
+                                  <td className="border border-drona-green/20 p-2">{i === 0 ? 'Empty' : items[i - 1]?.name}</td>
+                                  {row.map((value, j) => (
+                                    <td
+                                      key={j}
+                                      className={`border border-drona-green/20 p-2 text-center ${
+                                        currentItem === i - 1 && currentWeight === j ? 'bg-drona-green/10 font-semibold' : ''
+                                      }`}
+                                    >
+                                      {value}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selected Items */}
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-bold text-drona-dark">Selected Items:</h3>
+                      {selectedItems.length === 0 ? (
+                        <p className="text-drona-gray">No items selected.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {selectedItems.map(index => (
+                            <li key={items[index].id} className="p-3 rounded-lg border-2 border-drona-green/20">
+                              <span className="font-semibold">{items[index].name}</span> - Weight: {items[index].weight}, Value: {items[index].value}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    
+                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">How 0/1 Knapsack Works</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                          <li>Create a DP table to store maximum values for different weights.</li>
+                          <li>Iterate through each item and weight to fill the DP table.</li>
+                          <li>If the item's weight is less than or equal to the current weight, choose the maximum value between including and excluding the item.</li>
+                          <li>Backtrack from the last cell to find the selected items.</li>
+                        </ol>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         </div>
