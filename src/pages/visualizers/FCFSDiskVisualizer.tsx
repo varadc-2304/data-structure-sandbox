@@ -37,7 +37,12 @@ const FCFSDiskVisualizer = () => {
 
   // Auto-play simulation
   useEffect(() => {
-    if (!isPlaying || currentStep >= requestQueue.length - 1) return;
+    if (!isPlaying || currentStep >= requestQueue.length - 1) {
+      if (isPlaying && currentStep >= requestQueue.length - 1) {
+        setIsPlaying(false);
+      }
+      return;
+    }
 
     const timer = setTimeout(() => {
       nextStep();
@@ -123,6 +128,11 @@ const FCFSDiskVisualizer = () => {
     
     // Move head to new position
     setCurrentHeadPosition(nextRequest.position);
+    
+    // Stop simulation if this was the last step
+    if (nextStepIndex >= requestQueue.length - 1) {
+      setIsPlaying(false);
+    }
   };
 
   const prevStep = () => {

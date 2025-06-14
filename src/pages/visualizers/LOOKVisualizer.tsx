@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -39,7 +38,12 @@ const LOOKVisualizer = () => {
   }, [initialHeadPosition, direction]);
 
   useEffect(() => {
-    if (!isPlaying || currentStep >= lookOrder.length - 1) return;
+    if (!isPlaying || currentStep >= lookOrder.length - 1) {
+      if (isPlaying && currentStep >= lookOrder.length - 1) {
+        setIsPlaying(false);
+      }
+      return;
+    }
 
     const timer = setTimeout(() => {
       nextStep();
@@ -166,6 +170,11 @@ const LOOKVisualizer = () => {
     setRequestQueue(updatedRequests);
     
     setCurrentStep(nextStepIndex);
+    
+    // Stop simulation if this was the last step
+    if (nextStepIndex >= lookOrder.length - 1) {
+      setIsPlaying(false);
+    }
   };
 
   const prevStep = () => {
