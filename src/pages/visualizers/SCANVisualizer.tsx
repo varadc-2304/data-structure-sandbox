@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -32,6 +33,7 @@ const SCANVisualizer = () => {
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
   const [scanOrder, setScanOrder] = useState<(number | 'boundary')[]>([]);
+  const [isMovingToEdge, setIsMovingToEdge] = useState<boolean>(false);
 
   useEffect(() => {
     resetSimulation();
@@ -47,7 +49,7 @@ const SCANVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, scanOrder.length, speed]);
@@ -73,7 +75,7 @@ const SCANVisualizer = () => {
         current: false
       }));
       
-      setRequestQueue([...requestQueue, ...newRequests]);
+      setRequestQueue(prev => [...prev, ...newRequests]);
       setInputPosition("");
     } catch (error) {
       console.error("Invalid position format or out of range");
@@ -126,6 +128,7 @@ const SCANVisualizer = () => {
     setIsPlaying(false);
     setSeekHistory([]);
     setCurrentHeadPosition(initialHeadPosition);
+    setIsMovingToEdge(false);
     
     const resetRequests = requestQueue.map(req => ({
       ...req,
@@ -149,15 +152,14 @@ const SCANVisualizer = () => {
     }
   }, [requestQueue, initialHeadPosition, direction]);
 
-  
   const nextStep = () => {
     if (currentStep >= scanOrder.length - 1) {
       setIsPlaying(false);
       return;
     }
     
-    const nextStep = currentStep + 1;
-    const nextItem = scanOrder[nextStep];
+    const nextStepIndex = currentStep + 1;
+    const nextItem = scanOrder[nextStepIndex];
     
     let targetPosition: number;
     let seekDistance: number;
@@ -165,10 +167,12 @@ const SCANVisualizer = () => {
     if (nextItem === 'boundary') {
       targetPosition = direction === 'right' ? diskSize - 1 : 0;
       seekDistance = Math.abs(currentHeadPosition - targetPosition);
+      setIsMovingToEdge(true);
     } else {
       const nextRequest = requestQueue[nextItem as number];
       targetPosition = nextRequest.position;
       seekDistance = Math.abs(currentHeadPosition - targetPosition);
+      setIsMovingToEdge(false);
     }
     
     setSeekHistory(prev => [...prev, { 
@@ -183,16 +187,15 @@ const SCANVisualizer = () => {
     if (nextItem !== 'boundary') {
       const updatedRequests = requestQueue.map((req, idx) => ({
         ...req,
-        processed: scanOrder.slice(0, nextStep + 1).filter(item => typeof item === 'number').includes(idx),
+        processed: scanOrder.slice(0, nextStepIndex + 1).filter(item => typeof item === 'number').includes(idx),
         current: idx === nextItem
       }));
       setRequestQueue(updatedRequests);
     }
     
-    setCurrentStep(nextStep);
+    setCurrentStep(nextStepIndex);
     
-    // Stop simulation if this was the last step
-    if (nextStep >= scanOrder.length - 1) {
+    if (nextStepIndex >= scanOrder.length - 1) {
       setIsPlaying(false);
     }
   };
@@ -211,6 +214,8 @@ const SCANVisualizer = () => {
     
     const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
     setCurrentHeadPosition(newHeadPosition);
+    
+    setIsMovingToEdge(newStep >= 0 && scanOrder[newStep] === 'boundary');
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -252,6 +257,7 @@ const SCANVisualizer = () => {
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
     setCurrentHeadPosition(newHeadPosition);
+    setIsMovingToEdge(step >= 0 && scanOrder[step] === 'boundary');
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -270,21 +276,8 @@ const SCANVisualizer = () => {
     }
   };
 
-  // Calculate position as percentage for visual elements - fixed to prevent overflow
   const calculatePosition = (position: number) => {
-    const percentage = (position / (diskSize - 1)) * 100;
-    return Math.max(0, Math.min(100, percentage));
-  };
-
-  // Generate scale markers with proper bounds
-  const getScaleMarkers = () => {
-    const markers = [];
-    const steps = 5;
-    for (let i = 0; i < steps; i++) {
-      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
-      markers.push(position);
-    }
-    return markers;
+    return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
 
   return (
@@ -381,29 +374,48 @@ const SCANVisualizer = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
-                        <SkipBack className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
-                        <Rewind className="h-3 w-3" />
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep} 
+                        disabled={currentStep <= -1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipBack className="h-4 w-4" />
                       </Button>
                       <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(-1)}
+                        className="flex items-center justify-center"
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
                         onClick={togglePlayPause}
                         disabled={scanOrder.length === 0}
+                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
-                        {isPlaying ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= scanOrder.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(scanOrder.length - 1)}>
-                        <FastForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(scanOrder.length - 1)}
+                        className="flex items-center justify-center"
+                      >
+                        <FastForward className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= scanOrder.length - 1}>
-                        <SkipForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep} 
+                        disabled={currentStep >= scanOrder.length - 1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipForward className="h-4 w-4" />
                       </Button>
                     </div>
                     
@@ -433,7 +445,6 @@ const SCANVisualizer = () => {
                 </div>
               </CardContent>
             </Card>
-            
             
             <Card>
               <CardHeader>
@@ -475,6 +486,9 @@ const SCANVisualizer = () => {
                     <CardTitle>SCAN Disk Scheduling Visualization</CardTitle>
                     <CardDescription>
                       Step: {currentStep + 1} of {scanOrder.length}
+                      {isMovingToEdge && (
+                        <Badge className="ml-2 bg-blue-500">Moving to Edge</Badge>
+                      )}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -482,7 +496,7 @@ const SCANVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
                       <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Direction indicator */}
                         <div className="absolute top-4 right-4 flex items-center space-x-2">
@@ -493,8 +507,8 @@ const SCANVisualizer = () => {
                         </div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
-                          {getScaleMarkers().map(pos => (
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
                               <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
@@ -504,10 +518,9 @@ const SCANVisualizer = () => {
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
-                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
                           <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
@@ -516,17 +529,31 @@ const SCANVisualizer = () => {
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
                         </div>
                         
+                        {/* Initial head position indicator (if different) */}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
+                            style={{ 
+                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
+                            }}
+                          >
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
+                              Start: {initialHeadPosition}
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Request positions */}
                         {requestQueue.map((req, idx) => (
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
                               req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
                               req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
+                              left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
@@ -536,7 +563,6 @@ const SCANVisualizer = () => {
                         ))}
                       </div>
                     </div>
-                    
                     
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">SCAN Order</h3>

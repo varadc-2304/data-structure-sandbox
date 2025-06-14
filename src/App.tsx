@@ -18,7 +18,7 @@ import PriorityVisualizer from "./pages/visualizers/PriorityVisualizer";
 // Memory Management Visualizers
 import FIFOVisualizer from "./pages/visualizers/FIFOVisualizer";
 import LRUVisualizer from "./pages/visualizers/LRUVisualizer";
-import OptimalVisualizer from "./pages/visualizers/OptimalVisualizer";
+import MRUVisualizer from "./pages/visualizers/MRUVisualizer";
 
 // Disk Scheduling Visualizers
 import FCFSDiskVisualizer from "./pages/visualizers/FCFSDiskVisualizer";
@@ -46,11 +46,11 @@ const App = () => (
           <Route path="/cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
           <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
           
-          {/* Memory Management */}
-          <Route path="/memory-management" element={<PageReplacement />} />
-          <Route path="/memory-management/fifo" element={<FIFOVisualizer />} />
-          <Route path="/memory-management/lru" element={<LRUVisualizer />} />
-          <Route path="/memory-management/optimal" element={<OptimalVisualizer />} />
+          {/* Page Replacement */}
+          <Route path="/page-replacement" element={<PageReplacement />} />
+          <Route path="/page-replacement/fifo" element={<FIFOVisualizer />} />
+          <Route path="/page-replacement/lru" element={<LRUVisualizer />} />
+          <Route path="/page-replacement/mru" element={<MRUVisualizer />} />
           
           {/* Disk Scheduling */}
           <Route path="/disk-scheduling" element={<DiskScheduling />} />

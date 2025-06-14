@@ -458,12 +458,12 @@ const SSTFVisualizer = () => {
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
                             left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
-                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-orange-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
@@ -489,8 +489,8 @@ const SSTFVisualizer = () => {
                             key={idx}
                             className={cn(
                               "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
-                              req.processed ? "bg-orange-500 border-white shadow-lg scale-110" : "bg-white border-orange-400 shadow-md",
-                              req.current && "ring-4 ring-orange-400/50 scale-125 animate-pulse"
+                              req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
+                              req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
                               left: `calc(3rem + ${calculatePosition(req.position)}%)`
@@ -513,7 +513,7 @@ const SSTFVisualizer = () => {
                             variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
                             className={cn(
                               "text-sm px-3 py-1",
-                              orderIndex === currentStep && "bg-orange-500 text-white"
+                              orderIndex === currentStep && "bg-drona-green text-white"
                             )}
                           >
                             {requestQueue[requestIndex]?.position}
@@ -542,7 +542,7 @@ const SSTFVisualizer = () => {
                                 <tr key={idx} className={cn(
                                   "transition-colors",
                                   idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                                  idx === currentStep && 'bg-orange-100'
+                                  idx === currentStep && 'bg-drona-green/10'
                                 )}>
                                   <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
