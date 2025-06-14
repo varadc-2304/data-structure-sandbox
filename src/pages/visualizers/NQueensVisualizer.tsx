@@ -1,30 +1,34 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BoardState {
   grid: (0 | 1)[][];
   queens: number[];
   isSolution?: boolean;
+  solutionIndex?: number;
+}
+
+interface Solution {
+  queens: number[];
+  grid: (0 | 1)[][];
+  steps: BoardState[];
 }
 
 const NQueensVisualizer = () => {
   const [boardSize, setBoardSize] = useState<number>(4);
-  const [solutions, setSolutions] = useState<BoardState[]>([]);
-  const [currentSolution, setCurrentSolution] = useState<number>(0);
+  const [solutions, setSolutions] = useState<Solution[]>([]);
+  const [currentSolutionIndex, setCurrentSolutionIndex] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [currentStep, setCurrentStep] = useState<number>(-1);
-  const [steps, setSteps] = useState<BoardState[]>([]);
-  const [totalSolutions, setTotalSolutions] = useState<number>(0);
   const [solutionFound, setSolutionFound] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   
   useEffect(() => {
-    // Initialize board
     initializeBoard();
   }, [boardSize]);
   
@@ -32,78 +36,84 @@ const NQueensVisualizer = () => {
     setIsRunning(false);
     setCurrentStep(-1);
     setSolutionFound(false);
+    setCurrentSolutionIndex(0);
+    setIsInitialized(false);
     
+    const allSolutions: Solution[] = [];
     const initialBoard = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-    const stepsRecord: BoardState[] = [];
-    const solutionsFound: BoardState[] = [];
-    
-    // Keep track of queen positions (row index for each column)
-    const queens = Array(boardSize).fill(-1);
     
     // Find all solutions
-    solveNQueens(initialBoard, 0, queens, stepsRecord, solutionsFound);
+    findAllSolutions(initialBoard, 0, Array(boardSize).fill(-1), allSolutions);
     
-    setSteps(stepsRecord);
-    setSolutions(solutionsFound);
-    setTotalSolutions(solutionsFound.length);
-    setCurrentSolution(0);
+    setSolutions(allSolutions);
+    setIsInitialized(true);
   };
   
-  const solveNQueens = (
+  const findAllSolutions = (
     board: (0 | 1)[][],
     col: number,
     queens: number[],
-    stepsRecord: BoardState[],
-    solutionsFound: BoardState[]
-  ): boolean => {
-    // All queens are placed - solution found!
+    allSolutions: Solution[]
+  ) => {
     if (col >= boardSize) {
-      const solutionState = {
-        grid: JSON.parse(JSON.stringify(board)),
+      // Found a solution - generate steps to reach it
+      const steps = generateStepsToSolution([...queens]);
+      allSolutions.push({
         queens: [...queens],
-        isSolution: true
-      };
-      solutionsFound.push(solutionState);
-      stepsRecord.push(solutionState);
-      return true;
+        grid: JSON.parse(JSON.stringify(board)),
+        steps: steps
+      });
+      return;
     }
     
-    let solutionFound = false;
-    
-    // Try placing queen in each row of the current column
     for (let row = 0; row < boardSize; row++) {
       if (isSafe(board, row, col)) {
-        // Place queen
         board[row][col] = 1;
         queens[col] = row;
         
-        // Record step
-        stepsRecord.push({
-          grid: JSON.parse(JSON.stringify(board)),
-          queens: [...queens]
-        });
+        findAllSolutions(board, col + 1, queens, allSolutions);
         
-        // Recur to place rest of the queens
-        const found = solveNQueens(board, col + 1, queens, stepsRecord, solutionsFound);
-        if (found) {
-          solutionFound = true;
-          // Stop here for the first solution in visualization
-          return true;
-        }
-        
-        // Backtrack and remove queen
         board[row][col] = 0;
         queens[col] = -1;
-        
-        // Record backtracking step
-        stepsRecord.push({
-          grid: JSON.parse(JSON.stringify(board)),
-          queens: [...queens]
-        });
+      }
+    }
+  };
+  
+  const generateStepsToSolution = (targetQueens: number[]): BoardState[] => {
+    const steps: BoardState[] = [];
+    const board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+    const queens = Array(boardSize).fill(-1);
+    
+    // Generate steps by placing queens one by one
+    for (let col = 0; col < boardSize; col++) {
+      const row = targetQueens[col];
+      
+      // Try different positions to show the search process
+      for (let tryRow = 0; tryRow <= row; tryRow++) {
+        if (tryRow === row || isSafe(board, tryRow, col)) {
+          // Place queen temporarily
+          board[tryRow][col] = 1;
+          queens[col] = tryRow;
+          
+          steps.push({
+            grid: JSON.parse(JSON.stringify(board)),
+            queens: [...queens],
+            isSolution: col === boardSize - 1 && tryRow === row
+          });
+          
+          if (tryRow === row) {
+            // This is the correct position, keep it
+            break;
+          } else {
+            // Remove queen and try next position
+            board[tryRow][col] = 0;
+            queens[col] = -1;
+          }
+        }
       }
     }
     
-    return solutionFound;
+    return steps;
   };
   
   const isSafe = (board: (0 | 1)[][], row: number, col: number): boolean => {
@@ -135,12 +145,12 @@ const NQueensVisualizer = () => {
     setIsRunning(false);
     setCurrentStep(-1);
     setSolutionFound(false);
-    initializeBoard();
   };
   
   const toggleRunning = () => {
-    if (currentStep >= steps.length - 1) {
-      // If at end, restart from beginning
+    if (!isInitialized || solutions.length === 0) return;
+    
+    if (currentStep >= getCurrentSteps().length - 1) {
       setCurrentStep(-1);
       setSolutionFound(false);
     }
@@ -148,11 +158,11 @@ const NQueensVisualizer = () => {
   };
 
   const nextStep = () => {
+    const steps = getCurrentSteps();
     if (currentStep < steps.length - 1) {
       const nextStepIndex = currentStep + 1;
       setCurrentStep(nextStepIndex);
       
-      // Check if this step is a solution
       if (steps[nextStepIndex]?.isSolution) {
         setSolutionFound(true);
         setIsRunning(false);
@@ -174,6 +184,7 @@ const NQueensVisualizer = () => {
   };
 
   const skipToEnd = () => {
+    const steps = getCurrentSteps();
     setIsRunning(false);
     setCurrentStep(steps.length - 1);
     if (steps[steps.length - 1]?.isSolution) {
@@ -182,34 +193,40 @@ const NQueensVisualizer = () => {
   };
 
   const goToStep = (stepIndex: number) => {
+    const steps = getCurrentSteps();
     setIsRunning(false);
     setCurrentStep(stepIndex);
     setSolutionFound(stepIndex >= 0 && steps[stepIndex]?.isSolution);
   };
   
-  const nextSolution = () => {
+  const changeSolution = (direction: 'prev' | 'next') => {
+    if (solutions.length === 0) return;
+    
     setIsRunning(false);
     setCurrentStep(-1);
     setSolutionFound(false);
-    setCurrentSolution((prev) => (prev + 1) % solutions.length);
+    
+    if (direction === 'next') {
+      setCurrentSolutionIndex((prev) => (prev + 1) % solutions.length);
+    } else {
+      setCurrentSolutionIndex((prev) => (prev - 1 + solutions.length) % solutions.length);
+    }
   };
   
-  const prevSolution = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
-    setSolutionFound(false);
-    setCurrentSolution((prev) => (prev - 1 + solutions.length) % solutions.length);
+  const getCurrentSteps = (): BoardState[] => {
+    if (!isInitialized || solutions.length === 0) return [];
+    return solutions[currentSolutionIndex]?.steps || [];
   };
   
   useEffect(() => {
     let timer: NodeJS.Timeout;
+    const steps = getCurrentSteps();
     
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
         const nextStepIndex = currentStep + 1;
         setCurrentStep(nextStepIndex);
         
-        // Check if this step is a solution and stop animation
         if (steps[nextStepIndex]?.isSolution) {
           setSolutionFound(true);
           setIsRunning(false);
@@ -222,14 +239,24 @@ const NQueensVisualizer = () => {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isRunning, currentStep, steps.length, speed]);
+  }, [isRunning, currentStep, speed, currentSolutionIndex, isInitialized]);
   
   // Current board to display
-  const displayBoard = currentStep >= 0 ? 
-    steps[currentStep].grid : 
-    solutions.length > 0 ? 
-      solutions[currentSolution].grid :
-      Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+  const getCurrentBoard = () => {
+    if (!isInitialized || solutions.length === 0) {
+      return Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+    }
+    
+    const steps = getCurrentSteps();
+    if (currentStep >= 0 && currentStep < steps.length) {
+      return steps[currentStep].grid;
+    }
+    
+    return solutions[currentSolutionIndex]?.grid || Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+  };
+
+  const displayBoard = getCurrentBoard();
+  const currentSteps = getCurrentSteps();
 
   return (
     <div className="min-h-screen bg-white">
@@ -264,7 +291,7 @@ const NQueensVisualizer = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Animation Speed: {speed}x</label>
+                    <label className="text-sm font-medium">Speed: {speed}x</label>
                     <Slider
                       value={[speed]}
                       onValueChange={([value]) => setSpeed(value)}
@@ -275,16 +302,41 @@ const NQueensVisualizer = () => {
                       disabled={isRunning}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-drona-gray w-32 -mt-2">
-                    <span>Slower</span>
-                    <span>Faster</span>
-                  </div>
                 </div>
 
+                {/* Solution Selection */}
+                {isInitialized && solutions.length > 0 && (
+                  <div className="flex justify-center items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => changeSolution('prev')} 
+                      disabled={solutions.length <= 1 || isRunning}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Prev Solution
+                    </Button>
+                    <div className="text-center">
+                      <span className="font-semibold">Solution {currentSolutionIndex + 1} of {solutions.length}</span>
+                      <div className="text-sm text-gray-600">
+                        {currentSteps.length} steps to solve
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => changeSolution('next')} 
+                      disabled={solutions.length <= 1 || isRunning}
+                    >
+                      Next Solution <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Playback Controls */}
                 <div className="flex flex-wrap gap-2">
                   <Button 
                     onClick={skipToStart} 
-                    disabled={steps.length === 0 || currentStep === -1}
+                    disabled={currentSteps.length === 0 || currentStep === -1}
                     size="sm"
                   >
                     <SkipBack className="h-4 w-4 mr-1" /> Start
@@ -292,7 +344,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={prevStep} 
-                    disabled={steps.length === 0 || currentStep <= -1}
+                    disabled={currentSteps.length === 0 || currentStep <= -1}
                     size="sm"
                   >
                     ← Prev
@@ -300,7 +352,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={toggleRunning} 
-                    disabled={steps.length === 0 || solutionFound}
+                    disabled={currentSteps.length === 0 || solutionFound}
                     size="sm"
                   >
                     {isRunning ? (
@@ -312,7 +364,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={nextStep} 
-                    disabled={steps.length === 0 || currentStep >= steps.length - 1 || solutionFound}
+                    disabled={currentSteps.length === 0 || currentStep >= currentSteps.length - 1 || solutionFound}
                     size="sm"
                   >
                     Next →
@@ -320,7 +372,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={skipToEnd} 
-                    disabled={steps.length === 0 || currentStep === steps.length - 1}
+                    disabled={currentSteps.length === 0 || currentStep === currentSteps.length - 1}
                     size="sm"
                   >
                     <SkipForward className="h-4 w-4 mr-1" /> End
@@ -336,7 +388,8 @@ const NQueensVisualizer = () => {
                   </Button>
                 </div>
 
-                {steps.length > 0 && (
+                {/* Step Slider */}
+                {currentSteps.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium">Step:</span>
@@ -344,28 +397,15 @@ const NQueensVisualizer = () => {
                         value={[currentStep + 1]}
                         onValueChange={([value]) => goToStep(value - 1)}
                         min={0}
-                        max={steps.length}
+                        max={currentSteps.length}
                         step={1}
                         className="flex-1"
                         disabled={isRunning}
                       />
                       <span className="text-sm text-gray-500 w-16">
-                        {currentStep + 1}/{steps.length}
+                        {currentStep + 1}/{currentSteps.length}
                       </span>
                     </div>
-                  </div>
-                )}
-                
-                {/* Solution navigation */}
-                {solutions.length > 0 && !isRunning && currentStep === -1 && (
-                  <div className="flex justify-center items-center gap-4 mb-2">
-                    <Button variant="outline" size="sm" onClick={prevSolution} disabled={solutions.length <= 1}>
-                      ← Prev Solution
-                    </Button>
-                    <span>Solution {currentSolution + 1} of {totalSolutions}</span>
-                    <Button variant="outline" size="sm" onClick={nextSolution} disabled={solutions.length <= 1}>
-                      Next Solution →
-                    </Button>
                   </div>
                 )}
                 
@@ -401,15 +441,26 @@ const NQueensVisualizer = () => {
                   </div>
                 </div>
                 
-                {/* Step info */}
+                {/* Status Display */}
                 <div className="text-center mt-4">
-                  <p>Total steps: {steps.length}</p>
-                  <p>Current step: {currentStep + 1}</p>
-                  {solutionFound && (
-                    <p className="font-bold text-green-600 text-lg">🎉 Solution Found! All {boardSize} queens are safely placed!</p>
+                  {isInitialized && solutions.length > 0 && (
+                    <>
+                      <p>Current step: {currentStep + 1} of {currentSteps.length}</p>
+                      {solutionFound && (
+                        <p className="font-bold text-green-600 text-lg">
+                          🎉 Solution {currentSolutionIndex + 1} Found! All {boardSize} queens are safely placed!
+                        </p>
+                      )}
+                      {currentStep >= currentSteps.length - 1 && currentSteps.length > 0 && !solutionFound && (
+                        <p className="font-bold text-blue-600">✅ Simulation completed!</p>
+                      )}
+                    </>
                   )}
-                  {currentStep >= steps.length - 1 && steps.length > 0 && !solutionFound && (
-                    <p className="font-bold text-blue-600">✅ Backtracking algorithm completed!</p>
+                  {!isInitialized && (
+                    <p className="text-gray-500">Calculating solutions...</p>
+                  )}
+                  {isInitialized && solutions.length === 0 && (
+                    <p className="text-red-500">No solutions exist for {boardSize}x{boardSize} board</p>
                   )}
                 </div>
               </div>
@@ -422,7 +473,13 @@ const NQueensVisualizer = () => {
                 The solution uses backtracking to find all possible arrangements.
               </p>
               
-              <h3 className="text-lg font-semibold mt-4 mb-2">Backtracking Solution</h3>
+              <h3 className="text-lg font-semibold mt-4 mb-2">Multiple Solutions</h3>
+              <p className="text-drona-gray mb-4">
+                Most N-Queens problems have multiple solutions. You can use the solution navigation controls to explore different ways to solve the same puzzle.
+                Each solution shows the step-by-step process of placing queens to reach that particular arrangement.
+              </p>
+              
+              <h3 className="text-lg font-semibold mt-4 mb-2">Backtracking Algorithm</h3>
               <ol className="list-decimal list-inside space-y-2 text-drona-gray">
                 <li>Start placing queens one by one, column by column.</li>
                 <li>Before placing a queen, check if it's safe (not under attack by any previously placed queen).</li>
