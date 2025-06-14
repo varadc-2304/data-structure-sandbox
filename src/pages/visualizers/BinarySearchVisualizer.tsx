@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 const BinarySearchVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
+  const [arraySize, setArraySize] = useState<number>(10);
   const [searchValue, setSearchValue] = useState<number | null>(null);
   const [left, setLeft] = useState<number | null>(null);
   const [right, setRight] = useState<number | null>(null);
@@ -39,8 +40,7 @@ const BinarySearchVisualizer = () => {
   }, [isRunning, currentStep, searchSteps.length, speed, found]);
 
   const generateRandomArray = () => {
-    const size = Math.floor(Math.random() * 5) + 8; // 8-12 elements
-    const newArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100))
+    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100))
       .sort((a, b) => a - b);
     setArray(newArray);
     resetSearch();
@@ -58,7 +58,7 @@ const BinarySearchVisualizer = () => {
           if (isNaN(num)) throw new Error('Invalid number');
           return num;
         })
-        .sort((a, b) => a - b); // Ensure array is sorted for binary search
+        .sort((a, b) => a - b);
       
       if (newArray.length === 0) throw new Error('Empty array');
       
@@ -234,6 +234,18 @@ const BinarySearchVisualizer = () => {
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Array Size</Label>
+                    <Input
+                      type="number"
+                      value={arraySize}
+                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
+                      min={5}
+                      max={20}
+                      className="border-2 focus:border-drona-green"
+                    />
+                  </div>
+                  
                   <Button 
                     onClick={generateRandomArray} 
                     variant="outline"
@@ -325,6 +337,7 @@ const BinarySearchVisualizer = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => goToStep(searchSteps.length - 1)}
+                    disabled={searchSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipForward className="h-4 w-4" />
@@ -414,25 +427,39 @@ const BinarySearchVisualizer = () => {
                 ) : (
                   <div className="space-y-8">
                     <div className="flex flex-wrap justify-center gap-3">
-                      {array.map((value, index) => (
-                        <div
-                          key={index}
-                          className={`
-                            w-16 h-16 flex items-center justify-center rounded-xl border-3 transition-all duration-300 font-bold text-lg
-                            ${mid !== null && mid === index 
-                              ? 'bg-yellow-200 border-yellow-500 scale-110 shadow-lg' 
-                              : 'bg-white border-gray-300'}
-                            ${left !== null && right !== null ? 
-                              index < left || index > right ? 'opacity-25' : 'opacity-100' : 'opacity-100'}
-                            ${found !== null && found === true && mid === index 
-                              ? 'bg-green-200 border-green-500 animate-pulse' : ''}
-                            ${left !== null && right !== null && index >= left && index <= right && index !== mid
-                              ? 'border-blue-300 bg-blue-50' : ''}
-                          `}
-                        >
-                          {value}
-                        </div>
-                      ))}
+                      {array.map((value, index) => {
+                        let elementClass = 'w-16 h-16 flex items-center justify-center rounded-xl border-3 transition-all duration-300 font-bold text-lg ';
+                        
+                        if (mid !== null && mid === index) {
+                          elementClass += 'bg-yellow-200 border-yellow-500 scale-110 shadow-lg ';
+                        } else {
+                          elementClass += 'bg-white border-gray-300 ';
+                        }
+                        
+                        if (left !== null && right !== null) {
+                          if (index < left || index > right) {
+                            elementClass += 'opacity-25 ';
+                          } else {
+                            elementClass += 'opacity-100 ';
+                          }
+                        } else {
+                          elementClass += 'opacity-100 ';
+                        }
+                        
+                        if (found !== null && found === true && mid === index) {
+                          elementClass += 'bg-green-200 border-green-500 animate-pulse ';
+                        }
+                        
+                        if (left !== null && right !== null && index >= left && index <= right && index !== mid) {
+                          elementClass += 'border-blue-300 bg-blue-50 ';
+                        }
+                        
+                        return (
+                          <div key={index} className={elementClass}>
+                            {value}
+                          </div>
+                        );
+                      })}
                     </div>
                     
                     {currentStep >= 0 && currentStep < searchSteps.length && (
@@ -472,8 +499,8 @@ const BinarySearchVisualizer = () => {
                           <li>Binary search requires a sorted array</li>
                           <li>Compare target with middle element</li>
                           <li>If target matches middle, return position</li>
-                          <li>If target > middle, search right half</li>
-                          <li>If target < middle, search left half</li>
+                          <li>If target is greater than middle, search right half</li>
+                          <li>If target is less than middle, search left half</li>
                           <li>Repeat until found or search space is empty</li>
                         </ol>
                       </CardContent>
