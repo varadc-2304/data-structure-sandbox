@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -10,6 +11,11 @@ interface BoardState {
   queens: number[];
   isSolution?: boolean;
   solutionIndex?: number;
+  currentColumn?: number;
+  currentRow?: number;
+  isBacktracking?: boolean;
+  isConflict?: boolean;
+  message?: string;
 }
 
 interface Solution {
@@ -56,8 +62,8 @@ const NQueensVisualizer = () => {
     allSolutions: Solution[]
   ) => {
     if (col >= boardSize) {
-      // Found a solution - generate steps to reach it
-      const steps = generateStepsToSolution([...queens]);
+      // Found a solution - generate detailed steps to reach it
+      const steps = generateDetailedStepsToSolution([...queens]);
       allSolutions.push({
         queens: [...queens],
         grid: JSON.parse(JSON.stringify(board)),
@@ -79,39 +85,98 @@ const NQueensVisualizer = () => {
     }
   };
   
-  const generateStepsToSolution = (targetQueens: number[]): BoardState[] => {
+  const generateDetailedStepsToSolution = (targetQueens: number[]): BoardState[] => {
     const steps: BoardState[] = [];
-    const board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-    const queens = Array(boardSize).fill(-1);
     
-    // Generate steps by placing queens one by one
-    for (let col = 0; col < boardSize; col++) {
-      const row = targetQueens[col];
+    // Simulate the backtracking algorithm step by step
+    const solveWithSteps = (board: (0 | 1)[][], col: number, queens: number[]): boolean => {
+      // Base case: if all queens are placed
+      if (col >= boardSize) {
+        steps.push({
+          grid: JSON.parse(JSON.stringify(board)),
+          queens: [...queens],
+          isSolution: true,
+          message: `Solution found! All ${boardSize} queens placed successfully.`
+        });
+        return true;
+      }
       
-      // Try different positions to show the search process
-      for (let tryRow = 0; tryRow <= row; tryRow++) {
-        if (tryRow === row || isSafe(board, tryRow, col)) {
-          // Place queen temporarily
-          board[tryRow][col] = 1;
-          queens[col] = tryRow;
+      // Try placing queen in each row of current column
+      for (let row = 0; row < boardSize; row++) {
+        // Show attempt to place queen
+        steps.push({
+          grid: JSON.parse(JSON.stringify(board)),
+          queens: [...queens],
+          currentColumn: col,
+          currentRow: row,
+          message: `Trying to place queen at position (${row + 1}, ${col + 1})`
+        });
+        
+        if (isSafe(board, row, col)) {
+          // Place queen
+          board[row][col] = 1;
+          queens[col] = row;
           
           steps.push({
             grid: JSON.parse(JSON.stringify(board)),
             queens: [...queens],
-            isSolution: col === boardSize - 1 && tryRow === row
+            currentColumn: col,
+            currentRow: row,
+            message: `Queen placed at (${row + 1}, ${col + 1}). Safe position!`
           });
           
-          if (tryRow === row) {
-            // This is the correct position, keep it
-            break;
-          } else {
-            // Remove queen and try next position
-            board[tryRow][col] = 0;
-            queens[col] = -1;
+          // Recursively place queens in remaining columns
+          if (solveWithSteps(board, col + 1, queens)) {
+            return true;
           }
+          
+          // If placing queen doesn't lead to solution, backtrack
+          steps.push({
+            grid: JSON.parse(JSON.stringify(board)),
+            queens: [...queens],
+            currentColumn: col,
+            currentRow: row,
+            isBacktracking: true,
+            message: `Backtracking from (${row + 1}, ${col + 1}). No solution found in this path.`
+          });
+          
+          board[row][col] = 0;
+          queens[col] = -1;
+          
+          steps.push({
+            grid: JSON.parse(JSON.stringify(board)),
+            queens: [...queens],
+            currentColumn: col,
+            isBacktracking: true,
+            message: `Queen removed from (${row + 1}, ${col + 1}). Trying next position.`
+          });
+        } else {
+          // Show conflict
+          steps.push({
+            grid: JSON.parse(JSON.stringify(board)),
+            queens: [...queens],
+            currentColumn: col,
+            currentRow: row,
+            isConflict: true,
+            message: `Cannot place queen at (${row + 1}, ${col + 1}). Conflicts with existing queens.`
+          });
         }
       }
-    }
+      
+      return false;
+    };
+    
+    const board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+    const queens = Array(boardSize).fill(-1);
+    
+    // Add initial step
+    steps.push({
+      grid: JSON.parse(JSON.stringify(board)),
+      queens: [...queens],
+      message: `Starting to solve ${boardSize}-Queens problem. Let's place queens column by column.`
+    });
+    
+    solveWithSteps(board, 0, queens);
     
     return steps;
   };
@@ -252,11 +317,20 @@ const NQueensVisualizer = () => {
       return steps[currentStep].grid;
     }
     
-    return solutions[currentSolutionIndex]?.grid || Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+    return Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
+  };
+
+  const getCurrentStepInfo = () => {
+    const steps = getCurrentSteps();
+    if (currentStep >= 0 && currentStep < steps.length) {
+      return steps[currentStep];
+    }
+    return null;
   };
 
   const displayBoard = getCurrentBoard();
   const currentSteps = getCurrentSteps();
+  const currentStepInfo = getCurrentStepInfo();
 
   return (
     <div className="min-h-screen bg-white">
@@ -318,7 +392,7 @@ const NQueensVisualizer = () => {
                     <div className="text-center">
                       <span className="font-semibold">Solution {currentSolutionIndex + 1} of {solutions.length}</span>
                       <div className="text-sm text-gray-600">
-                        {currentSteps.length} steps to solve
+                        {currentSteps.length} detailed steps
                       </div>
                     </div>
                     <Button 
@@ -408,6 +482,21 @@ const NQueensVisualizer = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Current Step Message */}
+                {currentStepInfo && currentStepInfo.message && (
+                  <div className={`p-3 rounded-lg text-center font-medium ${
+                    currentStepInfo.isSolution 
+                      ? 'bg-green-100 text-green-800' 
+                      : currentStepInfo.isConflict
+                      ? 'bg-red-100 text-red-800'
+                      : currentStepInfo.isBacktracking
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {currentStepInfo.message}
+                  </div>
+                )}
                 
                 {/* Chessboard */}
                 <div className="flex justify-center">
@@ -420,23 +509,39 @@ const NQueensVisualizer = () => {
                     }}
                   >
                     {displayBoard.map((row, rowIdx) => (
-                      row.map((cell, colIdx) => (
-                        <div
-                          key={`${rowIdx}-${colIdx}`}
-                          className={`
-                            flex items-center justify-center
-                            ${(rowIdx + colIdx) % 2 === 0 ? 'bg-gray-100' : 'bg-gray-400'}
-                          `}
-                          style={{
-                            width: Math.min(50, 400 / boardSize),
-                            height: Math.min(50, 400 / boardSize)
-                          }}
-                        >
-                          {cell === 1 && (
-                            <span className="text-2xl">♛</span>
-                          )}
-                        </div>
-                      ))
+                      row.map((cell, colIdx) => {
+                        const isCurrentPosition = currentStepInfo && 
+                          currentStepInfo.currentRow === rowIdx && 
+                          currentStepInfo.currentColumn === colIdx;
+                        
+                        return (
+                          <div
+                            key={`${rowIdx}-${colIdx}`}
+                            className={`
+                              flex items-center justify-center
+                              ${(rowIdx + colIdx) % 2 === 0 ? 'bg-gray-100' : 'bg-gray-400'}
+                              ${isCurrentPosition && currentStepInfo.isConflict ? 'bg-red-300' : ''}
+                              ${isCurrentPosition && currentStepInfo.isBacktracking ? 'bg-yellow-300' : ''}
+                              ${isCurrentPosition && !currentStepInfo.isConflict && !currentStepInfo.isBacktracking ? 'bg-blue-300' : ''}
+                            `}
+                            style={{
+                              width: Math.min(50, 400 / boardSize),
+                              height: Math.min(50, 400 / boardSize)
+                            }}
+                          >
+                            {cell === 1 && (
+                              <span className="text-2xl">♛</span>
+                            )}
+                            {isCurrentPosition && cell === 0 && (
+                              <span className={`text-xl ${
+                                currentStepInfo.isConflict ? 'text-red-600' : 'text-blue-600'
+                              }`}>
+                                ●
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
                     ))}
                   </div>
                 </div>
@@ -445,19 +550,18 @@ const NQueensVisualizer = () => {
                 <div className="text-center mt-4">
                   {isInitialized && solutions.length > 0 && (
                     <>
-                      <p>Current step: {currentStep + 1} of {currentSteps.length}</p>
                       {solutionFound && (
                         <p className="font-bold text-green-600 text-lg">
                           🎉 Solution {currentSolutionIndex + 1} Found! All {boardSize} queens are safely placed!
                         </p>
                       )}
                       {currentStep >= currentSteps.length - 1 && currentSteps.length > 0 && !solutionFound && (
-                        <p className="font-bold text-blue-600">✅ Simulation completed!</p>
+                        <p className="font-bold text-blue-600">✅ Detailed simulation completed!</p>
                       )}
                     </>
                   )}
                   {!isInitialized && (
-                    <p className="text-gray-500">Calculating solutions...</p>
+                    <p className="text-gray-500">Calculating detailed solutions...</p>
                   )}
                   {isInitialized && solutions.length === 0 && (
                     <p className="text-red-500">No solutions exist for {boardSize}x{boardSize} board</p>
@@ -467,35 +571,43 @@ const NQueensVisualizer = () => {
             </Card>
             
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-3">N-Queens Problem Explanation</h2>
+              <h2 className="text-xl font-semibold mb-3">Detailed Algorithm Visualization</h2>
               <p className="text-drona-gray mb-4">
-                The N-Queens problem involves placing N queens on an NxN chessboard so that no two queens threaten each other.
-                The solution uses backtracking to find all possible arrangements.
+                This visualization shows every step of the backtracking algorithm including:
               </p>
               
-              <h3 className="text-lg font-semibold mt-4 mb-2">Multiple Solutions</h3>
-              <p className="text-drona-gray mb-4">
-                Most N-Queens problems have multiple solutions. You can use the solution navigation controls to explore different ways to solve the same puzzle.
-                Each solution shows the step-by-step process of placing queens to reach that particular arrangement.
-              </p>
-              
-              <h3 className="text-lg font-semibold mt-4 mb-2">Backtracking Algorithm</h3>
-              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
-                <li>Start placing queens one by one, column by column.</li>
-                <li>Before placing a queen, check if it's safe (not under attack by any previously placed queen).</li>
-                <li>If safe, place the queen and move to the next column.</li>
-                <li>If all queens can't be placed, backtrack (remove the last queen and try a different position).</li>
-                <li>Continue until all N queens are placed or all possibilities are exhausted.</li>
-              </ol>
-              
-              <div className="mt-4 text-drona-gray">
-                <p className="font-medium">Key properties:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>For an N×N board, there are N<sup>N</sup> possible arrangements of queens.</li>
-                  <li>For N = 8 (standard chess board), there are 92 distinct solutions.</li>
-                  <li>No solution exists for N = 2 or N = 3.</li>
-                </ul>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-blue-300 rounded"></div>
+                    <span className="text-sm">Attempting to place queen</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-green-100 rounded"></div>
+                    <span className="text-sm">Successfully placed queen</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-red-300 rounded"></div>
+                    <span className="text-sm">Conflict detected</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-yellow-300 rounded"></div>
+                    <span className="text-sm">Backtracking step</span>
+                  </div>
+                </div>
               </div>
+              
+              <h3 className="text-lg font-semibold mt-4 mb-2">Backtracking Process</h3>
+              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
+                <li>Try to place a queen in each row of the current column</li>
+                <li>Check if the position conflicts with existing queens</li>
+                <li>If safe, place the queen and move to the next column</li>
+                <li>If no safe position exists, backtrack to the previous column</li>
+                <li>Remove the queen and try the next position</li>
+                <li>Continue until all queens are placed or all possibilities exhausted</li>
+              </ol>
             </Card>
           </div>
         </div>
