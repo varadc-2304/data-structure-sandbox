@@ -65,7 +65,7 @@ const FractionalKnapsackVisualizer = () => {
       setItems([...items, newItem]);
       setName("");
       setWeight("");
-      SetValue("");
+      setValue("");
     }
   };
 
