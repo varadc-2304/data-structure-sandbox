@@ -37,10 +37,10 @@ const FCFSDiskVisualizer = () => {
 
   // Auto-play simulation
   useEffect(() => {
-    if (!isPlaying || currentStep >= requestQueue.length - 1) {
-      if (isPlaying && currentStep >= requestQueue.length - 1) {
-        setIsPlaying(false);
-      }
+    if (!isPlaying) return;
+    
+    if (currentStep >= requestQueue.length - 1) {
+      setIsPlaying(false);
       return;
     }
 

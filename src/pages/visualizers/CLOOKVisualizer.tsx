@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -10,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface DiskRequest {
@@ -21,6 +23,7 @@ interface DiskRequest {
 const CLOOKVisualizer = () => {
   const [diskSize, setDiskSize] = useState<number>(200);
   const [initialHeadPosition, setInitialHeadPosition] = useState<number>(50);
+  const [direction, setDirection] = useState<'left' | 'right'>('right');
   const [currentHeadPosition, setCurrentHeadPosition] = useState<number>(50);
   const [requestQueue, setRequestQueue] = useState<DiskRequest[]>([]);
   const [inputPosition, setInputPosition] = useState<string>("");
@@ -29,14 +32,19 @@ const CLOOKVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-  const [clookOrder, setClookOrder] = useState<(number | 'jump')[]>([]);
+  const [clookOrder, setClookOrder] = useState<number[]>([]);
 
   useEffect(() => {
     resetSimulation();
-  }, [initialHeadPosition]);
+  }, [initialHeadPosition, direction]);
 
   useEffect(() => {
-    if (!isPlaying || currentStep >= clookOrder.length - 1) return;
+    if (!isPlaying) return;
+    
+    if (currentStep >= clookOrder.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
 
     const timer = setTimeout(() => {
       nextStep();
@@ -73,28 +81,39 @@ const CLOOKVisualizer = () => {
     }
   };
 
-  const calculateCLOOKOrder = (requests: DiskRequest[], startPosition: number): (number | 'jump')[] => {
-    const order: (number | 'jump')[] = [];
+  const calculateCLOOKOrder = (requests: DiskRequest[], startPosition: number, initialDirection: 'left' | 'right'): number[] => {
+    const order: number[] = [];
     const sortedRequests = [...requests].sort((a, b) => a.position - b.position);
     
-    const rightRequests = sortedRequests.filter(req => req.position >= startPosition);
-    const leftRequests = sortedRequests.filter(req => req.position < startPosition);
-    
-    // Service requests to the right first
-    rightRequests.forEach(req => {
-      const index = requests.findIndex(r => r.position === req.position);
-      order.push(index);
-    });
-    
-    // If there are requests to the left, add a jump and then service them
-    if (leftRequests.length > 0 && rightRequests.length > 0) {
-      order.push('jump');
+    if (initialDirection === 'right') {
+      // Service requests to the right (including current position)
+      const rightRequests = sortedRequests.filter(req => req.position >= startPosition);
+      rightRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      // Service remaining requests from the beginning
+      const leftRequests = sortedRequests.filter(req => req.position < startPosition);
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+    } else {
+      // Service requests to the left (including current position)
+      const leftRequests = sortedRequests.filter(req => req.position <= startPosition).reverse();
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
+      
+      // Service remaining requests from the end
+      const rightRequests = sortedRequests.filter(req => req.position > startPosition).reverse();
+      rightRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
     }
-    
-    leftRequests.forEach(req => {
-      const index = requests.findIndex(r => r.position === req.position);
-      order.push(index);
-    });
     
     return order;
   };
@@ -114,7 +133,7 @@ const CLOOKVisualizer = () => {
     setRequestQueue(resetRequests);
     
     if (resetRequests.length > 0) {
-      const order = calculateCLOOKOrder(resetRequests, initialHeadPosition);
+      const order = calculateCLOOKOrder(resetRequests, initialHeadPosition, direction);
       setClookOrder(order);
     } else {
       setClookOrder([]);
@@ -123,10 +142,10 @@ const CLOOKVisualizer = () => {
 
   useEffect(() => {
     if (requestQueue.length > 0) {
-      const order = calculateCLOOKOrder(requestQueue, initialHeadPosition);
+      const order = calculateCLOOKOrder(requestQueue, initialHeadPosition, direction);
       setClookOrder(order);
     }
-  }, [requestQueue, initialHeadPosition]);
+  }, [requestQueue, initialHeadPosition, direction]);
 
   const nextStep = () => {
     if (currentStep >= clookOrder.length - 1) {
@@ -134,42 +153,33 @@ const CLOOKVisualizer = () => {
       return;
     }
     
-    const nextStep = currentStep + 1;
-    const nextItem = clookOrder[nextStep];
+    const nextStepIndex = currentStep + 1;
+    const nextRequestIndex = clookOrder[nextStepIndex];
+    const nextRequest = requestQueue[nextRequestIndex];
     
-    let targetPosition: number;
-    let seekDistance: number;
-    
-    if (nextItem === 'jump') {
-      // Jump to the smallest request position
-      const leftRequests = requestQueue.filter(req => req.position < initialHeadPosition);
-      targetPosition = Math.min(...leftRequests.map(req => req.position));
-      seekDistance = Math.abs(currentHeadPosition - targetPosition);
-    } else {
-      const nextRequest = requestQueue[nextItem as number];
-      targetPosition = nextRequest.position;
-      seekDistance = Math.abs(currentHeadPosition - targetPosition);
-    }
+    const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
     setSeekHistory(prev => [...prev, { 
       from: currentHeadPosition, 
-      to: targetPosition, 
+      to: nextRequest.position, 
       distance: seekDistance 
     }]);
     
     setTotalSeekTime(prev => prev + seekDistance);
-    setCurrentHeadPosition(targetPosition);
+    setCurrentHeadPosition(nextRequest.position);
     
-    if (nextItem !== 'jump') {
-      const updatedRequests = requestQueue.map((req, idx) => ({
-        ...req,
-        processed: clookOrder.slice(0, nextStep + 1).filter(item => typeof item === 'number').includes(idx),
-        current: idx === nextItem
-      }));
-      setRequestQueue(updatedRequests);
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: clookOrder.slice(0, nextStepIndex + 1).includes(idx),
+      current: idx === nextRequestIndex
+    }));
+    setRequestQueue(updatedRequests);
+    
+    setCurrentStep(nextStepIndex);
+    
+    if (nextStepIndex >= clookOrder.length - 1) {
+      setIsPlaying(false);
     }
-    
-    setCurrentStep(nextStep);
   };
 
   const prevStep = () => {
@@ -184,12 +194,12 @@ const CLOOKVisualizer = () => {
     const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
     setTotalSeekTime(newTotalSeekTime);
     
-    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : requestQueue[clookOrder[newStep]].position;
     setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: clookOrder.slice(0, newStep + 1).filter(item => typeof item === 'number').includes(idx),
+      processed: clookOrder.slice(0, newStep + 1).includes(idx),
       current: newStep >= 0 && clookOrder[newStep] === idx
     }));
     setRequestQueue(updatedRequests);
@@ -201,38 +211,31 @@ const CLOOKVisualizer = () => {
     setCurrentStep(step);
     setIsPlaying(false);
     
-    // Recalculate state for the target step
-    let newHeadPosition = initialHeadPosition;
-    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    const newHeadPosition = step === -1 ? initialHeadPosition : requestQueue[clookOrder[step]].position;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    // Recalculate seek history up to this step
+    const newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    let headPos = initialHeadPosition;
     
     for (let i = 0; i <= step; i++) {
-      const item = clookOrder[i];
-      let targetPosition: number;
-      
-      if (item === 'jump') {
-        const leftRequests = requestQueue.filter(req => req.position < initialHeadPosition);
-        targetPosition = Math.min(...leftRequests.map(req => req.position));
-      } else {
-        targetPosition = requestQueue[item as number].position;
-      }
-      
-      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      const requestIndex = clookOrder[i];
+      const targetPosition = requestQueue[requestIndex].position;
+      const seekDistance = Math.abs(headPos - targetPosition);
       newSeekHistory.push({
-        from: newHeadPosition,
+        from: headPos,
         to: targetPosition,
         distance: seekDistance
       });
-      
-      newHeadPosition = targetPosition;
+      headPos = targetPosition;
     }
     
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
-    setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: clookOrder.slice(0, step + 1).filter(item => typeof item === 'number').includes(idx),
+      processed: clookOrder.slice(0, step + 1).includes(idx),
       current: step >= 0 && clookOrder[step] === idx
     }));
     setRequestQueue(updatedRequests);
@@ -245,6 +248,21 @@ const CLOOKVisualizer = () => {
     } else {
       setIsPlaying(!isPlaying);
     }
+  };
+
+  const calculatePosition = (position: number) => {
+    const percentage = (position / (diskSize - 1)) * 100;
+    return Math.max(0, Math.min(100, percentage));
+  };
+
+  const getScaleMarkers = () => {
+    const markers = [];
+    const steps = 5;
+    for (let i = 0; i < steps; i++) {
+      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
+      markers.push(position);
+    }
+    return markers;
   };
 
   return (
@@ -297,6 +315,19 @@ const CLOOKVisualizer = () => {
                   </div>
                   
                   <div>
+                    <Label>Initial Direction</Label>
+                    <Select value={direction} onValueChange={(value: 'left' | 'right') => setDirection(value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
                     <Label htmlFor="position">Request Position</Label>
                     <div className="flex mt-1">
                       <Input
@@ -328,48 +359,29 @@ const CLOOKVisualizer = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="grid grid-cols-5 gap-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={prevStep} 
-                        disabled={currentStep <= -1}
-                        className="flex items-center justify-center"
-                      >
-                        <SkipBack className="h-4 w-4" />
+                    <div className="flex space-x-1">
+                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
+                        <SkipBack className="h-3 w-3" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
+                        <Rewind className="h-3 w-3" />
                       </Button>
                       <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => goToStep(-1)}
-                        className="flex items-center justify-center"
-                      >
-                        <Rewind className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm"
+                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
                         onClick={togglePlayPause}
                         disabled={clookOrder.length === 0}
-                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
-                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        {isPlaying ? (
+                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
+                        ) : (
+                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= clookOrder.length - 1 ? 'Restart' : 'Play'}</>
+                        )}
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => goToStep(clookOrder.length - 1)}
-                        className="flex items-center justify-center"
-                      >
-                        <FastForward className="h-4 w-4" />
+                      <Button variant="outline" size="sm" onClick={() => goToStep(clookOrder.length - 1)}>
+                        <FastForward className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={nextStep} 
-                        disabled={currentStep >= clookOrder.length - 1}
-                        className="flex items-center justify-center"
-                      >
-                        <SkipForward className="h-4 w-4" />
+                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= clookOrder.length - 1}>
+                        <SkipForward className="h-3 w-3" />
                       </Button>
                     </div>
                     
@@ -444,45 +456,41 @@ const CLOOKVisualizer = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
+                      <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-16 right-16 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
+                        
+                        {/* Direction indicator */}
+                        <div className="absolute top-4 right-4 flex items-center space-x-2">
+                          <span className="text-sm font-medium text-drona-gray">Direction:</span>
+                          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
+                            {direction === 'right' ? '→' : '←'} C-LOOK {direction.toUpperCase()}
+                          </Badge>
+                        </div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-16 right-16 flex justify-between items-center transform -translate-y-1/2">
-                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
+                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
+                          {getScaleMarkers().map(pos => (
                             <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
-                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                              <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
+                              <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
                             </div>
                           ))}
                         </div>
                         
-                        {/* Initial head position indicator */}
-                        <div 
-                          className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
-                          style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((initialHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
-                          }}
-                        >
-                          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                            Start: {initialHeadPosition}
-                          </div>
-                        </div>
-                        
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
                           style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((currentHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
+                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
                             transform: 'translateY(-50%) translateX(-50%)'
                           }}
                         >
-                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-purple-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
                         </div>
                         
                         {/* Request positions */}
@@ -490,15 +498,15 @@ const CLOOKVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
-                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
-                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
+                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              req.processed ? "bg-purple-500 border-white shadow-lg scale-110" : "bg-white border-purple-400 shadow-md",
+                              req.current && "ring-4 ring-purple-400/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(4rem + ${Math.min(Math.max((req.position / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`
+                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
                             }}
                           >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
                               {req.position}
                             </div>
                           </div>
@@ -509,13 +517,16 @@ const CLOOKVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">C-LOOK Order</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {clookOrder.map((item, orderIndex) => (
+                        {clookOrder.map((requestIndex, orderIndex) => (
                           <Badge 
                             key={orderIndex}
                             variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
-                            className={orderIndex === currentStep ? "bg-drona-green" : ""}
+                            className={cn(
+                              "text-sm px-3 py-1",
+                              orderIndex === currentStep && "bg-purple-500 text-white"
+                            )}
                           >
-                            {item === 'jump' ? "➥" : requestQueue[item as number]?.position}
+                            {requestQueue[requestIndex]?.position}
                           </Badge>
                         ))}
                       </div>
@@ -528,7 +539,7 @@ const CLOOKVisualizer = () => {
                           <div className="p-4 text-center text-gray-400">No operations yet</div>
                         ) : (
                           <table className="w-full">
-                            <thead className="bg-drona-light">
+                            <thead className="bg-drona-light sticky top-0">
                               <tr>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Step</th>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">From</th>
@@ -538,11 +549,15 @@ const CLOOKVisualizer = () => {
                             </thead>
                             <tbody>
                               {seekHistory.map((seek, idx) => (
-                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-4 py-2 text-sm">{idx + 1}</td>
+                                <tr key={idx} className={cn(
+                                  "transition-colors",
+                                  idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
+                                  idx === currentStep && 'bg-purple-100'
+                                )}>
+                                  <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
                                   <td className="px-4 py-2 text-sm">{seek.to}</td>
-                                  <td className="px-4 py-2 text-sm">{seek.distance} cylinders</td>
+                                  <td className="px-4 py-2 text-sm font-medium">{seek.distance} cylinders</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -564,10 +579,10 @@ const CLOOKVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        C-LOOK is an improved version of LOOK where the disk arm serves requests only in one direction (typically right) and when it reaches the last request in that direction, it jumps to the lowest position and starts moving in the same direction again.
+                        C-LOOK (Circular LOOK) combines the advantages of both C-SCAN and LOOK. Like LOOK, it only moves as far as the last request in each direction, and like C-SCAN, it provides more uniform service times.
                       </p>
                       <p className="text-drona-gray">
-                        This provides more uniform wait times compared to LOOK, as the longest waiting time is reduced.
+                        It services requests in one direction until the last request, then jumps directly to the first request in the opposite direction without going to the disk boundary.
                       </p>
                     </div>
                     
@@ -575,34 +590,36 @@ const CLOOKVisualizer = () => {
                       <h3 className="font-medium text-drona-dark mb-2">Pseudocode</h3>
                       <div className="bg-gray-800 text-white p-4 rounded-md overflow-x-auto">
                         <pre className="font-mono text-sm">
-{`function CLOOK_DiskScheduling(requestQueue, initialHeadPosition):
+{`function CLOOK_DiskScheduling(requestQueue, initialHeadPosition, direction):
     currentHeadPosition = initialHeadPosition
     totalSeekTime = 0
     
     sort requestQueue by position
     
-    // Service requests to the right of head position
-    for each request >= currentHeadPosition:
-        seekTime = abs(currentHeadPosition - request.position)
-        totalSeekTime += seekTime
-        currentHeadPosition = request.position
-    endfor
-    
-    // If there are requests to the left, jump to lowest position
-    if any requests < initialHeadPosition:
-        lowestRequest = min position in requestQueue
-        seekTime = abs(currentHeadPosition - lowestRequest)
-        totalSeekTime += seekTime
-        currentHeadPosition = lowestRequest
+    if direction == "right":
+        // Service requests to the right (including current position)
+        for each request >= currentHeadPosition:
+            seekTime = abs(currentHeadPosition - request.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = request.position
+        endfor
         
-        // Continue servicing requests from lowest to below initial position
-        for each request < initialHeadPosition (in ascending order):
-            if request.position > lowestRequest:
+        // Jump directly to the first remaining request
+        if there are requests < initialHeadPosition:
+            firstRequest = first request < initialHeadPosition
+            seekTime = abs(currentHeadPosition - firstRequest.position)
+            totalSeekTime += seekTime
+            currentHeadPosition = firstRequest.position
+            
+            // Service remaining requests in order
+            for each remaining request:
                 seekTime = abs(currentHeadPosition - request.position)
                 totalSeekTime += seekTime
                 currentHeadPosition = request.position
-            endif
-        endfor
+            endfor
+        endif
+    else:
+        // Similar logic for left direction
     endif
     
     return totalSeekTime`}
@@ -615,17 +632,18 @@ const CLOOKVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>More uniform wait times than LOOK and SCAN</li>
-                        <li>Better seek time performance than C-SCAN</li>
-                        <li>No unnecessary movements like in SCAN and C-SCAN</li>
-                        <li>Eliminates starvation</li>
+                        <li>Combines benefits of both LOOK and C-SCAN</li>
+                        <li>Most efficient seek time among all algorithms</li>
+                        <li>Uniform wait times like C-SCAN</li>
+                        <li>No unnecessary movement to disk boundaries</li>
+                        <li>Best overall performance</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>More complex to implement than simpler algorithms</li>
-                        <li>Large jumps can occur when moving from highest to lowest request</li>
-                        <li>Performance depends on request distribution</li>
+                        <li>Most complex algorithm to implement</li>
+                        <li>Requires sorting and careful track of current direction</li>
+                        <li>Overhead may not be justified for simple systems</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -666,7 +684,7 @@ const CLOOKVisualizer = () => {
                     <div>
                       <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        C-LOOK generally provides the best performance among disk scheduling algorithms, with more uniform wait times and reduced seek overhead.
+                        C-LOOK typically provides the best overall performance among all disk scheduling algorithms, combining efficiency with fairness.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
@@ -679,7 +697,7 @@ const CLOOKVisualizer = () => {
                           <li>SSTF (Shortest Seek Time First)</li>
                           <li>SCAN (Elevator)</li>
                           <li>C-SCAN (Circular SCAN)</li>
-                          <li>LOOK and C-LOOK</li>
+                          <li>LOOK and C-LOOK (Best)</li>
                         </ol>
                       </div>
                     </div>

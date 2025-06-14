@@ -38,7 +38,12 @@ const SCANVisualizer = () => {
   }, [initialHeadPosition, direction]);
 
   useEffect(() => {
-    if (!isPlaying || currentStep >= scanOrder.length - 1) return;
+    if (!isPlaying) return;
+    
+    if (currentStep >= scanOrder.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
 
     const timer = setTimeout(() => {
       nextStep();
@@ -185,6 +190,11 @@ const SCANVisualizer = () => {
     }
     
     setCurrentStep(nextStep);
+    
+    // Stop simulation if this was the last step
+    if (nextStep >= scanOrder.length - 1) {
+      setIsPlaying(false);
+    }
   };
 
   const prevStep = () => {

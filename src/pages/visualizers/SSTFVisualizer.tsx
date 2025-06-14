@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -36,16 +37,16 @@ const SSTFVisualizer = () => {
   }, [initialHeadPosition]);
 
   useEffect(() => {
-    if (!isPlaying || currentStep >= sstfOrder.length - 1) {
-      if (isPlaying && currentStep >= sstfOrder.length - 1) {
-        setIsPlaying(false);
-      }
+    if (!isPlaying) return;
+    
+    if (currentStep >= sstfOrder.length - 1) {
+      setIsPlaying(false);
       return;
     }
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, sstfOrder.length, speed]);
@@ -80,27 +81,30 @@ const SSTFVisualizer = () => {
 
   const calculateSSTFOrder = (requests: DiskRequest[], startPosition: number): number[] => {
     const order: number[] = [];
-    const remaining = [...requests];
+    const unprocessed = [...requests];
     let currentPos = startPosition;
-
-    while (remaining.length > 0) {
+    
+    while (unprocessed.length > 0) {
       let minDistance = Infinity;
-      let closestIndex = 0;
-
-      remaining.forEach((req, index) => {
+      let closestIndex = -1;
+      let closestOriginalIndex = -1;
+      
+      unprocessed.forEach((req, idx) => {
         const distance = Math.abs(currentPos - req.position);
         if (distance < minDistance) {
           minDistance = distance;
-          closestIndex = index;
+          closestIndex = idx;
+          closestOriginalIndex = requests.findIndex(r => r.position === req.position && !order.includes(requests.indexOf(r)));
         }
       });
-
-      const closest = remaining[closestIndex];
-      order.push(requests.findIndex(req => req.position === closest.position && !order.includes(requests.findIndex(r => r === req))));
-      currentPos = closest.position;
-      remaining.splice(closestIndex, 1);
+      
+      if (closestIndex !== -1) {
+        order.push(closestOriginalIndex);
+        currentPos = unprocessed[closestIndex].position;
+        unprocessed.splice(closestIndex, 1);
+      }
     }
-
+    
     return order;
   };
 
@@ -163,7 +167,6 @@ const SSTFVisualizer = () => {
     
     setCurrentStep(nextStepIndex);
     
-    // Stop simulation if this was the last step
     if (nextStepIndex >= sstfOrder.length - 1) {
       setIsPlaying(false);
     }
@@ -187,7 +190,7 @@ const SSTFVisualizer = () => {
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
       processed: sstfOrder.slice(0, newStep + 1).includes(idx),
-      current: newStep >= 0 && idx === sstfOrder[newStep]
+      current: newStep >= 0 && sstfOrder[newStep] === idx
     }));
     setRequestQueue(updatedRequests);
   };
@@ -223,7 +226,7 @@ const SSTFVisualizer = () => {
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
       processed: sstfOrder.slice(0, step + 1).includes(idx),
-      current: step >= 0 && idx === sstfOrder[step]
+      current: step >= 0 && sstfOrder[step] === idx
     }));
     setRequestQueue(updatedRequests);
   };
@@ -237,7 +240,6 @@ const SSTFVisualizer = () => {
     }
   };
 
-  // Calculate position as percentage for visual elements
   const calculatePosition = (position: number) => {
     return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
@@ -344,7 +346,7 @@ const SSTFVisualizer = () => {
                       <Button 
                         size="sm"
                         onClick={togglePlayPause}
-                        disabled={requestQueue.length === 0}
+                        disabled={sstfOrder.length === 0}
                         className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
                         {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -439,61 +441,62 @@ const SSTFVisualizer = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
-                      <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8" style={{ minHeight: "200px" }}>
+                      <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
+                      <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Scale markers */}
                         <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
                           {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
-                              <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
-                              <span className="text-xs text-gray-600 font-medium">{pos}</span>
+                              <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
+                              <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
                             </div>
                           ))}
                         </div>
                         
-                        {/* Initial head position indicator */}
-                        {initialHeadPosition !== currentHeadPosition && (
-                          <div 
-                            className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
-                            style={{ 
-                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
-                            }}
-                          >
-                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                              Start: {initialHeadPosition}
-                            </div>
-                          </div>
-                        )}
-                        
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-1000 z-10"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
                             left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
-                          <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-orange-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
                         </div>
+                        
+                        {/* Initial head position indicator (if different) */}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
+                            style={{ 
+                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
+                            }}
+                          >
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
+                              Start: {initialHeadPosition}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Request positions */}
                         {requestQueue.map((req, idx) => (
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
-                              req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
-                              req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
+                              "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              req.processed ? "bg-orange-500 border-white shadow-lg scale-110" : "bg-white border-orange-400 shadow-md",
+                              req.current && "ring-4 ring-orange-400/50 scale-125 animate-pulse"
                             )}
                             style={{ 
                               left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
-                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
                               {req.position}
                             </div>
                           </div>
@@ -502,13 +505,16 @@ const SSTFVisualizer = () => {
                     </div>
                     
                     <div className="mb-6">
-                      <h3 className="text-sm font-medium text-drona-gray mb-2">Request Order (SSTF)</h3>
+                      <h3 className="text-sm font-medium text-drona-gray mb-2">SSTF Order (Shortest Seek Time First)</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {sstfOrder.map((requestIndex, orderIndex) => (
                           <Badge 
                             key={orderIndex}
                             variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
-                            className={orderIndex === currentStep ? "bg-drona-green" : ""}
+                            className={cn(
+                              "text-sm px-3 py-1",
+                              orderIndex === currentStep && "bg-orange-500 text-white"
+                            )}
                           >
                             {requestQueue[requestIndex]?.position}
                           </Badge>
@@ -523,7 +529,7 @@ const SSTFVisualizer = () => {
                           <div className="p-4 text-center text-gray-400">No operations yet</div>
                         ) : (
                           <table className="w-full">
-                            <thead className="bg-drona-light">
+                            <thead className="bg-drona-light sticky top-0">
                               <tr>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Step</th>
                                 <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">From</th>
@@ -533,11 +539,15 @@ const SSTFVisualizer = () => {
                             </thead>
                             <tbody>
                               {seekHistory.map((seek, idx) => (
-                                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-4 py-2 text-sm">{idx + 1}</td>
+                                <tr key={idx} className={cn(
+                                  "transition-colors",
+                                  idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
+                                  idx === currentStep && 'bg-orange-100'
+                                )}>
+                                  <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
                                   <td className="px-4 py-2 text-sm">{seek.to}</td>
-                                  <td className="px-4 py-2 text-sm">{seek.distance} cylinders</td>
+                                  <td className="px-4 py-2 text-sm font-medium">{seek.distance} cylinders</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -559,10 +569,10 @@ const SSTFVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        SSTF selects the request with the minimum seek time from the current head position. This reduces the total seek time compared to FCFS.
+                        SSTF selects the request that requires the least movement of the disk head from its current position. This greedy approach minimizes seek time for each individual request.
                       </p>
                       <p className="text-drona-gray">
-                        The algorithm continues to pick the closest unserviced request until all requests are processed.
+                        At each step, the algorithm calculates the distance to all remaining requests and chooses the one with the shortest seek time.
                       </p>
                     </div>
                     
@@ -573,22 +583,23 @@ const SSTFVisualizer = () => {
 {`function SSTF_DiskScheduling(requestQueue, initialHeadPosition):
     currentHeadPosition = initialHeadPosition
     totalSeekTime = 0
-    remaining = copy(requestQueue)
+    unprocessedRequests = copy(requestQueue)
     
-    while remaining is not empty:
+    while unprocessedRequests is not empty:
         minDistance = infinity
         closestRequest = null
         
-        for each request in remaining:
+        for each request in unprocessedRequests:
             distance = abs(currentHeadPosition - request.position)
             if distance < minDistance:
                 minDistance = distance
                 closestRequest = request
+            endif
         endfor
         
         totalSeekTime = totalSeekTime + minDistance
         currentHeadPosition = closestRequest.position
-        remove closestRequest from remaining
+        remove closestRequest from unprocessedRequests
     endwhile
     
     return totalSeekTime`}
@@ -601,16 +612,18 @@ const SSTFVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Better average response time than FCFS</li>
-                        <li>Reduces total seek time</li>
+                        <li>Better performance than FCFS in most cases</li>
+                        <li>Minimizes average seek time</li>
                         <li>Simple to understand and implement</li>
+                        <li>Good performance with localized request patterns</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Can cause starvation of requests far from current position</li>
-                        <li>Not optimal - can lead to unnecessary back-and-forth movement</li>
-                        <li>Performance depends on the distribution of requests</li>
+                        <li>Can cause starvation for requests far from the head</li>
+                        <li>Not optimal - greedy approach doesn't guarantee global minimum</li>
+                        <li>May result in high variance in wait times</li>
+                        <li>Performance degrades with random request patterns</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -630,7 +643,7 @@ const SSTFVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n²)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        For each request to be processed, the algorithm searches through all remaining requests to find the closest one.
+                        For each request, the algorithm must search through all remaining unprocessed requests to find the closest one.
                       </p>
                     </div>
                     
@@ -642,7 +655,7 @@ const SSTFVisualizer = () => {
                         <span className="font-mono bg-drona-light px-2 py-1 rounded">O(n)</span> where n is the number of disk requests.
                       </p>
                       <p className="text-drona-gray">
-                        The space required is proportional to the number of requests to track which ones have been processed.
+                        Space is needed to maintain the list of unprocessed requests.
                       </p>
                     </div>
                     
@@ -651,7 +664,7 @@ const SSTFVisualizer = () => {
                     <div>
                       <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        SSTF generally performs better than FCFS but can still result in high variance in response times due to the possibility of starvation.
+                        SSTF generally provides better average seek time than FCFS but can suffer from starvation issues and doesn't guarantee optimal performance.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
