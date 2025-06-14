@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, Plus } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, SkipBack, SkipForward, Trash2 } from 'lucide-react';
 
 interface Item {
   id: number;
@@ -21,12 +22,7 @@ interface Step {
 }
 
 const ZeroOneKnapsackVisualizer = () => {
-  const [items, setItems] = useState<Item[]>([
-    { id: 1, name: "Item 1", weight: 2, value: 10 },
-    { id: 2, name: "Item 2", weight: 3, value: 20 },
-    { id: 3, name: "Item 3", weight: 5, value: 30 },
-    { id: 4, name: "Item 4", weight: 7, value: 40 },
-  ]);
+  const [items, setItems] = useState<Item[]>([]);
   const [capacity, setCapacity] = useState<number>(10);
   const [name, setName] = useState<string>("");
   const [weight, setWeight] = useState<string>("");
@@ -34,13 +30,20 @@ const ZeroOneKnapsackVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(800);
+  const [speed, setSpeed] = useState<number>(1000);
   const [optimalValue, setOptimalValue] = useState<number>(0);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
 
-  // Initialize solution
+  // Initialize solution when items or capacity change
   useEffect(() => {
-    solveKnapsack();
+    if (items.length > 0) {
+      solveKnapsack();
+    } else {
+      setSteps([]);
+      setOptimalValue(0);
+      setSelectedItems([]);
+      setCurrentStep(-1);
+    }
   }, [items, capacity]);
 
   const addItem = () => {
@@ -56,6 +59,10 @@ const ZeroOneKnapsackVisualizer = () => {
       setWeight("");
       setValue("");
     }
+  };
+
+  const removeItem = (id: number) => {
+    setItems(items.filter(item => item.id !== id));
   };
 
   const solveKnapsack = () => {
@@ -150,6 +157,21 @@ const ZeroOneKnapsackVisualizer = () => {
     setIsRunning(!isRunning);
   };
 
+  const skipToStart = () => {
+    setIsRunning(false);
+    setCurrentStep(-1);
+  };
+
+  const skipToEnd = () => {
+    setIsRunning(false);
+    setCurrentStep(steps.length - 1);
+  };
+
+  const handleStepChange = (value: number[]) => {
+    setIsRunning(false);
+    setCurrentStep(value[0]);
+  };
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
@@ -173,11 +195,15 @@ const ZeroOneKnapsackVisualizer = () => {
     
   const currentMessage = currentStep >= 0 && steps.length > 0
     ? steps[currentStep].message
+    : items.length === 0 
+    ? "Add items to start the visualization."
     : "Click 'Start Visualization' to see the 0/1 Knapsack algorithm in action.";
 
   const currentHighlight = currentStep >= 0 && steps.length > 0 && steps[currentStep].currentItem
     ? { item: steps[currentStep].currentItem, weight: steps[currentStep].currentWeight, selected: steps[currentStep].selected }
     : null;
+
+  const speedDisplay = ((2000 - speed) / 500).toFixed(1);
 
   return (
     <div className="min-h-screen bg-white">
@@ -254,22 +280,41 @@ const ZeroOneKnapsackVisualizer = () => {
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Weight</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {items.map((item) => (
-                          <tr key={item.id} className={
-                            currentHighlight && currentHighlight.item.id === item.id
-                              ? currentHighlight.selected
-                                ? 'bg-green-100'
-                                : 'bg-red-100'
-                              : ''
-                          }>
-                            <td className="px-4 py-2">{item.name}</td>
-                            <td className="px-4 py-2">{item.weight}</td>
-                            <td className="px-4 py-2">{item.value}</td>
+                        {items.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                              No items added yet. Add items to get started.
+                            </td>
                           </tr>
-                        ))}
+                        ) : (
+                          items.map((item) => (
+                            <tr key={item.id} className={
+                              currentHighlight && currentHighlight.item.id === item.id
+                                ? currentHighlight.selected
+                                  ? 'bg-green-100'
+                                  : 'bg-red-100'
+                                : ''
+                            }>
+                              <td className="px-4 py-2">{item.name}</td>
+                              <td className="px-4 py-2">{item.weight}</td>
+                              <td className="px-4 py-2">{item.value}</td>
+                              <td className="px-4 py-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => removeItem(item.id)}
+                                  disabled={isRunning}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -278,18 +323,21 @@ const ZeroOneKnapsackVisualizer = () => {
               
               <div className="flex flex-wrap gap-4 mt-6">
                 <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium">Speed:</label>
-                  <input
-                    type="range"
-                    min="200"
-                    max="2000"
-                    step="200"
-                    value={speed}
-                    onChange={(e) => setSpeed(parseInt(e.target.value))}
+                  <label className="text-sm font-medium">Speed: {speedDisplay}x</label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={(value) => setSpeed(value[0])}
+                    min={500}
+                    max={1500}
+                    step={250}
                     className="w-32"
                     disabled={isRunning}
                   />
                 </div>
+                
+                <Button onClick={skipToStart} disabled={steps.length === 0 || currentStep === -1 || isRunning}>
+                  <SkipBack className="mr-2 h-4 w-4" /> Start
+                </Button>
                 
                 <Button onClick={toggleRunning} disabled={steps.length === 0}>
                   {isRunning ? (
@@ -299,72 +347,98 @@ const ZeroOneKnapsackVisualizer = () => {
                   )}
                 </Button>
                 
+                <Button onClick={skipToEnd} disabled={steps.length === 0 || currentStep === steps.length - 1 || isRunning}>
+                  <SkipForward className="mr-2 h-4 w-4" /> End
+                </Button>
+                
                 <Button onClick={resetVisualization} variant="outline" disabled={isRunning || currentStep === -1}>
                   <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
               </div>
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Dynamic Programming Table</h2>
               
-              <div className="overflow-auto">
-                <table className="border-collapse border border-gray-300 mb-4">
-                  <thead>
-                    <tr>
-                      <th className="border border-gray-300 px-4 py-2 bg-gray-50">Item \ Weight</th>
-                      {Array.from({ length: capacity + 1 }, (_, i) => (
-                        <th 
-                          key={i} 
-                          className={`
-                            border border-gray-300 px-4 py-2 bg-gray-50
-                            ${currentHighlight && currentHighlight.weight === i ? 'bg-yellow-100' : ''}
-                          `}>
-                          {i}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentTable.map((row, i) => (
-                      <tr key={i}>
-                        <td className={`
-                          border border-gray-300 px-4 py-2 font-medium
-                          ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 ? 'bg-yellow-100' : ''}
-                        `}>
-                          {i === 0 ? '0' : items[i-1].name}
-                        </td>
-                        {row.map((cell, j) => (
-                          <td
-                            key={j}
-                            className={`
-                              border border-gray-300 px-4 py-2 text-center
-                              ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 && j === currentHighlight.weight ? 'bg-yellow-200 font-bold' : ''}
-                            `}
-                          >
-                            {cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-700">{currentMessage}</p>
-              </div>
-              
-              {currentStep === steps.length - 1 && (
-                <div className="mt-4 p-4 bg-green-50 rounded border border-green-200">
-                  <h3 className="font-semibold text-green-800">Final Solution</h3>
-                  <p className="text-green-700">Maximum value: {optimalValue}</p>
-                  <p className="text-green-700">
-                    Selected items: {selectedItems.map(item => item.name).join(", ")}
-                  </p>
+              {steps.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">Step:</span>
+                    <Slider
+                      value={[currentStep]}
+                      onValueChange={handleStepChange}
+                      min={-1}
+                      max={steps.length - 1}
+                      step={1}
+                      className="flex-1"
+                      disabled={isRunning}
+                    />
+                    <span className="text-sm text-gray-500 w-16">
+                      {currentStep + 1}/{steps.length}
+                    </span>
+                  </div>
                 </div>
               )}
             </Card>
+            
+            {items.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Dynamic Programming Table</h2>
+                
+                <div className="overflow-auto">
+                  <table className="border-collapse border border-gray-300 mb-4">
+                    <thead>
+                      <tr>
+                        <th className="border border-gray-300 px-4 py-2 bg-gray-50">Item \ Weight</th>
+                        {Array.from({ length: capacity + 1 }, (_, i) => (
+                          <th 
+                            key={i} 
+                            className={`
+                              border border-gray-300 px-4 py-2 bg-gray-50
+                              ${currentHighlight && currentHighlight.weight === i ? 'bg-yellow-100' : ''}
+                            `}>
+                            {i}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentTable.map((row, i) => (
+                        <tr key={i}>
+                          <td className={`
+                            border border-gray-300 px-4 py-2 font-medium
+                            ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 ? 'bg-yellow-100' : ''}
+                          `}>
+                            {i === 0 ? '0' : items[i-1].name}
+                          </td>
+                          {row.map((cell, j) => (
+                            <td
+                              key={j}
+                              className={`
+                                border border-gray-300 px-4 py-2 text-center
+                                ${currentHighlight && i === items.indexOf(currentHighlight.item) + 1 && j === currentHighlight.weight ? 'bg-yellow-200 font-bold' : ''}
+                              `}
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded">
+                  <p className="text-sm text-gray-700">{currentMessage}</p>
+                </div>
+                
+                {currentStep === steps.length - 1 && (
+                  <div className="mt-4 p-4 bg-green-50 rounded border border-green-200">
+                    <h3 className="font-semibold text-green-800">Final Solution</h3>
+                    <p className="text-green-700">Maximum value: {optimalValue}</p>
+                    <p className="text-green-700">
+                      Selected items: {selectedItems.length > 0 ? selectedItems.map(item => item.name).join(", ") : "None"}
+                    </p>
+                  </div>
+                )}
+              </Card>
+            )}
             
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-3">0-1 Knapsack Problem Explanation</h2>
