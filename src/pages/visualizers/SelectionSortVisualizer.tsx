@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +10,9 @@ import { Slider } from '@/components/ui/slider';
 
 interface SortStep {
   array: number[];
-  currentIndex: number | null;
-  minIndex: number | null;
+  currentMin: number;
+  currentIndex: number;
+  comparing: number;
   sortedIndices: number[];
   comparison?: string;
 }
@@ -21,11 +21,12 @@ const SelectionSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [arraySize, setArraySize] = useState<number>(10);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const [minIndex, setMinIndex] = useState<number | null>(null);
+  const [currentMin, setCurrentMin] = useState<number>(-1);
+  const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [comparing, setComparing] = useState<number>(-1);
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1);
   const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
   const [comparisons, setComparisons] = useState(0);
@@ -40,7 +41,7 @@ const SelectionSortVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isRunning, currentStep, sortSteps.length, speed]);
@@ -75,8 +76,9 @@ const SelectionSortVisualizer = () => {
   };
 
   const resetSort = () => {
-    setCurrentIndex(null);
-    setMinIndex(null);
+    setCurrentMin(-1);
+    setCurrentIndex(-1);
+    setComparing(-1);
     setSortedIndices([]);
     setIsRunning(false);
     setSortSteps([]);
@@ -92,21 +94,23 @@ const SelectionSortVisualizer = () => {
     
     steps.push({
       array: [...arrCopy],
-      currentIndex: null,
-      minIndex: null,
+      currentMin: -1,
+      currentIndex: -1,
+      comparing: -1,
       sortedIndices: [],
       comparison: 'Starting Selection Sort'
     });
     
     for (let i = 0; i < n - 1; i++) {
-      let minIdx = i;
+      let minIndex = i;
       
       steps.push({
         array: [...arrCopy],
+        currentMin: minIndex,
         currentIndex: i,
-        minIndex: minIdx,
+        comparing: -1,
         sortedIndices: Array.from({ length: i }, (_, k) => k),
-        comparison: `Finding minimum in unsorted part starting from index ${i}`
+        comparison: `Looking for minimum in unsorted portion starting at index ${i}`
       });
       
       for (let j = i + 1; j < n; j++) {
@@ -114,48 +118,53 @@ const SelectionSortVisualizer = () => {
         
         steps.push({
           array: [...arrCopy],
-          currentIndex: j,
-          minIndex: minIdx,
+          currentMin: minIndex,
+          currentIndex: i,
+          comparing: j,
           sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Comparing ${arrCopy[j]} with current minimum ${arrCopy[minIdx]}`
+          comparison: `Comparing ${arrCopy[j]} with current minimum ${arrCopy[minIndex]}`
         });
         
-        if (arrCopy[j] < arrCopy[minIdx]) {
-          minIdx = j;
+        if (arrCopy[j] < arrCopy[minIndex]) {
+          minIndex = j;
           steps.push({
             array: [...arrCopy],
-            currentIndex: j,
-            minIndex: minIdx,
+            currentMin: minIndex,
+            currentIndex: i,
+            comparing: j,
             sortedIndices: Array.from({ length: i }, (_, k) => k),
-            comparison: `New minimum found: ${arrCopy[minIdx]}`
+            comparison: `New minimum found: ${arrCopy[minIndex]} at index ${minIndex}`
           });
         }
       }
       
-      if (minIdx !== i) {
-        [arrCopy[i], arrCopy[minIdx]] = [arrCopy[minIdx], arrCopy[i]];
+      if (minIndex !== i) {
+        [arrCopy[i], arrCopy[minIndex]] = [arrCopy[minIndex], arrCopy[i]];
         steps.push({
           array: [...arrCopy],
+          currentMin: -1,
           currentIndex: i,
-          minIndex: minIdx,
-          sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Swapped ${arrCopy[minIdx]} with ${arrCopy[i]}`
+          comparing: -1,
+          sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
+          comparison: `Swapped ${arrCopy[i]} with ${arrCopy[minIndex]} and placed it in position ${i}`
+        });
+      } else {
+        steps.push({
+          array: [...arrCopy],
+          currentMin: -1,
+          currentIndex: i,
+          comparing: -1,
+          sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
+          comparison: `Element ${arrCopy[i]} is already in the correct position`
         });
       }
-      
-      steps.push({
-        array: [...arrCopy],
-        currentIndex: null,
-        minIndex: null,
-        sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
-        comparison: `Element ${arrCopy[i]} is now in its final position`
-      });
     }
     
     steps.push({
       array: [...arrCopy],
-      currentIndex: null,
-      minIndex: null,
+      currentMin: -1,
+      currentIndex: -1,
+      comparing: -1,
       sortedIndices: Array.from({ length: n }, (_, i) => i),
       comparison: 'Array is completely sorted!'
     });
@@ -183,8 +192,9 @@ const SelectionSortVisualizer = () => {
     
     const step = sortSteps[nextStepIndex];
     setArray(step.array);
+    setCurrentMin(step.currentMin);
     setCurrentIndex(step.currentIndex);
-    setMinIndex(step.minIndex);
+    setComparing(step.comparing);
     setSortedIndices(step.sortedIndices);
     setComparisons(nextStepIndex);
   };
@@ -197,8 +207,9 @@ const SelectionSortVisualizer = () => {
     
     const step = sortSteps[prevStepIndex];
     setArray(step.array);
+    setCurrentMin(step.currentMin);
     setCurrentIndex(step.currentIndex);
-    setMinIndex(step.minIndex);
+    setComparing(step.comparing);
     setSortedIndices(step.sortedIndices);
     setComparisons(prevStepIndex);
   };
@@ -211,8 +222,9 @@ const SelectionSortVisualizer = () => {
     
     const sortStep = sortSteps[step];
     setArray(sortStep.array);
+    setCurrentMin(sortStep.currentMin);
     setCurrentIndex(sortStep.currentIndex);
-    setMinIndex(sortStep.minIndex);
+    setComparing(sortStep.comparing);
     setSortedIndices(sortStep.sortedIndices);
     setComparisons(step);
   };
@@ -243,7 +255,7 @@ const SelectionSortVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Selection Sort Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Selection sort finds the minimum element in the unsorted part of the array and swaps it with the first unsorted element.
+            Selection sort finds the minimum element and places it at the beginning, then repeats for the remaining elements.
             <span className="font-semibold text-drona-green"> Time Complexity: O(n²)</span>
           </p>
         </div>
@@ -299,16 +311,19 @@ const SelectionSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {speed}x
                   </Label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={900}
-                    min={100}
-                    step={100}
-                    className="w-full"
-                  />
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-drona-gray">
                     <span>Slower</span>
                     <span>Faster</span>
@@ -441,8 +456,9 @@ const SelectionSortVisualizer = () => {
                           key={index}
                           className={`
                             w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${currentIndex === index ? 'bg-yellow-500 scale-110 shadow-lg' : 
-                              minIndex === index ? 'bg-purple-500 scale-105' : 
+                            ${index === comparing ? 'bg-orange-500 scale-110 shadow-lg' : 
+                              index === currentMin ? 'bg-red-500 scale-110 shadow-lg' :
+                              index === currentIndex ? 'bg-purple-500 scale-110 shadow-lg' :
                               sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
                           `}
                           style={{ 
@@ -468,12 +484,16 @@ const SelectionSortVisualizer = () => {
                         <span className="font-medium">Unsorted</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-yellow-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current position</span>
+                        <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
+                        <span className="font-medium">Current Position</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current minimum</span>
+                        <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
+                        <span className="font-medium">Current Min</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
+                        <span className="font-medium">Comparing</span>
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
@@ -487,9 +507,9 @@ const SelectionSortVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Find the minimum element in the unsorted part of the array.</li>
-                          <li>Swap it with the first element in the unsorted part.</li>
-                          <li>Move the boundary between sorted and unsorted parts one element to the right.</li>
+                          <li>Find the minimum element in the unsorted portion of the array.</li>
+                          <li>Swap it with the first element of the unsorted portion.</li>
+                          <li>Move the boundary of the sorted portion one position to the right.</li>
                           <li>Repeat until the entire array is sorted.</li>
                         </ol>
                       </CardContent>

@@ -1,33 +1,41 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 
 interface SortStep {
   array: number[];
-  auxiliaryArray: number[];
-  colorKey: Record<number, string>;
+  leftArray: number[];
+  rightArray: number[];
+  mergedArray: number[];
+  leftPointer: number;
+  rightPointer: number;
+  mergedPointer: number;
+  activeIndices: number[];
   comparison?: string;
-  mergeStart?: number;
-  mergeEnd?: number;
 }
 
 const MergeSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
-  const [arraySize, setArraySize] = useState<number>(10);
+  const [arraySize, setArraySize] = useState<number>(8);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
-  const [auxiliaryArray, setAuxiliaryArray] = useState<number[]>([]);
-  const [colorKey, setColorKey] = useState<Record<number, string>>({});
+  const [leftArray, setLeftArray] = useState<number[]>([]);
+  const [rightArray, setRightArray] = useState<number[]>([]);
+  const [mergedArray, setMergedArray] = useState<number[]>([]);
+  const [leftPointer, setLeftPointer] = useState<number>(-1);
+  const [rightPointer, setRightPointer] = useState<number>(-1);
+  const [mergedPointer, setMergedPointer] = useState<number>(-1);
+  const [activeIndices, setActiveIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1);
   const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
+  const [comparisons, setComparisons] = useState(0);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -39,7 +47,7 @@ const MergeSortVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isRunning, currentStep, sortSteps.length, speed]);
@@ -47,8 +55,6 @@ const MergeSortVisualizer = () => {
   const generateRandomArray = () => {
     const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100) + 1);
     setArray(newArray);
-    setAuxiliaryArray([...newArray]);
-    resetColors();
     resetSort();
   };
 
@@ -68,194 +74,188 @@ const MergeSortVisualizer = () => {
       if (newArray.length === 0) throw new Error('Empty array');
       
       setArray(newArray);
-      setAuxiliaryArray([...newArray]);
       setCustomArrayInput('');
-      resetColors();
       resetSort();
     } catch (error) {
       console.error("Invalid array format");
     }
   };
 
-  const resetColors = () => {
-    const newColorKey: Record<number, string> = {};
-    for (let i = 0; i < array.length; i++) {
-      newColorKey[i] = 'bg-blue-500';
-    }
-    setColorKey(newColorKey);
-  };
-
   const resetSort = () => {
+    setLeftArray([]);
+    setRightArray([]);
+    setMergedArray([]);
+    setLeftPointer(-1);
+    setRightPointer(-1);
+    setMergedPointer(-1);
+    setActiveIndices([]);
     setIsRunning(false);
     setSortSteps([]);
     setCurrentStep(-1);
-    resetColors();
+    setComparisons(0);
   };
 
-  const calculateSortSteps = async (arr: number[]) => {
+  const calculateSortSteps = (arr: number[]) => {
     const steps: SortStep[] = [];
-    const arrCopy = [...arr];
-    const auxCopy = [...arr];
-    const initialColorKey: Record<number, string> = {};
+    let compCount = 0;
     
-    for (let i = 0; i < arrCopy.length; i++) {
-      initialColorKey[i] = 'bg-blue-500';
-    }
+    const mergeSort = (array: number[], start: number = 0): number[] => {
+      if (array.length <= 1) return array;
+      
+      const mid = Math.floor(array.length / 2);
+      const left = array.slice(0, mid);
+      const right = array.slice(mid);
+      
+      steps.push({
+        array: [...arr],
+        leftArray: left,
+        rightArray: right,
+        mergedArray: [],
+        leftPointer: -1,
+        rightPointer: -1,
+        mergedPointer: -1,
+        activeIndices: Array.from({ length: array.length }, (_, i) => start + i),
+        comparison: `Dividing array into left [${left.join(', ')}] and right [${right.join(', ')}]`
+      });
+      
+      const sortedLeft = mergeSort(left, start);
+      const sortedRight = mergeSort(right, start + mid);
+      
+      return merge(sortedLeft, sortedRight, start);
+    };
+    
+    const merge = (left: number[], right: number[], start: number): number[] => {
+      const result: number[] = [];
+      let leftIndex = 0;
+      let rightIndex = 0;
+      
+      steps.push({
+        array: [...arr],
+        leftArray: left,
+        rightArray: right,
+        mergedArray: [],
+        leftPointer: 0,
+        rightPointer: 0,
+        mergedPointer: 0,
+        activeIndices: Array.from({ length: left.length + right.length }, (_, i) => start + i),
+        comparison: `Starting to merge [${left.join(', ')}] and [${right.join(', ')}]`
+      });
+      
+      while (leftIndex < left.length && rightIndex < right.length) {
+        compCount++;
+        
+        if (left[leftIndex] <= right[rightIndex]) {
+          result.push(left[leftIndex]);
+          steps.push({
+            array: [...arr],
+            leftArray: left,
+            rightArray: right,
+            mergedArray: [...result],
+            leftPointer: leftIndex,
+            rightPointer: rightIndex,
+            mergedPointer: result.length - 1,
+            activeIndices: Array.from({ length: left.length + right.length }, (_, i) => start + i),
+            comparison: `${left[leftIndex]} ≤ ${right[rightIndex]}, taking ${left[leftIndex]} from left`
+          });
+          leftIndex++;
+        } else {
+          result.push(right[rightIndex]);
+          steps.push({
+            array: [...arr],
+            leftArray: left,
+            rightArray: right,
+            mergedArray: [...result],
+            leftPointer: leftIndex,
+            rightPointer: rightIndex,
+            mergedPointer: result.length - 1,
+            activeIndices: Array.from({ length: left.length + right.length }, (_, i) => start + i),
+            comparison: `${left[leftIndex]} > ${right[rightIndex]}, taking ${right[rightIndex]} from right`
+          });
+          rightIndex++;
+        }
+      }
+      
+      while (leftIndex < left.length) {
+        result.push(left[leftIndex]);
+        steps.push({
+          array: [...arr],
+          leftArray: left,
+          rightArray: right,
+          mergedArray: [...result],
+          leftPointer: leftIndex,
+          rightPointer: -1,
+          mergedPointer: result.length - 1,
+          activeIndices: Array.from({ length: left.length + right.length }, (_, i) => start + i),
+          comparison: `Taking remaining element ${left[leftIndex]} from left`
+        });
+        leftIndex++;
+      }
+      
+      while (rightIndex < right.length) {
+        result.push(right[rightIndex]);
+        steps.push({
+          array: [...arr],
+          leftArray: left,
+          rightArray: right,
+          mergedArray: [...result],
+          leftPointer: -1,
+          rightPointer: rightIndex,
+          mergedPointer: result.length - 1,
+          activeIndices: Array.from({ length: left.length + right.length }, (_, i) => start + i),
+          comparison: `Taking remaining element ${right[rightIndex]} from right`
+        });
+        rightIndex++;
+      }
+      
+      steps.push({
+        array: [...arr],
+        leftArray: [],
+        rightArray: [],
+        mergedArray: result,
+        leftPointer: -1,
+        rightPointer: -1,
+        mergedPointer: -1,
+        activeIndices: Array.from({ length: result.length }, (_, i) => start + i),
+        comparison: `Merged result: [${result.join(', ')}]`
+      });
+      
+      return result;
+    };
     
     steps.push({
-      array: [...arrCopy],
-      auxiliaryArray: [...auxCopy],
-      colorKey: { ...initialColorKey },
+      array: [...arr],
+      leftArray: [],
+      rightArray: [],
+      mergedArray: [],
+      leftPointer: -1,
+      rightPointer: -1,
+      mergedPointer: -1,
+      activeIndices: [],
       comparison: 'Starting Merge Sort - Divide and Conquer approach'
     });
     
-    await mergeSortSteps(arrCopy, auxCopy, 0, arrCopy.length - 1, steps, initialColorKey);
-    
-    const finalColorKey: Record<number, string> = {};
-    for (let i = 0; i < arrCopy.length; i++) {
-      finalColorKey[i] = 'bg-green-500';
-    }
+    const sortedArray = mergeSort([...arr]);
     
     steps.push({
-      array: [...arrCopy],
-      auxiliaryArray: [...auxCopy],
-      colorKey: finalColorKey,
+      array: sortedArray,
+      leftArray: [],
+      rightArray: [],
+      mergedArray: [],
+      leftPointer: -1,
+      rightPointer: -1,
+      mergedPointer: -1,
+      activeIndices: [],
       comparison: 'Array is completely sorted!'
     });
     
-    return steps;
+    return { steps, totalComparisons: compCount };
   };
 
-  const mergeSortSteps = async (
-    mainArray: number[], 
-    auxiliaryArray: number[], 
-    startIdx: number, 
-    endIdx: number, 
-    steps: SortStep[], 
-    currentColorKey: Record<number, string>
-  ) => {
-    if (startIdx === endIdx) return;
-    
-    const middleIdx = Math.floor((startIdx + endIdx) / 2);
-    
-    const newColorKey = { ...currentColorKey };
-    for (let i = startIdx; i <= endIdx; i++) {
-      newColorKey[i] = 'bg-yellow-500';
-    }
-    
-    steps.push({
-      array: [...mainArray],
-      auxiliaryArray: [...auxiliaryArray],
-      colorKey: newColorKey,
-      comparison: `Dividing subarray from index ${startIdx} to ${endIdx}`,
-      mergeStart: startIdx,
-      mergeEnd: endIdx
-    });
-    
-    await mergeSortSteps(auxiliaryArray, mainArray, startIdx, middleIdx, steps, newColorKey);
-    await mergeSortSteps(auxiliaryArray, mainArray, middleIdx + 1, endIdx, steps, newColorKey);
-    await doMergeSteps(mainArray, auxiliaryArray, startIdx, middleIdx, endIdx, steps, newColorKey);
-  };
-  
-  const doMergeSteps = async (
-    mainArray: number[], 
-    auxiliaryArray: number[], 
-    startIdx: number, 
-    middleIdx: number, 
-    endIdx: number, 
-    steps: SortStep[], 
-    currentColorKey: Record<number, string>
-  ) => {
-    let k = startIdx;
-    let i = startIdx;
-    let j = middleIdx + 1;
-    
-    steps.push({
-      array: [...mainArray],
-      auxiliaryArray: [...auxiliaryArray],
-      colorKey: { ...currentColorKey },
-      comparison: `Merging subarrays [${startIdx}..${middleIdx}] and [${middleIdx + 1}..${endIdx}]`
-    });
-    
-    while (i <= middleIdx && j <= endIdx) {
-      const newColorKey = { ...currentColorKey };
-      newColorKey[i] = 'bg-purple-500';
-      newColorKey[j] = 'bg-purple-500';
-      
-      steps.push({
-        array: [...mainArray],
-        auxiliaryArray: [...auxiliaryArray],
-        colorKey: newColorKey,
-        comparison: `Comparing ${auxiliaryArray[i]} and ${auxiliaryArray[j]}`
-      });
-      
-      if (auxiliaryArray[i] <= auxiliaryArray[j]) {
-        mainArray[k] = auxiliaryArray[i];
-        i++;
-      } else {
-        mainArray[k] = auxiliaryArray[j];
-        j++;
-      }
-      k++;
-      
-      steps.push({
-        array: [...mainArray],
-        auxiliaryArray: [...auxiliaryArray],
-        colorKey: { ...newColorKey },
-        comparison: `Placed ${mainArray[k-1]} at position ${k-1}`
-      });
-    }
-    
-    while (i <= middleIdx) {
-      const newColorKey = { ...currentColorKey };
-      newColorKey[i] = 'bg-purple-500';
-      
-      steps.push({
-        array: [...mainArray],
-        auxiliaryArray: [...auxiliaryArray],
-        colorKey: newColorKey,
-        comparison: `Copying remaining element ${auxiliaryArray[i]} from left subarray`
-      });
-      
-      mainArray[k] = auxiliaryArray[i];
-      i++;
-      k++;
-    }
-    
-    while (j <= endIdx) {
-      const newColorKey = { ...currentColorKey };
-      newColorKey[j] = 'bg-purple-500';
-      
-      steps.push({
-        array: [...mainArray],
-        auxiliaryArray: [...auxiliaryArray],
-        colorKey: newColorKey,
-        comparison: `Copying remaining element ${auxiliaryArray[j]} from right subarray`
-      });
-      
-      mainArray[k] = auxiliaryArray[j];
-      j++;
-      k++;
-    }
-    
-    const mergedColorKey = { ...currentColorKey };
-    for (let idx = startIdx; idx <= endIdx; idx++) {
-      mergedColorKey[idx] = 'bg-green-500';
-    }
-    
-    steps.push({
-      array: [...mainArray],
-      auxiliaryArray: [...auxiliaryArray],
-      colorKey: mergedColorKey,
-      comparison: `Merged subarray from ${startIdx} to ${endIdx} is now sorted`
-    });
-  };
-
-  const startSort = async () => {
+  const startSort = () => {
     if (array.length === 0 || isRunning) return;
     
     resetSort();
-    const steps = await calculateSortSteps(array);
+    const { steps } = calculateSortSteps(array);
     setSortSteps(steps);
     setIsRunning(true);
   };
@@ -271,8 +271,14 @@ const MergeSortVisualizer = () => {
     
     const step = sortSteps[nextStepIndex];
     setArray(step.array);
-    setAuxiliaryArray(step.auxiliaryArray);
-    setColorKey(step.colorKey);
+    setLeftArray(step.leftArray);
+    setRightArray(step.rightArray);
+    setMergedArray(step.mergedArray);
+    setLeftPointer(step.leftPointer);
+    setRightPointer(step.rightPointer);
+    setMergedPointer(step.mergedPointer);
+    setActiveIndices(step.activeIndices);
+    setComparisons(nextStepIndex);
   };
 
   const prevStep = () => {
@@ -283,8 +289,14 @@ const MergeSortVisualizer = () => {
     
     const step = sortSteps[prevStepIndex];
     setArray(step.array);
-    setAuxiliaryArray(step.auxiliaryArray);
-    setColorKey(step.colorKey);
+    setLeftArray(step.leftArray);
+    setRightArray(step.rightArray);
+    setMergedArray(step.mergedArray);
+    setLeftPointer(step.leftPointer);
+    setRightPointer(step.rightPointer);
+    setMergedPointer(step.mergedPointer);
+    setActiveIndices(step.activeIndices);
+    setComparisons(prevStepIndex);
   };
 
   const goToStep = (step: number) => {
@@ -295,8 +307,14 @@ const MergeSortVisualizer = () => {
     
     const sortStep = sortSteps[step];
     setArray(sortStep.array);
-    setAuxiliaryArray(sortStep.auxiliaryArray);
-    setColorKey(sortStep.colorKey);
+    setLeftArray(sortStep.leftArray);
+    setRightArray(sortStep.rightArray);
+    setMergedArray(sortStep.mergedArray);
+    setLeftPointer(sortStep.leftPointer);
+    setRightPointer(sortStep.rightPointer);
+    setMergedPointer(sortStep.mergedPointer);
+    setActiveIndices(sortStep.activeIndices);
+    setComparisons(step);
   };
 
   const togglePlayPause = () => {
@@ -308,7 +326,7 @@ const MergeSortVisualizer = () => {
   };
 
   const getBarHeight = (value: number) => {
-    const maxHeight = 200;
+    const maxHeight = 150;
     const maxValue = Math.max(...array, 1);
     return (value / maxValue) * maxHeight;
   };
@@ -325,7 +343,7 @@ const MergeSortVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Merge Sort Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Merge sort is a divide-and-conquer algorithm that divides the array in half, sorts each half, and then merges them back together.
+            Merge sort divides the array into smaller subarrays, sorts them, and then merges them back together.
             <span className="font-semibold text-drona-green"> Time Complexity: O(n log n)</span>
           </p>
         </div>
@@ -344,9 +362,9 @@ const MergeSortVisualizer = () => {
                     <Input
                       type="number"
                       value={arraySize}
-                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
-                      min={5}
-                      max={20}
+                      onChange={(e) => setArraySize(Math.max(4, Math.min(16, parseInt(e.target.value) || 8)))}
+                      min={4}
+                      max={16}
                       className="border-2 focus:border-drona-green"
                     />
                   </div>
@@ -381,16 +399,19 @@ const MergeSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {speed}x
                   </Label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={900}
-                    min={100}
-                    step={100}
-                    className="w-full"
-                  />
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-drona-gray">
                     <span>Slower</span>
                     <span>Faster</span>
@@ -517,13 +538,13 @@ const MergeSortVisualizer = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    <div className="flex items-end justify-center gap-1 h-60">
+                    <div className="flex items-end justify-center gap-1 h-40">
                       {array.map((value, index) => (
                         <div
                           key={index}
                           className={`
-                            w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${colorKey[index] || 'bg-blue-500'}
+                            w-8 transition-all flex items-center justify-center font-bold text-white rounded-t-lg text-sm
+                            ${activeIndices.includes(index) ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-blue-500'}
                           `}
                           style={{ 
                             height: `${getBarHeight(value)}px`,
@@ -534,6 +555,67 @@ const MergeSortVisualizer = () => {
                       ))}
                     </div>
 
+                    {(leftArray.length > 0 || rightArray.length > 0 || mergedArray.length > 0) && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {leftArray.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-semibold text-drona-dark">Left Array</h3>
+                            <div className="flex gap-1 justify-center">
+                              {leftArray.map((value, index) => (
+                                <div
+                                  key={index}
+                                  className={`
+                                    w-8 h-8 flex items-center justify-center font-bold text-white rounded text-sm
+                                    ${index === leftPointer ? 'bg-red-500 scale-110' : 'bg-blue-400'}
+                                  `}
+                                >
+                                  {value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {rightArray.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-semibold text-drona-dark">Right Array</h3>
+                            <div className="flex gap-1 justify-center">
+                              {rightArray.map((value, index) => (
+                                <div
+                                  key={index}
+                                  className={`
+                                    w-8 h-8 flex items-center justify-center font-bold text-white rounded text-sm
+                                    ${index === rightPointer ? 'bg-red-500 scale-110' : 'bg-green-400'}
+                                  `}
+                                >
+                                  {value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {mergedArray.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-semibold text-drona-dark">Merged Array</h3>
+                            <div className="flex gap-1 justify-center">
+                              {mergedArray.map((value, index) => (
+                                <div
+                                  key={index}
+                                  className={`
+                                    w-8 h-8 flex items-center justify-center font-bold text-white rounded text-sm
+                                    ${index === mergedPointer ? 'bg-purple-500 scale-110' : 'bg-gray-500'}
+                                  `}
+                                >
+                                  {value}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {currentStep >= 0 && currentStep < sortSteps.length && (
                       <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
                         <p className="text-lg font-semibold text-drona-dark">
@@ -542,22 +624,26 @@ const MergeSortVisualizer = () => {
                       </div>
                     )}
                     
-                    <div className="flex justify-center gap-6">
+                    <div className="flex justify-center gap-6 flex-wrap">
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
-                        <span className="font-medium">Unsorted</span>
+                        <span className="font-medium">Original Array</span>
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-yellow-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current subarray</span>
+                        <span className="font-medium">Active Section</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
-                        <span className="font-medium">Comparing</span>
+                        <div className="w-4 h-4 bg-blue-400 mr-2 rounded"></div>
+                        <span className="font-medium">Left Array</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
-                        <span className="font-medium">Sorted</span>
+                        <div className="w-4 h-4 bg-green-400 mr-2 rounded"></div>
+                        <span className="font-medium">Right Array</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
+                        <span className="font-medium">Current Pointer</span>
                       </div>
                     </div>
                     
@@ -567,10 +653,10 @@ const MergeSortVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Divide the unsorted array into n subarrays, each containing one element (a single element is considered sorted).</li>
-                          <li>Repeatedly merge subarrays to produce new sorted subarrays until there is only one subarray remaining.</li>
-                          <li>When merging two sorted subarrays, compare the smallest elements of both and place the smaller one in the result array.</li>
-                          <li>Continue this process until all elements are merged into one sorted array.</li>
+                          <li>Divide the array into two halves recursively until each subarray has only one element.</li>
+                          <li>Merge the subarrays back together by comparing elements from both sides.</li>
+                          <li>Always take the smaller element and place it in the merged array.</li>
+                          <li>Continue until all elements are merged into a single sorted array.</li>
                         </ol>
                       </CardContent>
                     </Card>

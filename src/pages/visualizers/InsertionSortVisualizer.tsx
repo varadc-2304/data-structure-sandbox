@@ -1,33 +1,33 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 
 interface SortStep {
   array: number[];
-  currentIndex: number | null;
-  sortedUpToIndex: number;
+  currentIndex: number;
+  comparing: number;
+  sortedIndices: number[];
   comparison?: string;
-  keyValue?: number;
 }
 
 const InsertionSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [arraySize, setArraySize] = useState<number>(10);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const [sortedUpToIndex, setSortedUpToIndex] = useState<number>(-1);
+  const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [comparing, setComparing] = useState<number>(-1);
+  const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1);
   const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [keyValue, setKeyValue] = useState<number | null>(null);
+  const [comparisons, setComparisons] = useState(0);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -39,7 +39,7 @@ const InsertionSortVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isRunning, currentStep, sortSteps.length, speed]);
@@ -74,87 +74,102 @@ const InsertionSortVisualizer = () => {
   };
 
   const resetSort = () => {
-    setCurrentIndex(null);
-    setSortedUpToIndex(-1);
+    setCurrentIndex(-1);
+    setComparing(-1);
+    setSortedIndices([]);
     setIsRunning(false);
     setSortSteps([]);
     setCurrentStep(-1);
-    setKeyValue(null);
+    setComparisons(0);
   };
 
   const calculateSortSteps = (arr: number[]) => {
     const steps: SortStep[] = [];
     const arrCopy = [...arr];
     const n = arrCopy.length;
+    let compCount = 0;
     
     steps.push({
       array: [...arrCopy],
-      currentIndex: null,
-      sortedUpToIndex: 0,
+      currentIndex: -1,
+      comparing: -1,
+      sortedIndices: [0],
       comparison: 'Starting Insertion Sort - First element is considered sorted'
     });
     
     for (let i = 1; i < n; i++) {
       const key = arrCopy[i];
+      let j = i - 1;
       
       steps.push({
         array: [...arrCopy],
         currentIndex: i,
-        sortedUpToIndex: i - 1,
-        keyValue: key,
-        comparison: `Taking element ${key} at position ${i} as key`
+        comparing: -1,
+        sortedIndices: Array.from({ length: i }, (_, k) => k),
+        comparison: `Taking element ${key} at position ${i} to insert into sorted portion`
       });
       
-      let j = i - 1;
-      
       while (j >= 0 && arrCopy[j] > key) {
+        compCount++;
+        
         steps.push({
           array: [...arrCopy],
-          currentIndex: j,
-          sortedUpToIndex: i - 1,
-          keyValue: key,
-          comparison: `Comparing ${arrCopy[j]} > ${key}, shifting ${arrCopy[j]} to the right`
+          currentIndex: i,
+          comparing: j,
+          sortedIndices: Array.from({ length: i }, (_, k) => k),
+          comparison: `Comparing ${key} with ${arrCopy[j]} - ${key} is smaller, shifting ${arrCopy[j]} right`
         });
         
         arrCopy[j + 1] = arrCopy[j];
+        j--;
         
         steps.push({
           array: [...arrCopy],
-          currentIndex: j,
-          sortedUpToIndex: i - 1,
-          keyValue: key,
-          comparison: `Shifted ${arrCopy[j]} to position ${j + 1}`
+          currentIndex: i,
+          comparing: j >= 0 ? j : -1,
+          sortedIndices: Array.from({ length: i }, (_, k) => k),
+          comparison: `Shifted ${arrCopy[j + 2]} to position ${j + 2}`
         });
-        
-        j--;
+      }
+      
+      if (j >= 0) {
+        compCount++;
+        steps.push({
+          array: [...arrCopy],
+          currentIndex: i,
+          comparing: j,
+          sortedIndices: Array.from({ length: i }, (_, k) => k),
+          comparison: `Comparing ${key} with ${arrCopy[j]} - ${key} is not smaller, found correct position`
+        });
       }
       
       arrCopy[j + 1] = key;
       
       steps.push({
         array: [...arrCopy],
-        currentIndex: j + 1,
-        sortedUpToIndex: i,
-        keyValue: key,
-        comparison: `Inserted key ${key} at position ${j + 1}`
+        currentIndex: -1,
+        comparing: -1,
+        sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
+        comparison: `Inserted ${key} at position ${j + 1}. First ${i + 1} elements are now sorted`
       });
     }
     
     steps.push({
       array: [...arrCopy],
-      currentIndex: null,
-      sortedUpToIndex: n - 1,
+      currentIndex: -1,
+      comparing: -1,
+      sortedIndices: Array.from({ length: n }, (_, i) => i),
       comparison: 'Array is completely sorted!'
     });
     
-    return steps;
+    return { steps, totalComparisons: compCount };
   };
 
   const startSort = () => {
     if (array.length === 0 || isRunning) return;
     
     resetSort();
-    const steps = calculateSortSteps(array);
+    const { steps } = calculateSortSteps(array);
     setSortSteps(steps);
     setIsRunning(true);
   };
@@ -171,8 +186,9 @@ const InsertionSortVisualizer = () => {
     const step = sortSteps[nextStepIndex];
     setArray(step.array);
     setCurrentIndex(step.currentIndex);
-    setSortedUpToIndex(step.sortedUpToIndex);
-    setKeyValue(step.keyValue || null);
+    setComparing(step.comparing);
+    setSortedIndices(step.sortedIndices);
+    setComparisons(nextStepIndex);
   };
 
   const prevStep = () => {
@@ -184,8 +200,9 @@ const InsertionSortVisualizer = () => {
     const step = sortSteps[prevStepIndex];
     setArray(step.array);
     setCurrentIndex(step.currentIndex);
-    setSortedUpToIndex(step.sortedUpToIndex);
-    setKeyValue(step.keyValue || null);
+    setComparing(step.comparing);
+    setSortedIndices(step.sortedIndices);
+    setComparisons(prevStepIndex);
   };
 
   const goToStep = (step: number) => {
@@ -197,8 +214,9 @@ const InsertionSortVisualizer = () => {
     const sortStep = sortSteps[step];
     setArray(sortStep.array);
     setCurrentIndex(sortStep.currentIndex);
-    setSortedUpToIndex(sortStep.sortedUpToIndex);
-    setKeyValue(sortStep.keyValue || null);
+    setComparing(sortStep.comparing);
+    setSortedIndices(sortStep.sortedIndices);
+    setComparisons(step);
   };
 
   const togglePlayPause = () => {
@@ -227,7 +245,7 @@ const InsertionSortVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Insertion Sort Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Insertion sort builds the sorted array one item at a time, taking items from the unsorted part and inserting them at the correct position.
+            Insertion sort builds the sorted array one element at a time by inserting each element into its correct position.
             <span className="font-semibold text-drona-green"> Time Complexity: O(n²)</span>
           </p>
         </div>
@@ -283,16 +301,19 @@ const InsertionSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {speed}x
                   </Label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={900}
-                    min={100}
-                    step={100}
-                    className="w-full"
-                  />
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-drona-gray">
                     <span>Slower</span>
                     <span>Faster</span>
@@ -394,12 +415,10 @@ const InsertionSortVisualizer = () => {
                     <p className="text-sm font-semibold text-drona-gray">Array Size</p>
                     <p className="text-3xl font-bold text-drona-dark">{array.length}</p>
                   </div>
-                  {keyValue && (
-                    <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                      <p className="text-sm font-semibold text-drona-gray">Current Key</p>
-                      <p className="text-3xl font-bold text-drona-dark">{keyValue}</p>
-                    </div>
-                  )}
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
+                    <p className="text-xl font-bold text-drona-dark">{sortSteps.length}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -427,8 +446,9 @@ const InsertionSortVisualizer = () => {
                           key={index}
                           className={`
                             w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${currentIndex === index ? 'bg-yellow-500 scale-110 shadow-lg' : 
-                              index <= sortedUpToIndex ? 'bg-green-500' : 'bg-blue-500'}
+                            ${index === currentIndex ? 'bg-red-500 scale-110 shadow-lg' : 
+                              index === comparing ? 'bg-orange-500 scale-110 shadow-lg' :
+                              sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
                           `}
                           style={{ 
                             height: `${getBarHeight(value)}px`,
@@ -453,12 +473,16 @@ const InsertionSortVisualizer = () => {
                         <span className="font-medium">Unsorted</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-yellow-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current element</span>
+                        <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
+                        <span className="font-medium">Current Element</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
+                        <span className="font-medium">Comparing</span>
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
-                        <span className="font-medium">Sorted portion</span>
+                        <span className="font-medium">Sorted</span>
                       </div>
                     </div>
                     
@@ -468,11 +492,11 @@ const InsertionSortVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Start with the second element as the 'current element' (first element is considered sorted).</li>
-                          <li>Compare the current element with all elements in the sorted portion.</li>
-                          <li>Shift elements in the sorted portion to the right if they are greater than the current element.</li>
-                          <li>Insert the current element at the correct position in the sorted portion.</li>
-                          <li>Move to the next unsorted element and repeat until the array is sorted.</li>
+                          <li>Start with the second element (first element is considered sorted).</li>
+                          <li>Compare the current element with elements in the sorted portion.</li>
+                          <li>Shift larger elements to the right to make space.</li>
+                          <li>Insert the current element in its correct position.</li>
+                          <li>Repeat until all elements are processed.</li>
                         </ol>
                       </CardContent>
                     </Card>

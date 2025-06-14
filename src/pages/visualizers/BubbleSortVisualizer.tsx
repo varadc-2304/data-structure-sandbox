@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +22,7 @@ const BubbleSortVisualizer = () => {
   const [currentSwapIndices, setCurrentSwapIndices] = useState<number[]>([]);
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1);
   const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
   const [comparisons, setComparisons] = useState(0);
@@ -38,7 +37,7 @@ const BubbleSortVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isRunning, currentStep, sortSteps.length, speed]);
@@ -274,16 +273,19 @@ const BubbleSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {speed}x
                   </Label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={900}
-                    min={100}
-                    step={100}
-                    className="w-full"
-                  />
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-drona-gray">
                     <span>Slower</span>
                     <span>Faster</span>

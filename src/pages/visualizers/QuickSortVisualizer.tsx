@@ -1,19 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
 
 interface SortStep {
   array: number[];
-  pivotIndex: number | null;
-  currentIndices: number[];
-  sortedIndices: number[];
+  pivotIndex: number;
+  low: number;
+  high: number;
+  i: number;
+  j: number;
+  partitionedIndices: number[];
   comparison?: string;
 }
 
@@ -21,13 +23,17 @@ const QuickSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [arraySize, setArraySize] = useState<number>(10);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
-  const [pivotIndex, setPivotIndex] = useState<number | null>(null);
-  const [currentIndices, setCurrentIndices] = useState<number[]>([]);
-  const [sortedIndices, setSortedIndices] = useState<number[]>([]);
+  const [pivotIndex, setPivotIndex] = useState<number>(-1);
+  const [low, setLow] = useState<number>(-1);
+  const [high, setHigh] = useState<number>(-1);
+  const [i, setI] = useState<number>(-1);
+  const [j, setJ] = useState<number>(-1);
+  const [partitionedIndices, setPartitionedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1);
   const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
+  const [comparisons, setComparisons] = useState(0);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -39,7 +45,7 @@ const QuickSortVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isRunning, currentStep, sortSteps.length, speed]);
@@ -47,7 +53,7 @@ const QuickSortVisualizer = () => {
   const generateRandomArray = () => {
     const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100) + 1);
     setArray(newArray);
-    resetVisualization();
+    resetSort();
   };
 
   const generateCustomArray = () => {
@@ -67,144 +73,132 @@ const QuickSortVisualizer = () => {
       
       setArray(newArray);
       setCustomArrayInput('');
-      resetVisualization();
+      resetSort();
     } catch (error) {
       console.error("Invalid array format");
     }
   };
 
-  const resetVisualization = () => {
-    setPivotIndex(null);
-    setCurrentIndices([]);
-    setSortedIndices([]);
+  const resetSort = () => {
+    setPivotIndex(-1);
+    setLow(-1);
+    setHigh(-1);
+    setI(-1);
+    setJ(-1);
+    setPartitionedIndices([]);
     setIsRunning(false);
     setSortSteps([]);
     setCurrentStep(-1);
+    setComparisons(0);
   };
 
   const calculateSortSteps = (arr: number[]) => {
     const steps: SortStep[] = [];
     const arrCopy = [...arr];
+    let compCount = 0;
+    
+    const quickSort = (array: number[], low: number, high: number) => {
+      if (low < high) {
+        steps.push({
+          array: [...array],
+          pivotIndex: high,
+          low,
+          high,
+          i: -1,
+          j: -1,
+          partitionedIndices: [],
+          comparison: `Sorting subarray from index ${low} to ${high}, choosing pivot ${array[high]}`
+        });
+        
+        const pivotIndex = partition(array, low, high);
+        quickSort(array, low, pivotIndex - 1);
+        quickSort(array, pivotIndex + 1, high);
+      }
+    };
+    
+    const partition = (array: number[], low: number, high: number): number => {
+      const pivot = array[high];
+      let i = low - 1;
+      
+      for (let j = low; j < high; j++) {
+        compCount++;
+        
+        steps.push({
+          array: [...array],
+          pivotIndex: high,
+          low,
+          high,
+          i: i + 1,
+          j,
+          partitionedIndices: [],
+          comparison: `Comparing ${array[j]} with pivot ${pivot}`
+        });
+        
+        if (array[j] <= pivot) {
+          i++;
+          [array[i], array[j]] = [array[j], array[i]];
+          
+          steps.push({
+            array: [...array],
+            pivotIndex: high,
+            low,
+            high,
+            i,
+            j,
+            partitionedIndices: [],
+            comparison: `${array[j]} ≤ ${pivot}, swapped with element at index ${i}`
+          });
+        }
+      }
+      
+      [array[i + 1], array[high]] = [array[high], array[i + 1]];
+      
+      steps.push({
+        array: [...array],
+        pivotIndex: i + 1,
+        low,
+        high,
+        i: -1,
+        j: -1,
+        partitionedIndices: Array.from({ length: high - low + 1 }, (_, k) => low + k),
+        comparison: `Placed pivot ${pivot} at its correct position ${i + 1}`
+      });
+      
+      return i + 1;
+    };
     
     steps.push({
       array: [...arrCopy],
-      pivotIndex: null,
-      currentIndices: [],
-      sortedIndices: [],
-      comparison: 'Starting Quick Sort - Divide and Conquer approach'
+      pivotIndex: -1,
+      low: -1,
+      high: -1,
+      i: -1,
+      j: -1,
+      partitionedIndices: [],
+      comparison: 'Starting Quick Sort - Divide and Conquer with partitioning'
     });
     
-    quickSortSteps(arrCopy, 0, arrCopy.length - 1, steps);
+    quickSort(arrCopy, 0, arrCopy.length - 1);
     
     steps.push({
       array: [...arrCopy],
-      pivotIndex: null,
-      currentIndices: [],
-      sortedIndices: Array.from({ length: arrCopy.length }, (_, i) => i),
+      pivotIndex: -1,
+      low: -1,
+      high: -1,
+      i: -1,
+      j: -1,
+      partitionedIndices: Array.from({ length: arrCopy.length }, (_, i) => i),
       comparison: 'Array is completely sorted!'
     });
     
-    return steps;
-  };
-
-  const quickSortSteps = (arr: number[], low: number, high: number, steps: SortStep[]) => {
-    if (low < high) {
-      const pivotIdx = partitionSteps(arr, low, high, steps);
-      
-      steps.push({
-        array: [...arr],
-        pivotIndex: null,
-        currentIndices: [],
-        sortedIndices: [...steps[steps.length - 1].sortedIndices, pivotIdx],
-        comparison: `Pivot ${arr[pivotIdx]} is now in its final position at index ${pivotIdx}`
-      });
-      
-      quickSortSteps(arr, low, pivotIdx - 1, steps);
-      quickSortSteps(arr, pivotIdx + 1, high, steps);
-    } else if (low === high) {
-      steps.push({
-        array: [...arr],
-        pivotIndex: null,
-        currentIndices: [],
-        sortedIndices: [...steps[steps.length - 1].sortedIndices, low],
-        comparison: `Single element at index ${low} is already in correct position`
-      });
-    }
-  };
-
-  const partitionSteps = (arr: number[], low: number, high: number, steps: SortStep[]) => {
-    const pivot = arr[high];
-    
-    steps.push({
-      array: [...arr],
-      pivotIndex: high,
-      currentIndices: [],
-      sortedIndices: steps.length > 0 ? steps[steps.length - 1].sortedIndices : [],
-      comparison: `Selected ${pivot} at index ${high} as pivot`
-    });
-    
-    let i = low - 1;
-    
-    for (let j = low; j < high; j++) {
-      steps.push({
-        array: [...arr],
-        pivotIndex: high,
-        currentIndices: [j],
-        sortedIndices: steps[steps.length - 1].sortedIndices,
-        comparison: `Comparing ${arr[j]} with pivot ${pivot}`
-      });
-      
-      if (arr[j] < pivot) {
-        i++;
-        
-        if (i !== j) {
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-          
-          steps.push({
-            array: [...arr],
-            pivotIndex: high,
-            currentIndices: [i, j],
-            sortedIndices: steps[steps.length - 1].sortedIndices,
-            comparison: `${arr[i]} < ${pivot}, swapped ${arr[i]} and ${arr[j]}`
-          });
-        } else {
-          steps.push({
-            array: [...arr],
-            pivotIndex: high,
-            currentIndices: [j],
-            sortedIndices: steps[steps.length - 1].sortedIndices,
-            comparison: `${arr[j]} < ${pivot}, element is already in correct position`
-          });
-        }
-      } else {
-        steps.push({
-          array: [...arr],
-          pivotIndex: high,
-          currentIndices: [j],
-          sortedIndices: steps[steps.length - 1].sortedIndices,
-          comparison: `${arr[j]} >= ${pivot}, no swap needed`
-        });
-      }
-    }
-    
-    [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-    
-    steps.push({
-      array: [...arr],
-      pivotIndex: i + 1,
-      currentIndices: [i + 1, high],
-      sortedIndices: steps[steps.length - 1].sortedIndices,
-      comparison: `Placed pivot ${arr[i + 1]} at its final position ${i + 1}`
-    });
-    
-    return i + 1;
+    return { steps, totalComparisons: compCount };
   };
 
   const startSort = () => {
     if (array.length === 0 || isRunning) return;
     
-    resetVisualization();
-    const steps = calculateSortSteps(array);
+    resetSort();
+    const { steps } = calculateSortSteps(array);
     setSortSteps(steps);
     setIsRunning(true);
   };
@@ -221,8 +215,12 @@ const QuickSortVisualizer = () => {
     const step = sortSteps[nextStepIndex];
     setArray(step.array);
     setPivotIndex(step.pivotIndex);
-    setCurrentIndices(step.currentIndices);
-    setSortedIndices(step.sortedIndices);
+    setLow(step.low);
+    setHigh(step.high);
+    setI(step.i);
+    setJ(step.j);
+    setPartitionedIndices(step.partitionedIndices);
+    setComparisons(nextStepIndex);
   };
 
   const prevStep = () => {
@@ -234,8 +232,12 @@ const QuickSortVisualizer = () => {
     const step = sortSteps[prevStepIndex];
     setArray(step.array);
     setPivotIndex(step.pivotIndex);
-    setCurrentIndices(step.currentIndices);
-    setSortedIndices(step.sortedIndices);
+    setLow(step.low);
+    setHigh(step.high);
+    setI(step.i);
+    setJ(step.j);
+    setPartitionedIndices(step.partitionedIndices);
+    setComparisons(prevStepIndex);
   };
 
   const goToStep = (step: number) => {
@@ -247,8 +249,12 @@ const QuickSortVisualizer = () => {
     const sortStep = sortSteps[step];
     setArray(sortStep.array);
     setPivotIndex(sortStep.pivotIndex);
-    setCurrentIndices(sortStep.currentIndices);
-    setSortedIndices(sortStep.sortedIndices);
+    setLow(sortStep.low);
+    setHigh(sortStep.high);
+    setI(sortStep.i);
+    setJ(sortStep.j);
+    setPartitionedIndices(sortStep.partitionedIndices);
+    setComparisons(step);
   };
 
   const togglePlayPause = () => {
@@ -277,8 +283,8 @@ const QuickSortVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Quick Sort Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Quick sort is a divide-and-conquer algorithm that picks an element as a pivot and partitions the array around it.
-            <span className="font-semibold text-drona-green"> Average: O(n log n), Worst: O(n²)</span>
+            Quick sort uses a divide-and-conquer approach by selecting a pivot and partitioning the array around it.
+            <span className="font-semibold text-drona-green"> Average Time Complexity: O(n log n)</span>
           </p>
         </div>
         
@@ -296,9 +302,9 @@ const QuickSortVisualizer = () => {
                     <Input
                       type="number"
                       value={arraySize}
-                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
+                      onChange={(e) => setArraySize(Math.max(5, Math.min(15, parseInt(e.target.value) || 10)))}
                       min={5}
-                      max={20}
+                      max={15}
                       className="border-2 focus:border-drona-green"
                     />
                   </div>
@@ -333,16 +339,19 @@ const QuickSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {speed}x
                   </Label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={900}
-                    min={100}
-                    step={100}
-                    className="w-full"
-                  />
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </div>
                   <div className="flex justify-between text-xs text-drona-gray">
                     <span>Slower</span>
                     <span>Faster</span>
@@ -474,10 +483,11 @@ const QuickSortVisualizer = () => {
                         <div
                           key={index}
                           className={`
-                            w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${pivotIndex === index ? 'bg-red-500 scale-110 shadow-lg' : 
-                              currentIndices.includes(index) ? 'bg-yellow-500 scale-105' : 
-                              sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
+                            w-10 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
+                            ${index === pivotIndex ? 'bg-red-500 scale-110 shadow-lg' : 
+                              index === i ? 'bg-orange-500 scale-110 shadow-lg' :
+                              index === j ? 'bg-purple-500 scale-110 shadow-lg' :
+                              partitionedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
                           `}
                           style={{ 
                             height: `${getBarHeight(value)}px`,
@@ -488,6 +498,15 @@ const QuickSortVisualizer = () => {
                       ))}
                     </div>
 
+                    {(low >= 0 && high >= 0) && (
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-drona-gray">
+                          Current partition: [{low}, {high}]
+                          {pivotIndex >= 0 && ` | Pivot: ${array[pivotIndex]} at index ${pivotIndex}`}
+                        </p>
+                      </div>
+                    )}
+
                     {currentStep >= 0 && currentStep < sortSteps.length && (
                       <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
                         <p className="text-lg font-semibold text-drona-dark">
@@ -496,7 +515,7 @@ const QuickSortVisualizer = () => {
                       </div>
                     )}
                     
-                    <div className="flex justify-center gap-6">
+                    <div className="flex justify-center gap-6 flex-wrap">
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
                         <span className="font-medium">Unsorted</span>
@@ -506,12 +525,16 @@ const QuickSortVisualizer = () => {
                         <span className="font-medium">Pivot</span>
                       </div>
                       <div className="flex items-center">
-                        <div className="w-4 h-4 bg-yellow-500 mr-2 rounded"></div>
-                        <span className="font-medium">Comparing/Swapping</span>
+                        <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
+                        <span className="font-medium">i (smaller elements)</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
+                        <span className="font-medium">j (current element)</span>
                       </div>
                       <div className="flex items-center">
                         <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
-                        <span className="font-medium">Sorted</span>
+                        <span className="font-medium">Partitioned</span>
                       </div>
                     </div>
                     
@@ -521,10 +544,11 @@ const QuickSortVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Select a pivot element from the array.</li>
-                          <li>Rearrange the array so that all elements less than the pivot come before it, and all elements greater come after it. The pivot is then in its final sorted position.</li>
-                          <li>Recursively apply the above steps to the sub-arrays before and after the pivot.</li>
-                          <li>The base case is arrays of size 0 or 1, which are already sorted.</li>
+                          <li>Choose a pivot element (usually the last element).</li>
+                          <li>Partition the array so all elements smaller than pivot are on the left.</li>
+                          <li>Place the pivot in its correct sorted position.</li>
+                          <li>Recursively apply the same process to the left and right subarrays.</li>
+                          <li>Continue until all subarrays have been sorted.</li>
                         </ol>
                       </CardContent>
                     </Card>
