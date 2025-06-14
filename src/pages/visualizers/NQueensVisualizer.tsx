@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
 
 interface BoardState {
   grid: (0 | 1)[][];
@@ -15,7 +16,7 @@ const NQueensVisualizer = () => {
   const [solutions, setSolutions] = useState<BoardState[]>([]);
   const [currentSolution, setCurrentSolution] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(500);
+  const [speed, setSpeed] = useState<number>(1);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [steps, setSteps] = useState<BoardState[]>([]);
   const [totalSolutions, setTotalSolutions] = useState<number>(0);
@@ -129,7 +130,38 @@ const NQueensVisualizer = () => {
   };
   
   const toggleRunning = () => {
+    if (currentStep >= steps.length - 1) {
+      // If at end, restart from beginning
+      setCurrentStep(-1);
+    }
     setIsRunning(!isRunning);
+  };
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > -1) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const skipToStart = () => {
+    setIsRunning(false);
+    setCurrentStep(-1);
+  };
+
+  const skipToEnd = () => {
+    setIsRunning(false);
+    setCurrentStep(steps.length - 1);
+  };
+
+  const goToStep = (stepIndex: number) => {
+    setIsRunning(false);
+    setCurrentStep(stepIndex);
   };
   
   const nextSolution = () => {
@@ -149,8 +181,8 @@ const NQueensVisualizer = () => {
     
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
-        setCurrentStep(prev => prev + 1);
-      }, speed);
+        nextStep();
+      }, 2000 / speed);
     } else if (currentStep >= steps.length - 1) {
       setIsRunning(false);
     }
@@ -200,40 +232,107 @@ const NQueensVisualizer = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Speed:</label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="1000"
-                      step="100"
-                      value={speed}
-                      onChange={(e) => setSpeed(parseInt(e.target.value))}
+                    <label className="text-sm font-medium">Animation Speed: {speed}x</label>
+                    <Slider
+                      value={[speed]}
+                      onValueChange={([value]) => setSpeed(value)}
+                      min={0.5}
+                      max={3}
+                      step={0.5}
                       className="w-32"
+                      disabled={isRunning}
                     />
                   </div>
+                  <div className="flex justify-between text-xs text-drona-gray w-32 -mt-2">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    onClick={skipToStart} 
+                    disabled={steps.length === 0 || currentStep === -1}
+                    size="sm"
+                  >
+                    <SkipBack className="h-4 w-4 mr-1" /> Start
+                  </Button>
                   
-                  <Button onClick={toggleRunning} disabled={steps.length === 0 || currentStep === steps.length - 1}>
+                  <Button 
+                    onClick={prevStep} 
+                    disabled={steps.length === 0 || currentStep <= -1}
+                    size="sm"
+                  >
+                    ← Prev
+                  </Button>
+                  
+                  <Button 
+                    onClick={toggleRunning} 
+                    disabled={steps.length === 0}
+                    size="sm"
+                  >
                     {isRunning ? (
                       <><Pause className="mr-2 h-4 w-4" /> Pause</>
                     ) : (
-                      <><Play className="mr-2 h-4 w-4" /> {currentStep === -1 ? 'Visualize Solution' : 'Continue'}</>
+                      <><Play className="mr-2 h-4 w-4" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
                     )}
                   </Button>
                   
-                  <Button onClick={resetVisualization} variant="outline" disabled={isRunning}>
+                  <Button 
+                    onClick={nextStep} 
+                    disabled={steps.length === 0 || currentStep >= steps.length - 1}
+                    size="sm"
+                  >
+                    Next →
+                  </Button>
+                  
+                  <Button 
+                    onClick={skipToEnd} 
+                    disabled={steps.length === 0 || currentStep === steps.length - 1}
+                    size="sm"
+                  >
+                    <SkipForward className="h-4 w-4 mr-1" /> End
+                  </Button>
+                  
+                  <Button 
+                    onClick={resetVisualization} 
+                    variant="outline" 
+                    disabled={isRunning}
+                    size="sm"
+                  >
                     <RotateCcw className="mr-2 h-4 w-4" /> Reset
                   </Button>
                 </div>
+
+                {steps.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium">Step:</span>
+                      <Slider
+                        value={[currentStep + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        min={0}
+                        max={steps.length}
+                        step={1}
+                        className="flex-1"
+                        disabled={isRunning}
+                      />
+                      <span className="text-sm text-gray-500 w-16">
+                        {currentStep + 1}/{steps.length}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Solution navigation */}
                 {solutions.length > 0 && !isRunning && currentStep === -1 && (
                   <div className="flex justify-center items-center gap-4 mb-2">
                     <Button variant="outline" size="sm" onClick={prevSolution} disabled={solutions.length <= 1}>
-                      <ChevronLeft className="h-4 w-4" />
+                      ← Prev Solution
                     </Button>
                     <span>Solution {currentSolution + 1} of {totalSolutions}</span>
                     <Button variant="outline" size="sm" onClick={nextSolution} disabled={solutions.length <= 1}>
-                      <ChevronRight className="h-4 w-4" />
+                      Next Solution →
                     </Button>
                   </div>
                 )}
@@ -271,11 +370,13 @@ const NQueensVisualizer = () => {
                 </div>
                 
                 {/* Step info */}
-                {currentStep >= 0 && (
-                  <div className="text-center mt-4">
-                    <p>Step {currentStep + 1} of {steps.length}</p>
-                  </div>
-                )}
+                <div className="text-center mt-4">
+                  <p>Total steps: {steps.length}</p>
+                  <p>Current step: {currentStep + 1}</p>
+                  {currentStep >= steps.length - 1 && steps.length > 0 && (
+                    <p className="font-bold text-green-600">✅ Backtracking algorithm completed!</p>
+                  )}
+                </div>
               </div>
             </Card>
             
