@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,11 @@ import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
 import { Search, Play, Pause, SkipBack, SkipForward, RotateCcw, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+interface SearchStep {
+  index: number;
+  comparison: string;
+}
 
 const LinearSearchVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
@@ -21,7 +25,7 @@ const LinearSearchVisualizer = () => {
   const [speed, setSpeed] = useState(500);
   const [currentStep, setCurrentStep] = useState(-1);
   const [comparisons, setComparisons] = useState(0);
-  const [searchSteps, setSearchSteps] = useState<Array<{index: number, comparison: string}>>([]);
+  const [searchSteps, setSearchSteps] = useState<SearchStep[]>([]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -68,7 +72,7 @@ const LinearSearchVisualizer = () => {
   };
 
   const calculateSearchSteps = (arr: number[], target: number) => {
-    const steps: Array<{index: number, comparison: string}> = [];
+    const steps: SearchStep[] = [];
     
     for (let i = 0; i < arr.length; i++) {
       if (arr[i] === target) {
@@ -296,20 +300,23 @@ const LinearSearchVisualizer = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={prevStep} 
+                    onClick={() => goToStep(-1)}
+                    disabled={searchSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
                     disabled={currentStep <= -1}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipBack className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(-1)}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
+                  
                   <Button 
                     size="sm"
                     onClick={togglePlayPause}
@@ -318,15 +325,7 @@ const LinearSearchVisualizer = () => {
                   >
                     {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(searchSteps.length - 1)}
-                    disabled={searchSteps.length === 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
+                  
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -336,17 +335,30 @@ const LinearSearchVisualizer = () => {
                   >
                     <SkipForward className="h-4 w-4" />
                   </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(searchSteps.length - 1)}
+                    disabled={searchSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
                 </div>
                 
                 <Button 
-                  onClick={startSearch} 
-                  disabled={isRunning || searchValue === null || array.length === 0}
-                  className="w-full bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  onClick={() => {
+                    resetSearch();
+                    setIsRunning(false);
+                  }} 
+                  variant="outline" 
+                  disabled={isRunning}
+                  className="w-full border-2 hover:border-drona-green/50"
                 >
-                  <Search className="mr-2 h-4 w-4" /> 
-                  Start Search
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
-                
+
                 {searchSteps.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-drona-dark">

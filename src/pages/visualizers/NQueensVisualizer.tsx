@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -407,49 +406,54 @@ const NQueensVisualizer = () => {
                 )}
 
                 {/* Playback Controls */}
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   <Button 
                     onClick={skipToStart} 
                     disabled={currentSteps.length === 0 || currentStep === -1}
                     size="sm"
+                    variant="outline"
+                    className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipBack className="h-4 w-4 mr-1" /> Start
+                    <SkipBack className="h-4 w-4" />
                   </Button>
                   
                   <Button 
                     onClick={prevStep} 
                     disabled={currentSteps.length === 0 || currentStep <= -1}
                     size="sm"
+                    variant="outline"
+                    className="border-2 hover:border-drona-green/50"
                   >
-                    ← Prev
+                    <SkipBack className="h-4 w-4" />
                   </Button>
                   
                   <Button 
                     onClick={toggleRunning} 
                     disabled={currentSteps.length === 0 || solutionFound}
                     size="sm"
+                    className="bg-drona-green hover:bg-drona-green/90"
                   >
-                    {isRunning ? (
-                      <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                    ) : (
-                      <><Play className="mr-2 h-4 w-4" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
-                    )}
+                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                   
                   <Button 
                     onClick={nextStep} 
                     disabled={currentSteps.length === 0 || currentStep >= currentSteps.length - 1 || solutionFound}
                     size="sm"
+                    variant="outline"
+                    className="border-2 hover:border-drona-green/50"
                   >
-                    Next →
+                    <SkipForward className="h-4 w-4" />
                   </Button>
                   
                   <Button 
                     onClick={skipToEnd} 
                     disabled={currentSteps.length === 0 || currentStep === currentSteps.length - 1}
                     size="sm"
+                    variant="outline"
+                    className="border-2 hover:border-drona-green/50"
                   >
-                    <SkipForward className="h-4 w-4 mr-1" /> End
+                    <SkipForward className="h-4 w-4" />
                   </Button>
                   
                   <Button 
@@ -457,8 +461,9 @@ const NQueensVisualizer = () => {
                     variant="outline" 
                     disabled={isRunning}
                     size="sm"
+                    className="border-2 hover:border-drona-green/50"
                   >
-                    <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                    <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
 
