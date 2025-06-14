@@ -299,7 +299,7 @@ const SelectionSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {(10 - speed / 100).toFixed(1)}x
+                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
                   </Label>
                   <Slider
                     value={[speed]}
