@@ -1,13 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
+
+interface SortStep {
+  array: number[];
+  currentIndex: number | null;
+  minIndex: number | null;
+  sortedIndices: number[];
+  comparison?: string;
+}
 
 const SelectionSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
@@ -18,9 +26,27 @@ const SelectionSortVisualizer = () => {
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(500);
+  const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [comparisons, setComparisons] = useState(0);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    if (currentStep >= sortSteps.length - 1) {
+      setIsRunning(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      nextStep();
+    }, speed);
+
+    return () => clearTimeout(timer);
+  }, [isRunning, currentStep, sortSteps.length, speed]);
 
   const generateRandomArray = () => {
-    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100));
+    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100) + 1);
     setArray(newArray);
     resetSort();
   };
@@ -53,51 +79,150 @@ const SelectionSortVisualizer = () => {
     setMinIndex(null);
     setSortedIndices([]);
     setIsRunning(false);
+    setSortSteps([]);
+    setCurrentStep(-1);
+    setComparisons(0);
   };
 
-  const startSort = async () => {
-    if (array.length === 0 || isRunning) return;
-    
-    setIsRunning(true);
-    setSortedIndices([]);
-    
-    const arrCopy = [...array];
+  const calculateSortSteps = (arr: number[]) => {
+    const steps: SortStep[] = [];
+    const arrCopy = [...arr];
     const n = arrCopy.length;
+    let compCount = 0;
     
-    // Selection sort algorithm
+    steps.push({
+      array: [...arrCopy],
+      currentIndex: null,
+      minIndex: null,
+      sortedIndices: [],
+      comparison: 'Starting Selection Sort'
+    });
+    
     for (let i = 0; i < n - 1; i++) {
-      setCurrentIndex(i);
       let minIdx = i;
-      setMinIndex(minIdx);
+      
+      steps.push({
+        array: [...arrCopy],
+        currentIndex: i,
+        minIndex: minIdx,
+        sortedIndices: Array.from({ length: i }, (_, k) => k),
+        comparison: `Finding minimum in unsorted part starting from index ${i}`
+      });
       
       for (let j = i + 1; j < n; j++) {
-        // Wait for animation to show comparison
-        await new Promise(resolve => setTimeout(resolve, speed / 2));
+        compCount++;
+        
+        steps.push({
+          array: [...arrCopy],
+          currentIndex: j,
+          minIndex: minIdx,
+          sortedIndices: Array.from({ length: i }, (_, k) => k),
+          comparison: `Comparing ${arrCopy[j]} with current minimum ${arrCopy[minIdx]}`
+        });
         
         if (arrCopy[j] < arrCopy[minIdx]) {
           minIdx = j;
-          setMinIndex(j);
+          steps.push({
+            array: [...arrCopy],
+            currentIndex: j,
+            minIndex: minIdx,
+            sortedIndices: Array.from({ length: i }, (_, k) => k),
+            comparison: `New minimum found: ${arrCopy[minIdx]}`
+          });
         }
       }
       
-      // Wait for animation before the swap
-      await new Promise(resolve => setTimeout(resolve, speed));
-      
-      // Swap the found minimum element with the first element
       if (minIdx !== i) {
         [arrCopy[i], arrCopy[minIdx]] = [arrCopy[minIdx], arrCopy[i]];
-        setArray([...arrCopy]);
+        steps.push({
+          array: [...arrCopy],
+          currentIndex: i,
+          minIndex: minIdx,
+          sortedIndices: Array.from({ length: i }, (_, k) => k),
+          comparison: `Swapped ${arrCopy[minIdx]} with ${arrCopy[i]}`
+        });
       }
       
-      // Mark this position as sorted
-      setSortedIndices(prev => [...prev, i]);
+      steps.push({
+        array: [...arrCopy],
+        currentIndex: null,
+        minIndex: null,
+        sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
+        comparison: `Element ${arrCopy[i]} is now in its final position`
+      });
     }
     
-    // Mark all elements as sorted
-    setSortedIndices(Array.from({ length: n }, (_, i) => i));
-    setCurrentIndex(null);
-    setMinIndex(null);
+    steps.push({
+      array: [...arrCopy],
+      currentIndex: null,
+      minIndex: null,
+      sortedIndices: Array.from({ length: n }, (_, i) => i),
+      comparison: 'Array is completely sorted!'
+    });
+    
+    return { steps, totalComparisons: compCount };
+  };
+
+  const startSort = () => {
+    if (array.length === 0 || isRunning) return;
+    
+    resetSort();
+    const { steps } = calculateSortSteps(array);
+    setSortSteps(steps);
+    setIsRunning(true);
+  };
+
+  const nextStep = () => {
+    if (currentStep >= sortSteps.length - 1) {
+      setIsRunning(false);
+      return;
+    }
+    
+    const nextStepIndex = currentStep + 1;
+    setCurrentStep(nextStepIndex);
+    
+    const step = sortSteps[nextStepIndex];
+    setArray(step.array);
+    setCurrentIndex(step.currentIndex);
+    setMinIndex(step.minIndex);
+    setSortedIndices(step.sortedIndices);
+    setComparisons(nextStepIndex);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= 0) return;
+    
+    const prevStepIndex = currentStep - 1;
+    setCurrentStep(prevStepIndex);
+    
+    const step = sortSteps[prevStepIndex];
+    setArray(step.array);
+    setCurrentIndex(step.currentIndex);
+    setMinIndex(step.minIndex);
+    setSortedIndices(step.sortedIndices);
+    setComparisons(prevStepIndex);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < 0 || step >= sortSteps.length) return;
+    
+    setCurrentStep(step);
     setIsRunning(false);
+    
+    const sortStep = sortSteps[step];
+    setArray(sortStep.array);
+    setCurrentIndex(sortStep.currentIndex);
+    setMinIndex(sortStep.minIndex);
+    setSortedIndices(sortStep.sortedIndices);
+    setComparisons(step);
+  };
+
+  const togglePlayPause = () => {
+    if (currentStep >= sortSteps.length - 1) {
+      startSort();
+    } else {
+      setIsRunning(!isRunning);
+    }
   };
 
   const getBarHeight = (value: number) => {
@@ -174,7 +299,7 @@ const SelectionSortVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {(10 - speed / 100).toFixed(1)}x
                   </Label>
                   <Slider
                     value={[speed]}
@@ -189,6 +314,60 @@ const SelectionSortVisualizer = () => {
                     <span>Faster</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(0)}
+                    disabled={sortSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    disabled={array.length === 0}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep}
+                    disabled={currentStep >= sortSteps.length - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(sortSteps.length - 1)}
+                    disabled={sortSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                </div>
                 
                 <Button 
                   onClick={startSort} 
@@ -198,6 +377,44 @@ const SelectionSortVisualizer = () => {
                   <SortAsc className="mr-2 h-4 w-4" /> 
                   Start Sort
                 </Button>
+
+                {sortSteps.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Step: {currentStep + 1} of {sortSteps.length}
+                    </Label>
+                    <Slider
+                      value={[currentStep + 1]}
+                      onValueChange={([value]) => goToStep(value - 1)}
+                      max={sortSteps.length}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
+                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Array Size</p>
+                    <p className="text-3xl font-bold text-drona-dark">{array.length}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
+                    <p className="text-xl font-bold text-drona-dark">{sortSteps.length}</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -236,6 +453,14 @@ const SelectionSortVisualizer = () => {
                         </div>
                       ))}
                     </div>
+
+                    {currentStep >= 0 && currentStep < sortSteps.length && (
+                      <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
+                        <p className="text-lg font-semibold text-drona-dark">
+                          {sortSteps[currentStep].comparison}
+                        </p>
+                      </div>
+                    )}
                     
                     <div className="flex justify-center gap-6">
                       <div className="flex items-center">
