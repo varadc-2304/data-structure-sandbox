@@ -186,6 +186,18 @@ const FractionalKnapsackVisualizer = () => {
     setCurrentStep(-1);
   };
 
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > -1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const toggleRunning = () => {
     if (currentStep === steps.length - 1) {
       setCurrentStep(-1);
@@ -225,7 +237,7 @@ const FractionalKnapsackVisualizer = () => {
   }, [isRunning, currentStep, steps.length, speed]);
 
   const currentStepData = currentStep >= 0 && steps.length > 0 ? steps[currentStep] : null;
-  const speedDisplay = ((2000 - speed) / 500).toFixed(1);
+  const speedDisplay = (speed / 200).toFixed(1);
 
   return (
     <div className="min-h-screen bg-white">
@@ -350,39 +362,74 @@ const FractionalKnapsackVisualizer = () => {
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-4 mt-6">
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium">Speed: {speedDisplay}x</label>
+              <div className="mt-6">
+                <div className="flex items-center space-x-2 mb-4">
+                  <label className="text-sm font-medium whitespace-nowrap">Animation Speed: {speedDisplay}x</label>
                   <Slider
                     value={[speed]}
                     onValueChange={(value) => setSpeed(value[0])}
-                    min={500}
-                    max={1500}
-                    step={250}
-                    className="w-32"
+                    min={200}
+                    max={1200}
+                    step={200}
+                    className="flex-1"
                     disabled={isRunning}
                   />
                 </div>
                 
-                <Button onClick={skipToStart} disabled={steps.length === 0 || currentStep === -1 || isRunning}>
-                  <SkipBack className="mr-2 h-4 w-4" /> Start
-                </Button>
-                
-                <Button onClick={toggleRunning} disabled={steps.length === 0}>
-                  {isRunning ? (
-                    <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                  ) : (
-                    <><Play className="mr-2 h-4 w-4" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
-                  )}
-                </Button>
-                
-                <Button onClick={skipToEnd} disabled={steps.length === 0 || currentStep === steps.length - 1 || isRunning}>
-                  <SkipForward className="mr-2 h-4 w-4" /> End
-                </Button>
-                
-                <Button onClick={resetVisualization} variant="outline" disabled={isRunning || currentStep === -1}>
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    onClick={skipToStart} 
+                    disabled={steps.length === 0 || currentStep === -1}
+                    size="sm"
+                  >
+                    <SkipBack className="h-4 w-4 mr-1" /> Start
+                  </Button>
+                  
+                  <Button 
+                    onClick={prevStep} 
+                    disabled={steps.length === 0 || currentStep <= -1}
+                    size="sm"
+                  >
+                    ← Prev
+                  </Button>
+                  
+                  <Button 
+                    onClick={toggleRunning} 
+                    disabled={steps.length === 0}
+                    size="sm"
+                  >
+                    {isRunning ? (
+                      <><Pause className="h-4 w-4 mr-1" /> Pause</>
+                    ) : (
+                      <><Play className="h-4 w-4 mr-1" /> {currentStep === -1 ? 'Start' : 'Continue'}</>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    onClick={nextStep} 
+                    disabled={steps.length === 0 || currentStep >= steps.length - 1}
+                    size="sm"
+                  >
+                    Next →
+                  </Button>
+                  
+                  <Button 
+                    onClick={skipToEnd} 
+                    disabled={steps.length === 0 || currentStep === steps.length - 1}
+                    size="sm"
+                  >
+                    <SkipForward className="h-4 w-4 mr-1" /> End
+                  </Button>
+                  
+                  <Button 
+                    onClick={resetVisualization} 
+                    variant="outline" 
+                    disabled={currentStep === -1}
+                    size="sm"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" /> Reset
+                  </Button>
+                </div>
               </div>
               
               {steps.length > 0 && (
