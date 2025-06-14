@@ -1,12 +1,18 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
-import { Card } from '@/components/ui/card';
-import { SortAsc } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SortAsc, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Slider } from '@/components/ui/slider';
 
 const QuickSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
+  const [arraySize, setArraySize] = useState<number>(10);
+  const [customArrayInput, setCustomArrayInput] = useState<string>('');
   const [pivotIndex, setPivotIndex] = useState<number | null>(null);
   const [currentIndices, setCurrentIndices] = useState<number[]>([]);
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
@@ -14,10 +20,32 @@ const QuickSortVisualizer = () => {
   const [speed, setSpeed] = useState(500);
 
   const generateRandomArray = () => {
-    const size = Math.floor(Math.random() * 5) + 8; // 8-12 elements
-    const newArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100));
     setArray(newArray);
     resetVisualization();
+  };
+
+  const generateCustomArray = () => {
+    if (!customArrayInput.trim()) return;
+    
+    try {
+      const newArray = customArrayInput
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map(val => {
+          const num = parseInt(val.trim());
+          if (isNaN(num)) throw new Error('Invalid number');
+          return num;
+        });
+      
+      if (newArray.length === 0) throw new Error('Empty array');
+      
+      setArray(newArray);
+      setCustomArrayInput('');
+      resetVisualization();
+    } catch (error) {
+      console.error("Invalid array format");
+    }
   };
 
   const resetVisualization = () => {
@@ -108,88 +136,171 @@ const QuickSortVisualizer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
       
       <div className="page-container mt-20">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="section-title mb-2">Quick Sort Visualization</h1>
-          <p className="text-drona-gray mb-8">
+        <div className="mb-8">
+          <Link to="/algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Algorithms
+          </Link>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">Quick Sort Visualization</h1>
+          <p className="text-lg text-drona-gray">
             Quick sort is a divide-and-conquer algorithm that picks an element as a pivot and partitions the array around it.
-            Time Complexity: Average O(n log n), Worst case O(n²)
+            <span className="font-semibold text-drona-green"> Average: O(n log n), Worst: O(n²)</span>
           </p>
-          
-          <div className="flex flex-col space-y-6">
-            <Card className="p-6">
-              <div className="flex flex-col space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Button onClick={generateRandomArray} variant="outline">
-                    Generate Random Array
-                  </Button>
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Speed:</label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="1000"
-                      step="100"
-                      value={speed}
-                      onChange={(e) => setSpeed(parseInt(e.target.value))}
-                      className="w-32"
+        </div>
+        
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Controls Panel */}
+          <div className="xl:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Array Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Array Size</Label>
+                    <Input
+                      type="number"
+                      value={arraySize}
+                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
+                      min={5}
+                      max={20}
+                      className="border-2 focus:border-drona-green"
                     />
                   </div>
-                  <Button onClick={startSort} disabled={isRunning || array.length === 0}>
-                    <SortAsc className="mr-2 h-4 w-4" /> 
-                    Start Sort
+                  
+                  <Button 
+                    onClick={generateRandomArray} 
+                    variant="outline"
+                    className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  >
+                    Generate Random Array
                   </Button>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Custom Array (comma-separated)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="e.g., 64, 34, 25, 12"
+                        value={customArrayInput}
+                        onChange={(e) => setCustomArrayInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && generateCustomArray()}
+                        className="flex-1 border-2 focus:border-drona-green"
+                      />
+                      <Button 
+                        onClick={generateCustomArray}
+                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                      >
+                        Set
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="mt-6">
-                  <div className="flex items-end justify-center gap-1 h-60">
-                    {array.map((value, index) => (
-                      <div
-                        key={index}
-                        className={`
-                          w-12 transition-all flex items-center justify-center
-                          ${pivotIndex === index ? 'bg-red-500' : 
-                            currentIndices.includes(index) ? 'bg-yellow-500' : 
-                            sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
-                        `}
-                        style={{ 
-                          height: `${getBarHeight(value)}px`,
-                        }}
-                      >
-                        {value}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-4 flex justify-center gap-4">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-red-500 mr-2"></div>
-                      <span>Pivot</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-yellow-500 mr-2"></div>
-                      <span>Comparing/Swapping</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-green-500 mr-2"></div>
-                      <span>Sorted</span>
-                    </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-drona-dark">
+                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                  </Label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([value]) => setSpeed(value)}
+                    max={900}
+                    min={100}
+                    step={100}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
                   </div>
                 </div>
-              </div>
+                
+                <Button 
+                  onClick={startSort} 
+                  disabled={isRunning || array.length === 0}
+                  className="w-full bg-drona-green hover:bg-drona-green/90 font-semibold"
+                >
+                  <SortAsc className="mr-2 h-4 w-4" /> 
+                  Start Sort
+                </Button>
+              </CardContent>
             </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-3">How Quick Sort Works</h2>
-              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
-                <li>Select a pivot element from the array.</li>
-                <li>Rearrange the array so that all elements less than the pivot come before it, and all elements greater come after it. The pivot is then in its final sorted position.</li>
-                <li>Recursively apply the above steps to the sub-arrays before and after the pivot.</li>
-                <li>The base case is arrays of size 0 or 1, which are already sorted.</li>
-              </ol>
+          </div>
+          
+          {/* Visualization Panel */}
+          <div className="xl:col-span-3">
+            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">Array Visualization</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                {array.length === 0 ? (
+                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                    <div className="text-center">
+                      <SortAsc className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                      <p className="text-xl font-semibold">Generate an array to start visualization</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <div className="flex items-end justify-center gap-1 h-60">
+                      {array.map((value, index) => (
+                        <div
+                          key={index}
+                          className={`
+                            w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
+                            ${pivotIndex === index ? 'bg-red-500 scale-110 shadow-lg' : 
+                              currentIndices.includes(index) ? 'bg-yellow-500 scale-105' : 
+                              sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
+                          `}
+                          style={{ 
+                            height: `${getBarHeight(value)}px`,
+                          }}
+                        >
+                          {value}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex justify-center gap-6">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
+                        <span className="font-medium">Unsorted</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
+                        <span className="font-medium">Pivot</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-yellow-500 mr-2 rounded"></div>
+                        <span className="font-medium">Comparing/Swapping</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
+                        <span className="font-medium">Sorted</span>
+                      </div>
+                    </div>
+                    
+                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">How Quick Sort Works</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                          <li>Select a pivot element from the array.</li>
+                          <li>Rearrange the array so that all elements less than the pivot come before it, and all elements greater come after it. The pivot is then in its final sorted position.</li>
+                          <li>Recursively apply the above steps to the sub-arrays before and after the pivot.</li>
+                          <li>The base case is arrays of size 0 or 1, which are already sorted.</li>
+                        </ol>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         </div>
