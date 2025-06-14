@@ -83,6 +83,20 @@ const InsertionSortVisualizer = () => {
     setComparisons(0);
   };
 
+  const togglePlayPause = () => {
+    if (array.length === 0) return;
+    
+    if (isRunning) {
+      setIsRunning(false);
+    } else {
+      if (sortSteps.length === 0) {
+        startSort();
+      } else {
+        setIsRunning(true);
+      }
+    }
+  };
+
   const calculateSortSteps = (arr: number[]) => {
     const steps: SortStep[] = [];
     const arrCopy = [...arr];
