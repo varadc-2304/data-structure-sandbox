@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import CPUScheduling from "./pages/CPUScheduling";
-import MemoryManagement from "./pages/MemoryManagement";
+import PageReplacement from "./pages/PageReplacement";
 import DiskScheduling from "./pages/DiskScheduling";
 
 // CPU Scheduling Visualizers
@@ -47,7 +47,7 @@ const App = () => (
           <Route path="/cpu-scheduling/priority" element={<PriorityVisualizer />} />
           
           {/* Memory Management */}
-          <Route path="/memory-management" element={<MemoryManagement />} />
+          <Route path="/memory-management" element={<PageReplacement />} />
           <Route path="/memory-management/fifo" element={<FIFOVisualizer />} />
           <Route path="/memory-management/lru" element={<LRUVisualizer />} />
           <Route path="/memory-management/optimal" element={<OptimalVisualizer />} />
