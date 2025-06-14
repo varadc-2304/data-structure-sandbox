@@ -12,18 +12,21 @@ import { Link } from 'react-router-dom';
 const LinearSearchVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
   const [customArrayInput, setCustomArrayInput] = useState<string>('');
+  const [arraySize, setArraySize] = useState<number>(10);
   const [searchValue, setSearchValue] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [found, setFound] = useState<boolean | null>(null);
+  const [foundIndex, setFoundIndex] = useState<number | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(500);
   const [currentStep, setCurrentStep] = useState(-1);
   const [comparisons, setComparisons] = useState(0);
+  const [searchSteps, setSearchSteps] = useState<Array<{index: number, comparison: string}>>([]);
 
   useEffect(() => {
     if (!isRunning) return;
     
-    if (currentStep >= array.length - 1 || found === true) {
+    if (currentStep >= searchSteps.length - 1 || found !== null) {
       setIsRunning(false);
       return;
     }
@@ -33,11 +36,10 @@ const LinearSearchVisualizer = () => {
     }, speed);
 
     return () => clearTimeout(timer);
-  }, [isRunning, currentStep, array.length, speed, found]);
+  }, [isRunning, currentStep, searchSteps.length, speed, found]);
 
   const generateRandomArray = () => {
-    const size = Math.floor(Math.random() * 5) + 8; // 8-12 elements
-    const newArray = Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100));
     setArray(newArray);
     resetSearch();
   };
@@ -65,29 +67,49 @@ const LinearSearchVisualizer = () => {
     }
   };
 
+  const calculateSearchSteps = (arr: number[], target: number) => {
+    const steps: Array<{index: number, comparison: string}> = [];
+    
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] === target) {
+        steps.push({ index: i, comparison: 'Found!' });
+        break;
+      } else {
+        steps.push({ index: i, comparison: `${arr[i]} ≠ ${target}` });
+      }
+    }
+    
+    return steps;
+  };
+
   const resetSearch = () => {
     setCurrentIndex(null);
     setFound(null);
+    setFoundIndex(null);
     setIsRunning(false);
     setCurrentStep(-1);
     setComparisons(0);
+    setSearchSteps([]);
   };
 
   const nextStep = () => {
-    if (currentStep >= array.length - 1 || found === true) {
+    if (currentStep >= searchSteps.length - 1) {
       setIsRunning(false);
       return;
     }
     
     const nextStepIndex = currentStep + 1;
     setCurrentStep(nextStepIndex);
-    setCurrentIndex(nextStepIndex);
+    
+    const step = searchSteps[nextStepIndex];
+    setCurrentIndex(step.index);
     setComparisons(prev => prev + 1);
     
-    if (array[nextStepIndex] === searchValue) {
+    if (step.comparison === 'Found!') {
       setFound(true);
+      setFoundIndex(step.index);
       setIsRunning(false);
-    } else if (nextStepIndex >= array.length - 1) {
+    } else if (nextStepIndex >= searchSteps.length - 1) {
       setFound(false);
       setIsRunning(false);
     }
@@ -98,25 +120,51 @@ const LinearSearchVisualizer = () => {
     
     const newStep = currentStep - 1;
     setCurrentStep(newStep);
-    setCurrentIndex(newStep >= 0 ? newStep : null);
     setComparisons(Math.max(0, newStep + 1));
-    setFound(null);
+    
+    if (newStep === -1) {
+      setCurrentIndex(null);
+      setFound(null);
+      setFoundIndex(null);
+    } else {
+      const step = searchSteps[newStep];
+      setCurrentIndex(step.index);
+      
+      if (step.comparison === 'Found!') {
+        setFound(true);
+        setFoundIndex(step.index);
+      } else {
+        setFound(null);
+        setFoundIndex(null);
+      }
+    }
   };
 
   const goToStep = (step: number) => {
-    if (step < -1 || step >= array.length) return;
+    if (step < -1 || step >= searchSteps.length) return;
     
     setCurrentStep(step);
     setIsRunning(false);
-    setCurrentIndex(step >= 0 ? step : null);
     setComparisons(Math.max(0, step + 1));
     
-    if (step >= 0 && array[step] === searchValue) {
-      setFound(true);
-    } else if (step >= array.length - 1) {
-      setFound(false);
-    } else {
+    if (step === -1) {
+      setCurrentIndex(null);
       setFound(null);
+      setFoundIndex(null);
+    } else {
+      const searchStep = searchSteps[step];
+      setCurrentIndex(searchStep.index);
+      
+      if (searchStep.comparison === 'Found!') {
+        setFound(true);
+        setFoundIndex(searchStep.index);
+      } else if (step >= searchSteps.length - 1) {
+        setFound(false);
+        setFoundIndex(null);
+      } else {
+        setFound(null);
+        setFoundIndex(null);
+      }
     }
   };
 
@@ -124,13 +172,19 @@ const LinearSearchVisualizer = () => {
     if (searchValue === null || array.length === 0 || isRunning) return;
     
     resetSearch();
-    setIsRunning(true);
+    const steps = calculateSearchSteps(array, searchValue);
+    setSearchSteps(steps);
+    
+    if (steps.length === 0) {
+      setFound(false);
+    } else {
+      setIsRunning(true);
+    }
   };
 
   const togglePlayPause = () => {
-    if (currentStep >= array.length - 1 || found !== null) {
-      resetSearch();
-      setIsRunning(true);
+    if (currentStep >= searchSteps.length - 1 || found !== null) {
+      startSearch();
     } else {
       setIsRunning(!isRunning);
     }
@@ -148,7 +202,7 @@ const LinearSearchVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Linear Search Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Linear search checks each element sequentially until the target is found. 
+            Linear search checks each element sequentially until the target is found or the array ends.
             <span className="font-semibold text-drona-green"> Time Complexity: O(n)</span>
           </p>
         </div>
@@ -162,6 +216,18 @@ const LinearSearchVisualizer = () => {
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">Array Size</Label>
+                    <Input
+                      type="number"
+                      value={arraySize}
+                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
+                      min={5}
+                      max={20}
+                      className="border-2 focus:border-drona-green"
+                    />
+                  </div>
+                  
                   <Button 
                     onClick={generateRandomArray} 
                     variant="outline"
@@ -203,7 +269,7 @@ const LinearSearchVisualizer = () => {
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {((1000 - speed) / 100).toFixed(1)}x
+                    Animation Speed: {(10 - (speed / 100)).toFixed(1)}x
                   </Label>
                   <Slider
                     value={[speed]}
@@ -213,6 +279,10 @@ const LinearSearchVisualizer = () => {
                     step={100}
                     className="w-full"
                   />
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -251,7 +321,8 @@ const LinearSearchVisualizer = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => goToStep(array.length - 1)}
+                    onClick={() => goToStep(searchSteps.length - 1)}
+                    disabled={searchSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipForward className="h-4 w-4" />
@@ -260,7 +331,7 @@ const LinearSearchVisualizer = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={nextStep} 
-                    disabled={currentStep >= array.length - 1 || found === true}
+                    disabled={currentStep >= searchSteps.length - 1}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipForward className="h-4 w-4" />
@@ -276,15 +347,15 @@ const LinearSearchVisualizer = () => {
                   Start Search
                 </Button>
                 
-                {array.length > 0 && (
+                {searchSteps.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-drona-dark">
-                      Step: {currentStep + 1} of {array.length}
+                      Step: {currentStep + 1} of {searchSteps.length}
                     </Label>
                     <Slider
                       value={[currentStep + 1]}
                       onValueChange={([value]) => goToStep(value - 1)}
-                      max={array.length}
+                      max={searchSteps.length}
                       min={0}
                       step={1}
                       className="w-full"
@@ -310,7 +381,7 @@ const LinearSearchVisualizer = () => {
                   </div>
                   <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
                     <p className="text-sm font-semibold text-drona-gray">Current Index</p>
-                    <p className="text-3xl font-bold text-drona-dark">
+                    <p className="text-xl font-bold text-drona-dark">
                       {currentIndex !== null ? currentIndex : '-'}
                     </p>
                   </div>
@@ -341,29 +412,40 @@ const LinearSearchVisualizer = () => {
                 ) : (
                   <div className="space-y-8">
                     <div className="flex flex-wrap justify-center gap-3">
-                      {array.map((value, index) => (
-                        <div
-                          key={index}
-                          className={`
-                            w-16 h-16 flex items-center justify-center rounded-xl border-3 transition-all duration-300 font-bold text-lg
-                            ${currentIndex !== null && currentIndex === index 
-                              ? 'bg-yellow-200 border-yellow-500 scale-110 shadow-lg' 
-                              : 'bg-white border-gray-300 hover:border-gray-400'}
-                            ${currentIndex !== null && currentIndex < index ? 'opacity-40' : 'opacity-100'}
-                            ${found !== null && found === true && currentIndex === index 
-                              ? 'bg-green-200 border-green-500 animate-pulse' : ''}
-                          `}
-                        >
-                          {value}
-                        </div>
-                      ))}
+                      {array.map((value, index) => {
+                        let elementClass = 'w-16 h-16 flex items-center justify-center rounded-xl border-3 transition-all duration-300 font-bold text-lg ';
+                        
+                        if (currentIndex === index) {
+                          elementClass += 'bg-yellow-200 border-yellow-500 scale-110 shadow-lg ';
+                        } else if (foundIndex === index && found) {
+                          elementClass += 'bg-green-200 border-green-500 animate-pulse ';
+                        } else if (currentIndex !== null && index < currentIndex) {
+                          elementClass += 'bg-red-100 border-red-300 ';
+                        } else {
+                          elementClass += 'bg-white border-gray-300 ';
+                        }
+                        
+                        return (
+                          <div key={index} className={elementClass}>
+                            {value}
+                          </div>
+                        );
+                      })}
                     </div>
+                    
+                    {currentStep >= 0 && currentStep < searchSteps.length && (
+                      <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
+                        <p className="text-lg font-semibold text-drona-dark">
+                          {searchSteps[currentStep].comparison}
+                        </p>
+                      </div>
+                    )}
                     
                     {found !== null && (
                       <div className="text-center p-6 rounded-xl border-2 bg-gradient-to-r from-drona-light to-white">
                         {found ? (
                           <div className="text-green-600 text-xl font-bold">
-                            ✅ Found {searchValue} at index {currentIndex}!
+                            ✅ Found {searchValue} at index {foundIndex}!
                             <div className="text-sm font-medium text-drona-gray mt-2">
                               Total comparisons: {comparisons}
                             </div>
@@ -385,10 +467,12 @@ const LinearSearchVisualizer = () => {
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Start from the leftmost element of the array</li>
-                          <li>Compare each element with the target value</li>
-                          <li>If match is found, return the index position</li>
-                          <li>If no match after checking all elements, return "not found"</li>
+                          <li>Start from the first element of the array</li>
+                          <li>Compare the current element with the target value</li>
+                          <li>If they match, return the current index</li>
+                          <li>If they don't match, move to the next element</li>
+                          <li>Repeat until the element is found or array ends</li>
+                          <li>If array ends without finding the element, return "not found"</li>
                         </ol>
                       </CardContent>
                     </Card>
