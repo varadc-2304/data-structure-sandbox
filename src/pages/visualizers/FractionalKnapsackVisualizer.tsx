@@ -35,7 +35,7 @@ const FractionalKnapsackVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1000);
+  const [speed, setSpeed] = useState<number>(2000);
   
   const colors = [
     'bg-red-500', 'bg-blue-500', 'bg-green-500',
@@ -237,7 +237,7 @@ const FractionalKnapsackVisualizer = () => {
   }, [isRunning, currentStep, steps.length, speed]);
 
   const currentStepData = currentStep >= 0 && steps.length > 0 ? steps[currentStep] : null;
-  const speedDisplay = (speed / 200).toFixed(1);
+  const speedDisplay = (3000 / speed).toFixed(1);
 
   return (
     <div className="min-h-screen bg-white">
@@ -368,9 +368,9 @@ const FractionalKnapsackVisualizer = () => {
                   <Slider
                     value={[speed]}
                     onValueChange={(value) => setSpeed(value[0])}
-                    min={200}
-                    max={1200}
-                    step={200}
+                    min={1000}
+                    max={6000}
+                    step={500}
                     className="flex-1"
                     disabled={isRunning}
                   />
