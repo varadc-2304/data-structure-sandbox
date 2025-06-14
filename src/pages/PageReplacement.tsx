@@ -22,10 +22,10 @@ const PageReplacement = () => {
       icon: <FileText size={24} />,
     },
     {
-      id: 'mru',
-      name: 'MRU',
-      fullName: 'Most Recently Used',
-      description: 'Replaces the page that has been used most recently when a page fault occurs.',
+      id: 'optimal',
+      name: 'Optimal',
+      fullName: 'Optimal Page Replacement',
+      description: 'Replaces the page that will not be used for the longest period of time in the future.',
       icon: <FileText size={24} />,
     },
   ];
@@ -80,7 +80,7 @@ const PageReplacement = () => {
                   </div>
                   <p className="text-sm text-drona-gray flex-grow">{algorithm.description}</p>
                   <div className="mt-4">
-                    <Link to={`/page-replacement/${algorithm.id}`}>
+                    <Link to={`/memory-management/${algorithm.id}`}>
                       <Button
                         variant="default"
                         className="w-full group hover:bg-drona-green"
