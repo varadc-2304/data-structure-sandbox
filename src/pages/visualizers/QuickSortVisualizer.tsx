@@ -1,13 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft } from 'lucide-react';
+import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Slider } from '@/components/ui/slider';
+
+interface SortStep {
+  array: number[];
+  pivotIndex: number | null;
+  currentIndices: number[];
+  sortedIndices: number[];
+  comparison?: string;
+}
 
 const QuickSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
@@ -18,9 +26,26 @@ const QuickSortVisualizer = () => {
   const [sortedIndices, setSortedIndices] = useState<number[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(500);
+  const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
+  const [currentStep, setCurrentStep] = useState(-1);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    if (currentStep >= sortSteps.length - 1) {
+      setIsRunning(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      nextStep();
+    }, speed);
+
+    return () => clearTimeout(timer);
+  }, [isRunning, currentStep, sortSteps.length, speed]);
 
   const generateRandomArray = () => {
-    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100));
+    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100) + 1);
     setArray(newArray);
     resetVisualization();
   };
@@ -53,80 +78,185 @@ const QuickSortVisualizer = () => {
     setCurrentIndices([]);
     setSortedIndices([]);
     setIsRunning(false);
+    setSortSteps([]);
+    setCurrentStep(-1);
   };
 
-  const startSort = async () => {
-    if (array.length === 0 || isRunning) return;
+  const calculateSortSteps = (arr: number[]) => {
+    const steps: SortStep[] = [];
+    const arrCopy = [...arr];
     
-    setIsRunning(true);
-    setSortedIndices([]);
+    steps.push({
+      array: [...arrCopy],
+      pivotIndex: null,
+      currentIndices: [],
+      sortedIndices: [],
+      comparison: 'Starting Quick Sort - Divide and Conquer approach'
+    });
     
-    const arrCopy = [...array];
-    await quickSort(arrCopy, 0, arrCopy.length - 1);
+    quickSortSteps(arrCopy, 0, arrCopy.length - 1, steps);
     
-    // Mark all elements as sorted
-    setSortedIndices(Array.from({ length: arrCopy.length }, (_, i) => i));
-    setPivotIndex(null);
-    setCurrentIndices([]);
-    setIsRunning(false);
+    steps.push({
+      array: [...arrCopy],
+      pivotIndex: null,
+      currentIndices: [],
+      sortedIndices: Array.from({ length: arrCopy.length }, (_, i) => i),
+      comparison: 'Array is completely sorted!'
+    });
+    
+    return steps;
   };
 
-  const quickSort = async (arr: number[], low: number, high: number) => {
+  const quickSortSteps = (arr: number[], low: number, high: number, steps: SortStep[]) => {
     if (low < high) {
-      // Partition the array and get pivot index
-      const pivotIdx = await partition(arr, low, high);
+      const pivotIdx = partitionSteps(arr, low, high, steps);
       
-      // Mark pivot as sorted
-      setSortedIndices(prev => [...prev, pivotIdx]);
+      steps.push({
+        array: [...arr],
+        pivotIndex: null,
+        currentIndices: [],
+        sortedIndices: [...steps[steps.length - 1].sortedIndices, pivotIdx],
+        comparison: `Pivot ${arr[pivotIdx]} is now in its final position at index ${pivotIdx}`
+      });
       
-      // Recursively sort elements before and after the pivot
-      await quickSort(arr, low, pivotIdx - 1);
-      await quickSort(arr, pivotIdx + 1, high);
+      quickSortSteps(arr, low, pivotIdx - 1, steps);
+      quickSortSteps(arr, pivotIdx + 1, high, steps);
     } else if (low === high) {
-      // Single element is already sorted
-      setSortedIndices(prev => [...prev, low]);
+      steps.push({
+        array: [...arr],
+        pivotIndex: null,
+        currentIndices: [],
+        sortedIndices: [...steps[steps.length - 1].sortedIndices, low],
+        comparison: `Single element at index ${low} is already in correct position`
+      });
     }
   };
 
-  const partition = async (arr: number[], low: number, high: number) => {
-    // Choose rightmost element as pivot
+  const partitionSteps = (arr: number[], low: number, high: number, steps: SortStep[]) => {
     const pivot = arr[high];
-    setPivotIndex(high);
     
-    // Wait to show pivot selection
-    await new Promise(resolve => setTimeout(resolve, speed));
+    steps.push({
+      array: [...arr],
+      pivotIndex: high,
+      currentIndices: [],
+      sortedIndices: steps.length > 0 ? steps[steps.length - 1].sortedIndices : [],
+      comparison: `Selected ${pivot} at index ${high} as pivot`
+    });
     
-    // Index of smaller element
     let i = low - 1;
     
     for (let j = low; j < high; j++) {
-      // Highlight current element being compared
-      setCurrentIndices([j]);
-      await new Promise(resolve => setTimeout(resolve, speed));
+      steps.push({
+        array: [...arr],
+        pivotIndex: high,
+        currentIndices: [j],
+        sortedIndices: steps[steps.length - 1].sortedIndices,
+        comparison: `Comparing ${arr[j]} with pivot ${pivot}`
+      });
       
-      // If current element is smaller than the pivot
       if (arr[j] < pivot) {
         i++;
         
-        // Swap arr[i] and arr[j]
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        setArray([...arr]);
-        
-        // Highlight swapped elements
-        setCurrentIndices([i, j]);
-        await new Promise(resolve => setTimeout(resolve, speed));
+        if (i !== j) {
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+          
+          steps.push({
+            array: [...arr],
+            pivotIndex: high,
+            currentIndices: [i, j],
+            sortedIndices: steps[steps.length - 1].sortedIndices,
+            comparison: `${arr[i]} < ${pivot}, swapped ${arr[i]} and ${arr[j]}`
+          });
+        } else {
+          steps.push({
+            array: [...arr],
+            pivotIndex: high,
+            currentIndices: [j],
+            sortedIndices: steps[steps.length - 1].sortedIndices,
+            comparison: `${arr[j]} < ${pivot}, element is already in correct position`
+          });
+        }
+      } else {
+        steps.push({
+          array: [...arr],
+          pivotIndex: high,
+          currentIndices: [j],
+          sortedIndices: steps[steps.length - 1].sortedIndices,
+          comparison: `${arr[j]} >= ${pivot}, no swap needed`
+        });
       }
     }
     
-    // Swap arr[i+1] and arr[high] (put the pivot element in its correct position)
     [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-    setArray([...arr]);
     
-    // Highlight final pivot position
-    setPivotIndex(i + 1);
-    await new Promise(resolve => setTimeout(resolve, speed));
+    steps.push({
+      array: [...arr],
+      pivotIndex: i + 1,
+      currentIndices: [i + 1, high],
+      sortedIndices: steps[steps.length - 1].sortedIndices,
+      comparison: `Placed pivot ${arr[i + 1]} at its final position ${i + 1}`
+    });
     
     return i + 1;
+  };
+
+  const startSort = () => {
+    if (array.length === 0 || isRunning) return;
+    
+    resetVisualization();
+    const steps = calculateSortSteps(array);
+    setSortSteps(steps);
+    setIsRunning(true);
+  };
+
+  const nextStep = () => {
+    if (currentStep >= sortSteps.length - 1) {
+      setIsRunning(false);
+      return;
+    }
+    
+    const nextStepIndex = currentStep + 1;
+    setCurrentStep(nextStepIndex);
+    
+    const step = sortSteps[nextStepIndex];
+    setArray(step.array);
+    setPivotIndex(step.pivotIndex);
+    setCurrentIndices(step.currentIndices);
+    setSortedIndices(step.sortedIndices);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= 0) return;
+    
+    const prevStepIndex = currentStep - 1;
+    setCurrentStep(prevStepIndex);
+    
+    const step = sortSteps[prevStepIndex];
+    setArray(step.array);
+    setPivotIndex(step.pivotIndex);
+    setCurrentIndices(step.currentIndices);
+    setSortedIndices(step.sortedIndices);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < 0 || step >= sortSteps.length) return;
+    
+    setCurrentStep(step);
+    setIsRunning(false);
+    
+    const sortStep = sortSteps[step];
+    setArray(sortStep.array);
+    setPivotIndex(sortStep.pivotIndex);
+    setCurrentIndices(sortStep.currentIndices);
+    setSortedIndices(sortStep.sortedIndices);
+  };
+
+  const togglePlayPause = () => {
+    if (currentStep >= sortSteps.length - 1) {
+      startSort();
+    } else {
+      setIsRunning(!isRunning);
+    }
   };
 
   const getBarHeight = (value: number) => {
@@ -218,6 +348,60 @@ const QuickSortVisualizer = () => {
                     <span>Faster</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(0)}
+                    disabled={sortSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    disabled={array.length === 0}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep}
+                    disabled={currentStep >= sortSteps.length - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(sortSteps.length - 1)}
+                    disabled={sortSteps.length === 0}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                </div>
                 
                 <Button 
                   onClick={startSort} 
@@ -227,6 +411,44 @@ const QuickSortVisualizer = () => {
                   <SortAsc className="mr-2 h-4 w-4" /> 
                   Start Sort
                 </Button>
+
+                {sortSteps.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Step: {currentStep + 1} of {sortSteps.length}
+                    </Label>
+                    <Slider
+                      value={[currentStep + 1]}
+                      onValueChange={([value]) => goToStep(value - 1)}
+                      max={sortSteps.length}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
+                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Array Size</p>
+                    <p className="text-3xl font-bold text-drona-dark">{array.length}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
+                    <p className="text-xl font-bold text-drona-dark">{sortSteps.length}</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -265,6 +487,14 @@ const QuickSortVisualizer = () => {
                         </div>
                       ))}
                     </div>
+
+                    {currentStep >= 0 && currentStep < sortSteps.length && (
+                      <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
+                        <p className="text-lg font-semibold text-drona-dark">
+                          {sortSteps[currentStep].comparison}
+                        </p>
+                      </div>
+                    )}
                     
                     <div className="flex justify-center gap-6">
                       <div className="flex items-center">
