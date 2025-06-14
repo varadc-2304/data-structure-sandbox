@@ -48,7 +48,7 @@ const CLOOKVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, clookOrder.length, speed]);
@@ -74,7 +74,7 @@ const CLOOKVisualizer = () => {
         current: false
       }));
       
-      setRequestQueue([...requestQueue, ...newRequests]);
+      setRequestQueue(prev => [...prev, ...newRequests]);
       setInputPosition("");
     } catch (error) {
       console.error("Invalid position format or out of range");
@@ -86,28 +86,28 @@ const CLOOKVisualizer = () => {
     const sortedRequests = [...requests].sort((a, b) => a.position - b.position);
     
     if (initialDirection === 'right') {
-      // Service requests to the right (including current position)
+      // Service requests to the right
       const rightRequests = sortedRequests.filter(req => req.position >= startPosition);
       rightRequests.forEach(req => {
         const index = requests.findIndex(r => r.position === req.position);
         order.push(index);
       });
       
-      // Service remaining requests from the beginning
+      // Service remaining requests from the beginning (circular)
       const leftRequests = sortedRequests.filter(req => req.position < startPosition);
       leftRequests.forEach(req => {
         const index = requests.findIndex(r => r.position === req.position);
         order.push(index);
       });
     } else {
-      // Service requests to the left (including current position)
+      // Service requests to the left
       const leftRequests = sortedRequests.filter(req => req.position <= startPosition).reverse();
       leftRequests.forEach(req => {
         const index = requests.findIndex(r => r.position === req.position);
         order.push(index);
       });
       
-      // Service remaining requests from the end
+      // Service remaining requests from the end (circular)
       const rightRequests = sortedRequests.filter(req => req.position > startPosition).reverse();
       rightRequests.forEach(req => {
         const index = requests.findIndex(r => r.position === req.position);
@@ -250,19 +250,9 @@ const CLOOKVisualizer = () => {
     }
   };
 
+  // Calculate position as percentage for visual elements
   const calculatePosition = (position: number) => {
-    const percentage = (position / (diskSize - 1)) * 100;
-    return Math.max(0, Math.min(100, percentage));
-  };
-
-  const getScaleMarkers = () => {
-    const markers = [];
-    const steps = 5;
-    for (let i = 0; i < steps; i++) {
-      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
-      markers.push(position);
-    }
-    return markers;
+    return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
 
   return (
@@ -359,29 +349,48 @@ const CLOOKVisualizer = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
-                        <SkipBack className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
-                        <Rewind className="h-3 w-3" />
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep} 
+                        disabled={currentStep <= -1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipBack className="h-4 w-4" />
                       </Button>
                       <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(-1)}
+                        className="flex items-center justify-center"
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
                         onClick={togglePlayPause}
                         disabled={clookOrder.length === 0}
+                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
-                        {isPlaying ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= clookOrder.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(clookOrder.length - 1)}>
-                        <FastForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(clookOrder.length - 1)}
+                        className="flex items-center justify-center"
+                      >
+                        <FastForward className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= clookOrder.length - 1}>
-                        <SkipForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep} 
+                        disabled={currentStep >= clookOrder.length - 1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipForward className="h-4 w-4" />
                       </Button>
                     </div>
                     
@@ -459,19 +468,11 @@ const CLOOKVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
                       <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
-                        
-                        {/* Direction indicator */}
-                        <div className="absolute top-4 right-4 flex items-center space-x-2">
-                          <span className="text-sm font-medium text-drona-gray">Direction:</span>
-                          <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
-                            {direction === 'right' ? '→' : '←'} C-LOOK {direction.toUpperCase()}
-                          </Badge>
-                        </div>
+                        <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
-                          {getScaleMarkers().map(pos => (
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
                               <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
@@ -479,31 +480,44 @@ const CLOOKVisualizer = () => {
                           ))}
                         </div>
                         
-                        {/* Current head position */}
+                        {/* Current head position with smooth animation */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
-                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
-                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-purple-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
                         </div>
+                        
+                        {/* Initial head position indicator (if different) */}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
+                            style={{ 
+                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
+                            }}
+                          >
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
+                              Start: {initialHeadPosition}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Request positions */}
                         {requestQueue.map((req, idx) => (
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
-                              req.processed ? "bg-purple-500 border-white shadow-lg scale-110" : "bg-white border-purple-400 shadow-md",
-                              req.current && "ring-4 ring-purple-400/50 scale-125 animate-pulse"
+                              "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
+                              req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
+                              left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
@@ -523,7 +537,7 @@ const CLOOKVisualizer = () => {
                             variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
                             className={cn(
                               "text-sm px-3 py-1",
-                              orderIndex === currentStep && "bg-purple-500 text-white"
+                              orderIndex === currentStep && "bg-drona-green text-white"
                             )}
                           >
                             {requestQueue[requestIndex]?.position}
@@ -552,7 +566,7 @@ const CLOOKVisualizer = () => {
                                 <tr key={idx} className={cn(
                                   "transition-colors",
                                   idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                                  idx === currentStep && 'bg-purple-100'
+                                  idx === currentStep && 'bg-drona-green/10'
                                 )}>
                                   <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
@@ -573,16 +587,16 @@ const CLOOKVisualizer = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>C-LOOK Disk Scheduling Algorithm</CardTitle>
-                    <CardDescription>Circular LOOK Algorithm</CardDescription>
+                    <CardDescription>Circular LOOK Disk Scheduling</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        C-LOOK (Circular LOOK) combines the advantages of both C-SCAN and LOOK. Like LOOK, it only moves as far as the last request in each direction, and like C-SCAN, it provides more uniform service times.
+                        C-LOOK is a variation of LOOK that provides a more uniform wait time. Like LOOK, it services requests in one direction until no more requests exist in that direction.
                       </p>
                       <p className="text-drona-gray">
-                        It services requests in one direction until the last request, then jumps directly to the first request in the opposite direction without going to the disk boundary.
+                        However, instead of reversing direction like LOOK, C-LOOK jumps to the other end of the request range and continues in the same direction, creating a circular pattern.
                       </p>
                     </div>
                     
@@ -597,27 +611,19 @@ const CLOOKVisualizer = () => {
     sort requestQueue by position
     
     if direction == "right":
-        // Service requests to the right (including current position)
+        // Service requests to the right
         for each request >= currentHeadPosition:
             seekTime = abs(currentHeadPosition - request.position)
             totalSeekTime += seekTime
             currentHeadPosition = request.position
         endfor
         
-        // Jump directly to the first remaining request
-        if there are requests < initialHeadPosition:
-            firstRequest = first request < initialHeadPosition
-            seekTime = abs(currentHeadPosition - firstRequest.position)
+        // Jump to the leftmost request and continue
+        for each request < initialHeadPosition (in order):
+            seekTime = abs(currentHeadPosition - request.position)
             totalSeekTime += seekTime
-            currentHeadPosition = firstRequest.position
-            
-            // Service remaining requests in order
-            for each remaining request:
-                seekTime = abs(currentHeadPosition - request.position)
-                totalSeekTime += seekTime
-                currentHeadPosition = request.position
-            endfor
-        endif
+            currentHeadPosition = request.position
+        endfor
     else:
         // Similar logic for left direction
     endif
@@ -632,18 +638,17 @@ const CLOOKVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Combines benefits of both LOOK and C-SCAN</li>
-                        <li>Most efficient seek time among all algorithms</li>
-                        <li>Uniform wait times like C-SCAN</li>
-                        <li>No unnecessary movement to disk boundaries</li>
-                        <li>Best overall performance</li>
+                        <li>More uniform wait times than LOOK</li>
+                        <li>Eliminates the bias against requests at the ends</li>
+                        <li>Better performance than LOOK in many scenarios</li>
+                        <li>No starvation issues</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Most complex algorithm to implement</li>
-                        <li>Requires sorting and careful track of current direction</li>
-                        <li>Overhead may not be justified for simple systems</li>
+                        <li>More complex to implement than LOOK</li>
+                        <li>May have higher seek times in some cases due to the circular jump</li>
+                        <li>Performance depends on request distribution</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -684,7 +689,7 @@ const CLOOKVisualizer = () => {
                     <div>
                       <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        C-LOOK typically provides the best overall performance among all disk scheduling algorithms, combining efficiency with fairness.
+                        C-LOOK typically provides excellent performance with very uniform wait times, making it one of the best disk scheduling algorithms in practice.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
@@ -697,7 +702,7 @@ const CLOOKVisualizer = () => {
                           <li>SSTF (Shortest Seek Time First)</li>
                           <li>SCAN (Elevator)</li>
                           <li>C-SCAN (Circular SCAN)</li>
-                          <li>LOOK and C-LOOK (Best)</li>
+                          <li>LOOK and C-LOOK</li>
                         </ol>
                       </div>
                     </div>
