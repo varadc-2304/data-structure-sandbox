@@ -9,6 +9,7 @@ import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
 interface BoardState {
   grid: (0 | 1)[][];
   queens: number[];
+  isSolution?: boolean;
 }
 
 const NQueensVisualizer = () => {
@@ -20,6 +21,7 @@ const NQueensVisualizer = () => {
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [steps, setSteps] = useState<BoardState[]>([]);
   const [totalSolutions, setTotalSolutions] = useState<number>(0);
+  const [solutionFound, setSolutionFound] = useState<boolean>(false);
   
   useEffect(() => {
     // Initialize board
@@ -29,6 +31,7 @@ const NQueensVisualizer = () => {
   const initializeBoard = () => {
     setIsRunning(false);
     setCurrentStep(-1);
+    setSolutionFound(false);
     
     const initialBoard = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
     const stepsRecord: BoardState[] = [];
@@ -53,12 +56,15 @@ const NQueensVisualizer = () => {
     stepsRecord: BoardState[],
     solutionsFound: BoardState[]
   ): boolean => {
-    // All queens are placed
+    // All queens are placed - solution found!
     if (col >= boardSize) {
-      solutionsFound.push({
+      const solutionState = {
         grid: JSON.parse(JSON.stringify(board)),
-        queens: [...queens]
-      });
+        queens: [...queens],
+        isSolution: true
+      };
+      solutionsFound.push(solutionState);
+      stepsRecord.push(solutionState);
       return true;
     }
     
@@ -81,6 +87,8 @@ const NQueensVisualizer = () => {
         const found = solveNQueens(board, col + 1, queens, stepsRecord, solutionsFound);
         if (found) {
           solutionFound = true;
+          // Stop here for the first solution in visualization
+          return true;
         }
         
         // Backtrack and remove queen
@@ -126,6 +134,7 @@ const NQueensVisualizer = () => {
   const resetVisualization = () => {
     setIsRunning(false);
     setCurrentStep(-1);
+    setSolutionFound(false);
     initializeBoard();
   };
   
@@ -133,46 +142,62 @@ const NQueensVisualizer = () => {
     if (currentStep >= steps.length - 1) {
       // If at end, restart from beginning
       setCurrentStep(-1);
+      setSolutionFound(false);
     }
     setIsRunning(!isRunning);
   };
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      const nextStepIndex = currentStep + 1;
+      setCurrentStep(nextStepIndex);
+      
+      // Check if this step is a solution
+      if (steps[nextStepIndex]?.isSolution) {
+        setSolutionFound(true);
+        setIsRunning(false);
+      }
     }
   };
 
   const prevStep = () => {
     if (currentStep > -1) {
       setCurrentStep(prev => prev - 1);
+      setSolutionFound(false);
     }
   };
 
   const skipToStart = () => {
     setIsRunning(false);
     setCurrentStep(-1);
+    setSolutionFound(false);
   };
 
   const skipToEnd = () => {
     setIsRunning(false);
     setCurrentStep(steps.length - 1);
+    if (steps[steps.length - 1]?.isSolution) {
+      setSolutionFound(true);
+    }
   };
 
   const goToStep = (stepIndex: number) => {
     setIsRunning(false);
     setCurrentStep(stepIndex);
+    setSolutionFound(stepIndex >= 0 && steps[stepIndex]?.isSolution);
   };
   
   const nextSolution = () => {
     setIsRunning(false);
     setCurrentStep(-1);
+    setSolutionFound(false);
     setCurrentSolution((prev) => (prev + 1) % solutions.length);
   };
   
   const prevSolution = () => {
     setIsRunning(false);
     setCurrentStep(-1);
+    setSolutionFound(false);
     setCurrentSolution((prev) => (prev - 1 + solutions.length) % solutions.length);
   };
   
@@ -181,7 +206,14 @@ const NQueensVisualizer = () => {
     
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
-        nextStep();
+        const nextStepIndex = currentStep + 1;
+        setCurrentStep(nextStepIndex);
+        
+        // Check if this step is a solution and stop animation
+        if (steps[nextStepIndex]?.isSolution) {
+          setSolutionFound(true);
+          setIsRunning(false);
+        }
       }, 2000 / speed);
     } else if (currentStep >= steps.length - 1) {
       setIsRunning(false);
@@ -268,7 +300,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={toggleRunning} 
-                    disabled={steps.length === 0}
+                    disabled={steps.length === 0 || solutionFound}
                     size="sm"
                   >
                     {isRunning ? (
@@ -280,7 +312,7 @@ const NQueensVisualizer = () => {
                   
                   <Button 
                     onClick={nextStep} 
-                    disabled={steps.length === 0 || currentStep >= steps.length - 1}
+                    disabled={steps.length === 0 || currentStep >= steps.length - 1 || solutionFound}
                     size="sm"
                   >
                     Next →
@@ -373,8 +405,11 @@ const NQueensVisualizer = () => {
                 <div className="text-center mt-4">
                   <p>Total steps: {steps.length}</p>
                   <p>Current step: {currentStep + 1}</p>
-                  {currentStep >= steps.length - 1 && steps.length > 0 && (
-                    <p className="font-bold text-green-600">✅ Backtracking algorithm completed!</p>
+                  {solutionFound && (
+                    <p className="font-bold text-green-600 text-lg">🎉 Solution Found! All {boardSize} queens are safely placed!</p>
+                  )}
+                  {currentStep >= steps.length - 1 && steps.length > 0 && !solutionFound && (
+                    <p className="font-bold text-blue-600">✅ Backtracking algorithm completed!</p>
                   )}
                 </div>
               </div>
