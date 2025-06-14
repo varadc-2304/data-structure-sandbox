@@ -34,7 +34,7 @@ const FractionalKnapsackVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1000);
+  const [speed, setSpeed] = useState<number>(1);
   
   const colors = [
     'bg-red-500', 'bg-blue-500', 'bg-green-500',
@@ -65,7 +65,7 @@ const FractionalKnapsackVisualizer = () => {
       setItems([...items, newItem]);
       setName("");
       setWeight("");
-      setValue("");
+      SetValue("");
     }
   };
 
@@ -225,7 +225,7 @@ const FractionalKnapsackVisualizer = () => {
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
         setCurrentStep(current => current + 1);
-      }, speed);
+      }, 2000 / speed);
     } else if (currentStep >= steps.length - 1) {
       setIsRunning(false);
     }
@@ -236,7 +236,6 @@ const FractionalKnapsackVisualizer = () => {
   }, [isRunning, currentStep, steps.length, speed]);
 
   const currentStepData = currentStep >= 0 && steps.length > 0 ? steps[currentStep] : null;
-  const speedDisplay = (2000 / speed).toFixed(1);
 
   return (
     <div className="min-h-screen bg-white">
@@ -362,20 +361,29 @@ const FractionalKnapsackVisualizer = () => {
               </div>
               
               <div className="mt-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <label className="text-sm font-medium whitespace-nowrap">Animation Speed: {speedDisplay}x</label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={(value) => setSpeed(value[0])}
-                    min={667}
-                    max={4000}
-                    step={333}
-                    className="flex-1"
-                    disabled={isRunning}
-                  />
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-drona-dark">
+                    Animation Speed: {speed}x
+                  </label>
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                      disabled={isRunning}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <Button 
                     onClick={skipToStart} 
                     disabled={steps.length === 0 || currentStep === -1}

@@ -29,7 +29,7 @@ const JobSequencingVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1000);
+  const [speed, setSpeed] = useState<number>(1);
   
   const colors = [
     'bg-red-500', 'bg-blue-500', 'bg-green-500',
@@ -185,7 +185,7 @@ const JobSequencingVisualizer = () => {
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
         setCurrentStep(current => current + 1);
-      }, speed);
+      }, 2000 / speed);
     } else if (currentStep >= steps.length - 1) {
       setIsRunning(false);
     }
@@ -279,17 +279,24 @@ const JobSequencingVisualizer = () => {
                 </div>
 
                 <div className="mb-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <label className="text-sm font-medium whitespace-nowrap">Animation Speed: {speedDisplay}x</label>
-                    <Slider
-                      value={[speed]}
-                      onValueChange={(value) => setSpeed(value[0])}
-                      min={667}
-                      max={4000}
-                      step={333}
-                      className="flex-1"
-                      disabled={isRunning}
-                    />
+                  <div className="space-y-2 mb-4">
+                    <label className="text-sm font-semibold text-drona-dark">Animation Speed: {speed}x</label>
+                    <div className="flex items-center mt-1">
+                      <input 
+                        type="range" 
+                        min={0.5} 
+                        max={3} 
+                        step={0.5} 
+                        value={speed} 
+                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        className="w-full"
+                        disabled={isRunning}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-drona-gray">
+                      <span>Slower</span>
+                      <span>Faster</span>
+                    </div>
                   </div>
                   
                   {steps.length > 0 && (
@@ -411,7 +418,7 @@ const JobSequencingVisualizer = () => {
                 <li>Initialize the result sequence with 'empty' slots.</li>
                 <li>For each job in the sorted order:
                   <ul className="list-disc list-inside ml-6 mt-1">
-                    <li>Find the latest empty slot before the deadline.</li>
+                    <li>Find the latest available slot before the deadline.</li>
                     <li>If such a slot exists, assign the job to that slot.</li>
                   </ul>
                 </li>

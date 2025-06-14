@@ -29,7 +29,7 @@ const ZeroOneKnapsackVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1000);
+  const [speed, setSpeed] = useState<number>(1);
   const [optimalValue, setOptimalValue] = useState<number>(0);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
 
@@ -189,7 +189,7 @@ const ZeroOneKnapsackVisualizer = () => {
     if (isRunning && currentStep < steps.length - 1) {
       timer = setTimeout(() => {
         setCurrentStep(current => current + 1);
-      }, speed);
+      }, 2000 / speed);
     } else if (currentStep >= steps.length - 1) {
       setIsRunning(false);
     }
@@ -213,8 +213,6 @@ const ZeroOneKnapsackVisualizer = () => {
   const currentHighlight = currentStep >= 0 && steps.length > 0 && steps[currentStep].currentItem
     ? { item: steps[currentStep].currentItem, weight: steps[currentStep].currentWeight, selected: steps[currentStep].selected }
     : null;
-
-  const speedDisplay = (2000 / speed).toFixed(1);
 
   return (
     <div className="min-h-screen bg-white">
@@ -333,20 +331,29 @@ const ZeroOneKnapsackVisualizer = () => {
               </div>
               
               <div className="mt-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <label className="text-sm font-medium whitespace-nowrap">Animation Speed: {speedDisplay}x</label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={(value) => setSpeed(value[0])}
-                    min={667}
-                    max={4000}
-                    step={333}
-                    className="flex-1"
-                    disabled={isRunning}
-                  />
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-drona-dark">
+                    Animation Speed: {speed}x
+                  </label>
+                  <div className="flex items-center mt-1">
+                    <input 
+                      type="range" 
+                      min={0.5} 
+                      max={3} 
+                      step={0.5} 
+                      value={speed} 
+                      onChange={(e) => setSpeed(Number(e.target.value))}
+                      className="w-full"
+                      disabled={isRunning}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <Button 
                     onClick={skipToStart} 
                     disabled={steps.length === 0 || currentStep === -1}
@@ -423,7 +430,7 @@ const ZeroOneKnapsackVisualizer = () => {
               )}
             </Card>
             
-            {items.length > 0 && (
+            
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Dynamic Programming Table</h2>
                 
@@ -484,7 +491,6 @@ const ZeroOneKnapsackVisualizer = () => {
                   </div>
                 )}
               </Card>
-            )}
             
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-3">0-1 Knapsack Problem Explanation</h2>
