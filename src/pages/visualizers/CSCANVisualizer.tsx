@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -586,7 +587,7 @@ const CSCANVisualizer = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>C-SCAN Disk Scheduling Algorithm</CardTitle>
-                    <CardDescription>Circular SCAN Disk Scheduling</CardTitle>
+                    <CardDescription>Circular SCAN Disk Scheduling</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
