@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -32,7 +31,7 @@ const CSCANVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [seekHistory, setSeekHistory] = useState<{ from: number; to: number; distance: number }[]>([]);
-  const [cscanOrder, setCScanOrder] = useState<(number | 'end' | 'start')[]>([]);
+  const [cscanOrder, setCscanOrder] = useState<number[]>([]);
 
   useEffect(() => {
     resetSimulation();
@@ -48,7 +47,7 @@ const CSCANVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 1000 / speed);
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, cscanOrder.length, speed]);
@@ -74,15 +73,15 @@ const CSCANVisualizer = () => {
         current: false
       }));
       
-      setRequestQueue([...requestQueue, ...newRequests]);
+      setRequestQueue(prev => [...prev, ...newRequests]);
       setInputPosition("");
     } catch (error) {
       console.error("Invalid position format or out of range");
     }
   };
 
-  const calculateCSCANOrder = (requests: DiskRequest[], startPosition: number, initialDirection: 'left' | 'right'): (number | 'end' | 'start')[] => {
-    const order: (number | 'end' | 'start')[] = [];
+  const calculateCSCANOrder = (requests: DiskRequest[], startPosition: number, initialDirection: 'left' | 'right'): number[] => {
+    const order: number[] = [];
     const sortedRequests = [...requests].sort((a, b) => a.position - b.position);
     
     if (initialDirection === 'right') {
@@ -93,22 +92,12 @@ const CSCANVisualizer = () => {
         order.push(index);
       });
       
-      // Go to end if there were right requests
-      if (rightRequests.length > 0) {
-        order.push('end');
-      }
-      
-      // Jump to start
-      if (sortedRequests.some(req => req.position < startPosition)) {
-        order.push('start');
-        
-        // Service remaining requests from start
-        const leftRequests = sortedRequests.filter(req => req.position < startPosition);
-        leftRequests.forEach(req => {
-          const index = requests.findIndex(r => r.position === req.position);
-          order.push(index);
-        });
-      }
+      // Service remaining requests from the beginning
+      const leftRequests = sortedRequests.filter(req => req.position < startPosition);
+      leftRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
     } else {
       // Service requests to the left
       const leftRequests = sortedRequests.filter(req => req.position <= startPosition).reverse();
@@ -117,22 +106,12 @@ const CSCANVisualizer = () => {
         order.push(index);
       });
       
-      // Go to start if there were left requests
-      if (leftRequests.length > 0) {
-        order.push('start');
-      }
-      
-      // Jump to end
-      if (sortedRequests.some(req => req.position > startPosition)) {
-        order.push('end');
-        
-        // Service remaining requests from end
-        const rightRequests = sortedRequests.filter(req => req.position > startPosition).reverse();
-        rightRequests.forEach(req => {
-          const index = requests.findIndex(r => r.position === req.position);
-          order.push(index);
-        });
-      }
+      // Service remaining requests from the end
+      const rightRequests = sortedRequests.filter(req => req.position > startPosition).reverse();
+      rightRequests.forEach(req => {
+        const index = requests.findIndex(r => r.position === req.position);
+        order.push(index);
+      });
     }
     
     return order;
@@ -154,16 +133,16 @@ const CSCANVisualizer = () => {
     
     if (resetRequests.length > 0) {
       const order = calculateCSCANOrder(resetRequests, initialHeadPosition, direction);
-      setCScanOrder(order);
+      setCscanOrder(order);
     } else {
-      setCScanOrder([]);
+      setCscanOrder([]);
     }
   };
 
   useEffect(() => {
     if (requestQueue.length > 0) {
       const order = calculateCSCANOrder(requestQueue, initialHeadPosition, direction);
-      setCScanOrder(order);
+      setCscanOrder(order);
     }
   }, [requestQueue, initialHeadPosition, direction]);
 
@@ -173,52 +152,31 @@ const CSCANVisualizer = () => {
       return;
     }
     
-    const nextStep = currentStep + 1;
-    const nextItem = cscanOrder[nextStep];
+    const nextStepIndex = currentStep + 1;
+    const nextRequestIndex = cscanOrder[nextStepIndex];
+    const nextRequest = requestQueue[nextRequestIndex];
     
-    let targetPosition: number;
-    let seekDistance: number;
-    
-    if (nextItem === 'end') {
-      targetPosition = diskSize - 1;
-      seekDistance = Math.abs(currentHeadPosition - targetPosition);
-    } else if (nextItem === 'start') {
-      targetPosition = 0;
-      seekDistance = Math.abs(currentHeadPosition - targetPosition);
-    } else {
-      const nextRequest = requestQueue[nextItem as number];
-      targetPosition = nextRequest.position;
-      seekDistance = Math.abs(currentHeadPosition - targetPosition);
-    }
+    const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
     setSeekHistory(prev => [...prev, { 
       from: currentHeadPosition, 
-      to: targetPosition, 
+      to: nextRequest.position, 
       distance: seekDistance 
     }]);
     
     setTotalSeekTime(prev => prev + seekDistance);
-    setCurrentHeadPosition(targetPosition);
+    setCurrentHeadPosition(nextRequest.position);
     
-    if (typeof nextItem === 'number') {
-      const updatedRequests = requestQueue.map((req, idx) => ({
-        ...req,
-        processed: cscanOrder.slice(0, nextStep + 1).filter(item => typeof item === 'number').includes(idx),
-        current: idx === nextItem
-      }));
-      setRequestQueue(updatedRequests);
-    } else {
-      // Clear current highlighting for boundary movements
-      const updatedRequests = requestQueue.map(req => ({
-        ...req,
-        current: false
-      }));
-      setRequestQueue(updatedRequests);
-    }
+    const updatedRequests = requestQueue.map((req, idx) => ({
+      ...req,
+      processed: cscanOrder.slice(0, nextStepIndex + 1).includes(idx),
+      current: idx === nextRequestIndex
+    }));
+    setRequestQueue(updatedRequests);
     
-    setCurrentStep(nextStep);
+    setCurrentStep(nextStepIndex);
     
-    if (nextStep >= cscanOrder.length - 1) {
+    if (nextStepIndex >= cscanOrder.length - 1) {
       setIsPlaying(false);
     }
   };
@@ -235,13 +193,13 @@ const CSCANVisualizer = () => {
     const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
     setTotalSeekTime(newTotalSeekTime);
     
-    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : requestQueue[cscanOrder[newStep]].position;
     setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: cscanOrder.slice(0, newStep + 1).filter(item => typeof item === 'number').includes(idx),
-      current: newStep >= 0 && typeof cscanOrder[newStep] === 'number' && cscanOrder[newStep] === idx
+      processed: cscanOrder.slice(0, newStep + 1).includes(idx),
+      current: newStep >= 0 && cscanOrder[newStep] === idx
     }));
     setRequestQueue(updatedRequests);
   };
@@ -252,39 +210,32 @@ const CSCANVisualizer = () => {
     setCurrentStep(step);
     setIsPlaying(false);
     
-    let newHeadPosition = initialHeadPosition;
-    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    const newHeadPosition = step === -1 ? initialHeadPosition : requestQueue[cscanOrder[step]].position;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    // Recalculate seek history up to this step
+    const newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    let headPos = initialHeadPosition;
     
     for (let i = 0; i <= step; i++) {
-      const item = cscanOrder[i];
-      let targetPosition: number;
-      
-      if (item === 'end') {
-        targetPosition = diskSize - 1;
-      } else if (item === 'start') {
-        targetPosition = 0;
-      } else {
-        targetPosition = requestQueue[item as number].position;
-      }
-      
-      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      const requestIndex = cscanOrder[i];
+      const targetPosition = requestQueue[requestIndex].position;
+      const seekDistance = Math.abs(headPos - targetPosition);
       newSeekHistory.push({
-        from: newHeadPosition,
+        from: headPos,
         to: targetPosition,
         distance: seekDistance
       });
-      
-      newHeadPosition = targetPosition;
+      headPos = targetPosition;
     }
     
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
-    setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: cscanOrder.slice(0, step + 1).filter(item => typeof item === 'number').includes(idx),
-      current: step >= 0 && typeof cscanOrder[step] === 'number' && cscanOrder[step] === idx
+      processed: cscanOrder.slice(0, step + 1).includes(idx),
+      current: step >= 0 && cscanOrder[step] === idx
     }));
     setRequestQueue(updatedRequests);
   };
@@ -298,19 +249,9 @@ const CSCANVisualizer = () => {
     }
   };
 
+  // Calculate position as percentage for visual elements
   const calculatePosition = (position: number) => {
-    const percentage = (position / (diskSize - 1)) * 100;
-    return Math.max(0, Math.min(100, percentage));
-  };
-
-  const getScaleMarkers = () => {
-    const markers = [];
-    const steps = 5;
-    for (let i = 0; i < steps; i++) {
-      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
-      markers.push(position);
-    }
-    return markers;
+    return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
 
   return (
@@ -407,29 +348,48 @@ const CSCANVisualizer = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex space-x-1">
-                      <Button variant="outline" size="sm" onClick={prevStep} disabled={currentStep <= -1}>
-                        <SkipBack className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(-1)}>
-                        <Rewind className="h-3 w-3" />
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep} 
+                        disabled={currentStep <= -1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipBack className="h-4 w-4" />
                       </Button>
                       <Button 
-                        className="flex-1 bg-drona-green hover:bg-drona-green/90" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(-1)}
+                        className="flex items-center justify-center"
+                      >
+                        <Rewind className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
                         onClick={togglePlayPause}
                         disabled={cscanOrder.length === 0}
+                        className="bg-drona-green hover:bg-drona-green/90 flex items-center justify-center"
                       >
-                        {isPlaying ? (
-                          <><Pause className="mr-2 h-4 w-4" /> Pause</>
-                        ) : (
-                          <><Play className="mr-2 h-4 w-4" /> {currentStep >= cscanOrder.length - 1 ? 'Restart' : 'Play'}</>
-                        )}
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => goToStep(cscanOrder.length - 1)}>
-                        <FastForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => goToStep(cscanOrder.length - 1)}
+                        className="flex items-center justify-center"
+                      >
+                        <FastForward className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={nextStep} disabled={currentStep >= cscanOrder.length - 1}>
-                        <SkipForward className="h-3 w-3" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep} 
+                        disabled={currentStep >= cscanOrder.length - 1}
+                        className="flex items-center justify-center"
+                      >
+                        <SkipForward className="h-4 w-4" />
                       </Button>
                     </div>
                     
@@ -507,19 +467,11 @@ const CSCANVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
                       <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
-                        
-                        {/* Direction indicator */}
-                        <div className="absolute top-4 right-4 flex items-center space-x-2">
-                          <span className="text-sm font-medium text-drona-gray">Direction:</span>
-                          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
-                            {direction === 'right' ? '→' : '←'} CIRCULAR {direction.toUpperCase()}
-                          </Badge>
-                        </div>
+                        <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
-                          {getScaleMarkers().map(pos => (
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
                               <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
@@ -527,31 +479,44 @@ const CSCANVisualizer = () => {
                           ))}
                         </div>
                         
-                        {/* Current head position */}
+                        {/* Current head position with smooth animation */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full transform -translate-y-1/2 transition-all duration-700 ease-out z-20 shadow-lg border-2 border-white"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
-                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
-                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-blue-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
+                          <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                             Head: {currentHeadPosition}
                           </div>
                           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
                         </div>
+                        
+                        {/* Initial head position indicator (if different) */}
+                        {initialHeadPosition !== currentHeadPosition && (
+                          <div 
+                            className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
+                            style={{ 
+                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
+                            }}
+                          >
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
+                              Start: {initialHeadPosition}
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Request positions */}
                         {requestQueue.map((req, idx) => (
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
-                              req.processed ? "bg-blue-500 border-white shadow-lg scale-110" : "bg-white border-blue-400 shadow-md",
-                              req.current && "ring-4 ring-blue-400/50 scale-125 animate-pulse"
+                              "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
+                              req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
+                              left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
@@ -565,16 +530,16 @@ const CSCANVisualizer = () => {
                     <div className="mb-6">
                       <h3 className="text-sm font-medium text-drona-gray mb-2">C-SCAN Order</h3>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {cscanOrder.map((item, orderIndex) => (
+                        {cscanOrder.map((requestIndex, orderIndex) => (
                           <Badge 
                             key={orderIndex}
                             variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
                             className={cn(
                               "text-sm px-3 py-1",
-                              orderIndex === currentStep && "bg-blue-500 text-white"
+                              orderIndex === currentStep && "bg-drona-green text-white"
                             )}
                           >
-                            {item === 'end' ? (diskSize - 1) : item === 'start' ? 0 : requestQueue[item as number]?.position}
+                            {requestQueue[requestIndex]?.position}
                           </Badge>
                         ))}
                       </div>
@@ -600,7 +565,7 @@ const CSCANVisualizer = () => {
                                 <tr key={idx} className={cn(
                                   "transition-colors",
                                   idx % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                                  idx === currentStep && 'bg-blue-100'
+                                  idx === currentStep && 'bg-drona-green/10'
                                 )}>
                                   <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                                   <td className="px-4 py-2 text-sm">{seek.from}</td>
@@ -621,16 +586,16 @@ const CSCANVisualizer = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>C-SCAN Disk Scheduling Algorithm</CardTitle>
-                    <CardDescription>Circular SCAN Algorithm</CardDescription>
+                    <CardDescription>Circular SCAN Disk Scheduling</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6">
                       <h3 className="font-medium text-drona-dark mb-2">How it works</h3>
                       <p className="text-drona-gray mb-4">
-                        C-SCAN (Circular SCAN) is a variant of SCAN that provides more uniform wait times. It services requests in one direction only, and when it reaches the end, it immediately jumps to the beginning and continues in the same direction.
+                        C-SCAN is an improved version of the SCAN algorithm. In C-SCAN, the disk arm starts from one end of the disk and moves towards the other end, servicing all requests in its path.
                       </p>
                       <p className="text-drona-gray">
-                        This eliminates the bias against requests at either end of the disk that can occur with regular SCAN.
+                        Once the arm reaches the other end, it immediately returns to the starting end of the disk without servicing any requests on the return trip.
                       </p>
                     </div>
                     
@@ -652,18 +617,16 @@ const CSCANVisualizer = () => {
             currentHeadPosition = request.position
         endfor
         
-        // Jump to beginning and service remaining requests
-        if there are requests < initialHeadPosition:
-            seekTime = abs(currentHeadPosition - 0) + abs(0 - first_remaining_request)
+        // Move to the beginning of the disk without servicing
+        totalSeekTime += (diskSize - 1 - currentHeadPosition) + (diskSize - 1)
+        currentHeadPosition = 0
+        
+        // Service remaining requests from the beginning
+        for each request in requestQueue:
+            seekTime = abs(currentHeadPosition - request.position)
             totalSeekTime += seekTime
-            currentHeadPosition = 0
-            
-            for each remaining request (in ascending order):
-                seekTime = abs(currentHeadPosition - request.position)
-                totalSeekTime += seekTime
-                currentHeadPosition = request.position
-            endfor
-        endif
+            currentHeadPosition = request.position
+        endfor
     else:
         // Similar logic for left direction
     endif
@@ -678,17 +641,16 @@ const CSCANVisualizer = () => {
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Advantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>More uniform wait times compared to SCAN</li>
-                        <li>Eliminates bias against requests at disk extremes</li>
-                        <li>Better average response time than SCAN</li>
-                        <li>No starvation</li>
+                        <li>More uniform wait time compared to SCAN</li>
+                        <li>Provides better performance than FCFS and SCAN</li>
+                        <li>Reduces the possibility of starvation</li>
                       </ul>
                       
                       <h4 className="text-sm font-medium text-drona-green mt-4 mb-2">Disadvantages</h4>
                       <ul className="list-disc pl-5 text-drona-gray space-y-1">
-                        <li>Higher total seek time due to jumps from end to beginning</li>
-                        <li>More complex to implement than basic SCAN</li>
-                        <li>Unnecessary movement if all requests are on one side</li>
+                        <li>Longer seek times compared to SSTF</li>
+                        <li>Not as efficient as LOOK or C-LOOK</li>
+                        <li>Head movement to the end of the disk and back without servicing</li>
                       </ul>
                     </div>
                   </CardContent>
@@ -729,7 +691,7 @@ const CSCANVisualizer = () => {
                     <div>
                       <h3 className="font-medium text-drona-dark mb-2">Average Performance</h3>
                       <p className="text-drona-gray mb-4">
-                        C-SCAN provides better and more uniform performance than SCAN, especially for systems with heavy disk usage.
+                        C-SCAN provides better performance than FCFS and SCAN by offering more uniform wait times. However, it is generally less efficient than algorithms like LOOK or C-LOOK.
                       </p>
                       
                       <div className="bg-drona-light p-4 rounded-lg mt-4">
