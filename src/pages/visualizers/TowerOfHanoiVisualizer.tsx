@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import Navbar from '@/components/Navbar';
 import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
 
 interface Disk {
   size: number;
@@ -21,7 +22,7 @@ const TowerOfHanoiVisualizer = () => {
   const [moves, setMoves] = useState<Move[]>([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(-1);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(500);
+  const [speed, setSpeed] = useState<number>(1);
   const [diskCount, setDiskCount] = useState<number>(3);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   
@@ -76,7 +77,84 @@ const TowerOfHanoiVisualizer = () => {
   };
   
   const toggleRunning = () => {
+    if (currentMoveIndex >= moves.length - 1) {
+      // If at end, restart from beginning
+      setCurrentMoveIndex(-1);
+      initializeTowersToStep(-1);
+    }
     setIsRunning(!isRunning);
+  };
+
+  const nextStep = () => {
+    if (currentMoveIndex < moves.length - 1) {
+      const nextIndex = currentMoveIndex + 1;
+      setCurrentMoveIndex(nextIndex);
+      executeMove(nextIndex);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentMoveIndex > -1) {
+      const prevIndex = currentMoveIndex - 1;
+      setCurrentMoveIndex(prevIndex);
+      initializeTowersToStep(prevIndex);
+    }
+  };
+
+  const skipToStart = () => {
+    setIsRunning(false);
+    setCurrentMoveIndex(-1);
+    initializeTowersToStep(-1);
+  };
+
+  const skipToEnd = () => {
+    setIsRunning(false);
+    const endIndex = moves.length - 1;
+    setCurrentMoveIndex(endIndex);
+    initializeTowersToStep(endIndex);
+  };
+
+  const goToStep = (stepIndex: number) => {
+    setIsRunning(false);
+    setCurrentMoveIndex(stepIndex);
+    initializeTowersToStep(stepIndex);
+  };
+
+  const initializeTowersToStep = (stepIndex: number) => {
+    const initialTowers: Disk[][] = [[], [], []];
+    
+    // Initialize the first tower with disks
+    for (let i = diskCount; i > 0; i--) {
+      initialTowers[0].push({
+        size: i,
+        color: diskColors[i % diskColors.length]
+      });
+    }
+
+    // Apply moves up to stepIndex
+    for (let i = 0; i <= stepIndex && i < moves.length; i++) {
+      const move = moves[i];
+      const disk = initialTowers[move.from].pop();
+      if (disk) {
+        initialTowers[move.to].push(disk);
+      }
+    }
+
+    setTowers(initialTowers);
+  };
+
+  const executeMove = (moveIndex: number) => {
+    if (moveIndex >= 0 && moveIndex < moves.length) {
+      const move = moves[moveIndex];
+      const newTowers = JSON.parse(JSON.stringify(towers)) as Disk[][];
+      
+      const disk = newTowers[move.from].pop();
+      if (disk) {
+        newTowers[move.to].push(disk);
+      }
+      
+      setTowers(newTowers);
+    }
   };
   
   useEffect(() => {
@@ -84,17 +162,8 @@ const TowerOfHanoiVisualizer = () => {
     
     if (isRunning && currentMoveIndex < moves.length - 1) {
       timer = setTimeout(() => {
-        const nextMove = moves[currentMoveIndex + 1];
-        const newTowers = JSON.parse(JSON.stringify(towers)) as Disk[][];
-        
-        const disk = newTowers[nextMove.from].pop();
-        if (disk) {
-          newTowers[nextMove.to].push(disk);
-        }
-        
-        setTowers(newTowers);
-        setCurrentMoveIndex(prev => prev + 1);
-      }, speed);
+        nextStep();
+      }, 2000 / speed);
     } else if (currentMoveIndex >= moves.length - 1) {
       setIsRunning(false);
     }
@@ -102,7 +171,7 @@ const TowerOfHanoiVisualizer = () => {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isRunning, currentMoveIndex, moves, towers, speed]);
+  }, [isRunning, currentMoveIndex, moves.length, speed]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -138,21 +207,44 @@ const TowerOfHanoiVisualizer = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Speed:</label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="1000"
-                      step="100"
-                      value={speed}
-                      onChange={(e) => setSpeed(parseInt(e.target.value))}
+                    <label className="text-sm font-medium">Animation Speed: {speed}x</label>
+                    <Slider
+                      value={[speed]}
+                      onValueChange={([value]) => setSpeed(value)}
+                      min={0.5}
+                      max={3}
+                      step={0.5}
                       className="w-32"
+                      disabled={isRunning}
                     />
                   </div>
+                  <div className="flex justify-between text-xs text-drona-gray w-32 -mt-2">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    onClick={skipToStart} 
+                    disabled={moves.length === 0 || currentMoveIndex === -1}
+                    size="sm"
+                  >
+                    <SkipBack className="h-4 w-4 mr-1" /> Start
+                  </Button>
+                  
+                  <Button 
+                    onClick={prevStep} 
+                    disabled={moves.length === 0 || currentMoveIndex <= -1}
+                    size="sm"
+                  >
+                    ← Prev
+                  </Button>
                   
                   <Button 
                     onClick={toggleRunning} 
-                    disabled={currentMoveIndex === moves.length - 1}
+                    disabled={moves.length === 0}
+                    size="sm"
                   >
                     {isRunning ? (
                       <><Pause className="mr-2 h-4 w-4" /> Pause</>
@@ -162,13 +254,50 @@ const TowerOfHanoiVisualizer = () => {
                   </Button>
                   
                   <Button 
+                    onClick={nextStep} 
+                    disabled={moves.length === 0 || currentMoveIndex >= moves.length - 1}
+                    size="sm"
+                  >
+                    Next →
+                  </Button>
+                  
+                  <Button 
+                    onClick={skipToEnd} 
+                    disabled={moves.length === 0 || currentMoveIndex === moves.length - 1}
+                    size="sm"
+                  >
+                    <SkipForward className="h-4 w-4 mr-1" /> End
+                  </Button>
+                  
+                  <Button 
                     onClick={resetVisualization} 
-                    variant="outline"
+                    variant="outline" 
                     disabled={isRunning}
+                    size="sm"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" /> Reset
                   </Button>
                 </div>
+
+                {moves.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium">Step:</span>
+                      <Slider
+                        value={[currentMoveIndex + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        min={0}
+                        max={moves.length}
+                        step={1}
+                        className="flex-1"
+                        disabled={isRunning}
+                      />
+                      <span className="text-sm text-gray-500 w-16">
+                        {currentMoveIndex + 1}/{moves.length}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-center items-end mt-4">
                   <div className="relative flex justify-around w-full max-w-3xl">
@@ -178,7 +307,7 @@ const TowerOfHanoiVisualizer = () => {
                           {tower.map((disk, diskIndex) => (
                             <div
                               key={diskIndex}
-                              className={`${disk.color} h-8 rounded-md flex items-center justify-center text-white font-bold mb-1`}
+                              className={`${disk.color} h-8 rounded-md flex items-center justify-center text-white font-bold mb-1 transition-all duration-300`}
                               style={{
                                 width: `${(disk.size * 30) + 40}px`,
                               }}
@@ -198,9 +327,12 @@ const TowerOfHanoiVisualizer = () => {
                   <p>Total moves: {moves.length}</p>
                   <p>Current move: {currentMoveIndex + 1}</p>
                   {currentMoveIndex >= 0 && currentMoveIndex < moves.length && (
-                    <p>
+                    <p className="font-medium text-drona-green">
                       Moving disk {moves[currentMoveIndex].disk} from Tower {moves[currentMoveIndex].from + 1} to Tower {moves[currentMoveIndex].to + 1}
                     </p>
+                  )}
+                  {currentMoveIndex >= moves.length - 1 && moves.length > 0 && (
+                    <p className="font-bold text-green-600">✅ All disks moved successfully!</p>
                   )}
                 </div>
               </div>
