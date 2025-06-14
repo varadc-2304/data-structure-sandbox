@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, SkipForward, SkipBack, FastForward, Rewind } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -68,7 +69,7 @@ const LOOKVisualizer = () => {
         current: false
       }));
       
-      setRequestQueue([...requestQueue, ...newRequests]);
+      setRequestQueue(prev => [...prev, ...newRequests]);
       setInputPosition("");
     } catch (error) {
       console.error("Invalid position format or out of range");
@@ -142,8 +143,8 @@ const LOOKVisualizer = () => {
       return;
     }
     
-    const nextStep = currentStep + 1;
-    const nextRequestIndex = lookOrder[nextStep];
+    const nextStepIndex = currentStep + 1;
+    const nextRequestIndex = lookOrder[nextStepIndex];
     const nextRequest = requestQueue[nextRequestIndex];
     
     const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
@@ -159,12 +160,12 @@ const LOOKVisualizer = () => {
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: lookOrder.slice(0, nextStep + 1).includes(idx),
+      processed: lookOrder.slice(0, nextStepIndex + 1).includes(idx),
       current: idx === nextRequestIndex
     }));
     setRequestQueue(updatedRequests);
     
-    setCurrentStep(nextStep);
+    setCurrentStep(nextStepIndex);
   };
 
   const prevStep = () => {
@@ -179,7 +180,7 @@ const LOOKVisualizer = () => {
     const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
     setTotalSeekTime(newTotalSeekTime);
     
-    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : requestQueue[lookOrder[newStep]].position;
     setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
@@ -196,27 +197,27 @@ const LOOKVisualizer = () => {
     setCurrentStep(step);
     setIsPlaying(false);
     
-    // Recalculate state for the target step
-    let newHeadPosition = initialHeadPosition;
-    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    const newHeadPosition = step === -1 ? initialHeadPosition : requestQueue[lookOrder[step]].position;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    // Recalculate seek history up to this step
+    const newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    let headPos = initialHeadPosition;
     
     for (let i = 0; i <= step; i++) {
       const requestIndex = lookOrder[i];
       const targetPosition = requestQueue[requestIndex].position;
-      
-      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      const seekDistance = Math.abs(headPos - targetPosition);
       newSeekHistory.push({
-        from: newHeadPosition,
+        from: headPos,
         to: targetPosition,
         distance: seekDistance
       });
-      
-      newHeadPosition = targetPosition;
+      headPos = targetPosition;
     }
     
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
-    setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -233,6 +234,11 @@ const LOOKVisualizer = () => {
     } else {
       setIsPlaying(!isPlaying);
     }
+  };
+
+  // Calculate position as percentage for visual elements
+  const calculatePosition = (position: number) => {
+    return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
 
   return (
@@ -448,10 +454,10 @@ const LOOKVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Visualization</h3>
                       <div className="relative bg-drona-light rounded-lg border-2 border-gray-200 p-8 overflow-hidden" style={{ minHeight: "200px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-16 right-16 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-1 bg-gray-400 rounded transform -translate-y-1/2"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-16 right-16 flex justify-between items-center transform -translate-y-1/2">
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
                           {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-0.5 h-6 bg-gray-500 mb-2"></div>
@@ -464,8 +470,7 @@ const LOOKVisualizer = () => {
                         <div 
                           className="absolute top-1/2 w-1 h-10 bg-gray-500 rounded transform -translate-y-1/2"
                           style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((initialHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
                           }}
                         >
                           <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
@@ -475,10 +480,9 @@ const LOOKVisualizer = () => {
                         
                         {/* Current head position */}
                         <div 
-                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-500 z-10"
+                          className="absolute top-1/2 w-3 h-12 bg-drona-green rounded transform -translate-y-1/2 transition-all duration-1000 z-10"
                           style={{ 
-                            left: `calc(4rem + ${Math.min(Math.max((currentHeadPosition / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
                           <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green whitespace-nowrap">
@@ -491,12 +495,12 @@ const LOOKVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
+                              "absolute top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border-2 transition-all duration-300",
                               req.processed ? "bg-drona-green border-drona-green" : "bg-white border-gray-400",
                               req.current && "ring-4 ring-drona-green ring-opacity-50 scale-125"
                             )}
                             style={{ 
-                              left: `calc(4rem + ${Math.min(Math.max((req.position / (diskSize - 1)) * (100 - 8), 0), 100 - 8)}%)`
+                              left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">

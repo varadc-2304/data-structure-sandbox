@@ -41,7 +41,7 @@ const FCFSDiskVisualizer = () => {
 
     const timer = setTimeout(() => {
       nextStep();
-    }, 2000 / speed); // 2 seconds per step divided by speed
+    }, 2000 / speed);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, requestQueue.length, speed]);
@@ -67,7 +67,7 @@ const FCFSDiskVisualizer = () => {
         current: false
       }));
       
-      setRequestQueue([...requestQueue, ...newRequests]);
+      setRequestQueue(prev => [...prev, ...newRequests]);
       setInputPosition("");
     } catch (error) {
       console.error("Invalid position format or out of range");
@@ -95,8 +95,8 @@ const FCFSDiskVisualizer = () => {
       return;
     }
     
-    const nextStep = currentStep + 1;
-    const nextRequest = requestQueue[nextStep];
+    const nextStepIndex = currentStep + 1;
+    const nextRequest = requestQueue[nextStepIndex];
     
     const seekDistance = Math.abs(currentHeadPosition - nextRequest.position);
     
@@ -114,14 +114,14 @@ const FCFSDiskVisualizer = () => {
     // Update request states
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
-      processed: idx <= nextStep,
-      current: idx === nextStep
+      processed: idx <= nextStepIndex,
+      current: idx === nextStepIndex
     }));
     setRequestQueue(updatedRequests);
     
-    setCurrentStep(nextStep);
+    setCurrentStep(nextStepIndex);
     
-    // Move head to new position - this will trigger CSS animation
+    // Move head to new position
     setCurrentHeadPosition(nextRequest.position);
   };
 
@@ -137,7 +137,7 @@ const FCFSDiskVisualizer = () => {
     const newTotalSeekTime = newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0);
     setTotalSeekTime(newTotalSeekTime);
     
-    const newHeadPosition = newStep === -1 ? initialHeadPosition : seekHistory[newStep].to;
+    const newHeadPosition = newStep === -1 ? initialHeadPosition : requestQueue[newStep].position;
     setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
@@ -154,25 +154,26 @@ const FCFSDiskVisualizer = () => {
     setCurrentStep(step);
     setIsPlaying(false);
     
-    let newHeadPosition = initialHeadPosition;
-    let newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    const newHeadPosition = step === -1 ? initialHeadPosition : requestQueue[step].position;
+    setCurrentHeadPosition(newHeadPosition);
+    
+    // Recalculate seek history up to this step
+    const newSeekHistory: { from: number; to: number; distance: number }[] = [];
+    let headPos = initialHeadPosition;
     
     for (let i = 0; i <= step; i++) {
       const targetPosition = requestQueue[i].position;
-      
-      const seekDistance = Math.abs(newHeadPosition - targetPosition);
+      const seekDistance = Math.abs(headPos - targetPosition);
       newSeekHistory.push({
-        from: newHeadPosition,
+        from: headPos,
         to: targetPosition,
         distance: seekDistance
       });
-      
-      newHeadPosition = targetPosition;
+      headPos = targetPosition;
     }
     
     setSeekHistory(newSeekHistory);
     setTotalSeekTime(newSeekHistory.reduce((sum, seek) => sum + seek.distance, 0));
-    setCurrentHeadPosition(newHeadPosition);
     
     const updatedRequests = requestQueue.map((req, idx) => ({
       ...req,
@@ -191,22 +192,9 @@ const FCFSDiskVisualizer = () => {
     }
   };
 
-  // Calculate position as percentage for visual elements - fixed to prevent overflow
+  // Calculate position as percentage for visual elements
   const calculatePosition = (position: number) => {
-    const percentage = (position / (diskSize - 1)) * 100;
-    // Ensure percentage stays within bounds and add padding
-    return Math.max(0, Math.min(100, percentage));
-  };
-
-  // Generate scale markers with proper bounds
-  const getScaleMarkers = () => {
-    const markers = [];
-    const steps = 5;
-    for (let i = 0; i < steps; i++) {
-      const position = Math.round((i / (steps - 1)) * (diskSize - 1));
-      markers.push(position);
-    }
-    return markers;
+    return Math.min(Math.max((position / (diskSize - 1)) * 80, 0), 80);
   };
 
   return (
@@ -409,11 +397,11 @@ const FCFSDiskVisualizer = () => {
                       <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
                       <div className="relative bg-gradient-to-r from-drona-light to-white rounded-xl border-2 border-drona-green/20 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
                         {/* Disk track representation */}
-                        <div className="absolute top-1/2 left-8 right-8 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
+                        <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
                         
                         {/* Scale markers */}
-                        <div className="absolute top-1/2 left-8 right-8 flex justify-between items-center transform -translate-y-1/2">
-                          {getScaleMarkers().map(pos => (
+                        <div className="absolute top-1/2 left-12 right-12 flex justify-between items-center transform -translate-y-1/2">
+                          {[0, Math.floor(diskSize / 4), Math.floor(diskSize / 2), Math.floor(3 * diskSize / 4), diskSize - 1].map(pos => (
                             <div key={pos} className="flex flex-col items-center">
                               <div className="w-1 h-8 bg-drona-green rounded-full mb-3"></div>
                               <span className="text-xs font-bold text-drona-dark bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
@@ -423,10 +411,9 @@ const FCFSDiskVisualizer = () => {
                         
                         {/* Current head position with smooth animation */}
                         <div 
-                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1500 ease-in-out"
+                          className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-drona-green to-drona-green/80 rounded-full transform -translate-y-1/2 z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
                           style={{ 
-                            left: `calc(2rem + ${calculatePosition(currentHeadPosition)}% * (100% - 4rem) / 100)`,
-                            transform: 'translateY(-50%) translateX(-50%)'
+                            left: `calc(3rem + ${calculatePosition(currentHeadPosition)}%)`,
                           }}
                         >
                           <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-drona-green bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
@@ -440,8 +427,7 @@ const FCFSDiskVisualizer = () => {
                           <div 
                             className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded transform -translate-y-1/2 z-10 opacity-60"
                             style={{ 
-                              left: `calc(2rem + ${calculatePosition(initialHeadPosition)}% * (100% - 4rem) / 100)`,
-                              transform: 'translateY(-50%) translateX(-50%)'
+                              left: `calc(3rem + ${calculatePosition(initialHeadPosition)}%)`,
                             }}
                           >
                             <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
@@ -455,12 +441,12 @@ const FCFSDiskVisualizer = () => {
                           <div 
                             key={idx}
                             className={cn(
-                              "absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
+                              "absolute top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
                               req.processed ? "bg-drona-green border-white shadow-lg scale-110" : "bg-white border-drona-green shadow-md",
                               req.current && "ring-4 ring-drona-green/50 scale-125 animate-pulse"
                             )}
                             style={{ 
-                              left: `calc(2rem + ${calculatePosition(req.position)}% * (100% - 4rem) / 100)`
+                              left: `calc(3rem + ${calculatePosition(req.position)}%)`
                             }}
                           >
                             <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-drona-dark text-white px-2 py-1 rounded shadow">
