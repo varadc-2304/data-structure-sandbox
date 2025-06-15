@@ -2,7 +2,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -15,7 +16,7 @@ interface TreeVote {
 
 const RandomForestVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(-1);
   const [speed, setSpeed] = useState(1000);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -31,7 +32,11 @@ const RandomForestVisualizer = () => {
 
   const updateForest = useCallback(() => {
     setCurrentStep(prev => {
-      const newStep = (prev + 1) % (maxSteps + 1);
+      const newStep = prev + 1;
+      if (newStep >= maxSteps) {
+        setIsPlaying(false);
+        return maxSteps - 1;
+      }
       return newStep;
     });
   }, [maxSteps]);
@@ -52,15 +57,46 @@ const RandomForestVisualizer = () => {
     };
   }, [isPlaying, speed, updateForest]);
 
-  const togglePlayPause = () => setIsPlaying(!isPlaying);
+  const togglePlayPause = () => {
+    if (currentStep >= maxSteps - 1) {
+      resetVisualization();
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < maxSteps - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
+    setIsPlaying(false);
+  };
+
+  const prevStep = () => {
+    if (currentStep > -1) {
+      setCurrentStep(prev => prev - 1);
+    }
+    setIsPlaying(false);
+  };
+
+  const goToStep = (step: number) => {
+    setCurrentStep(Math.max(-1, Math.min(step, maxSteps - 1)));
+    setIsPlaying(false);
+  };
 
   const skipToStart = () => {
-    setCurrentStep(0);
+    setCurrentStep(-1);
     setIsPlaying(false);
   };
 
   const skipToEnd = () => {
-    setCurrentStep(maxSteps);
+    setCurrentStep(maxSteps - 1);
+    setIsPlaying(false);
+  };
+
+  const resetVisualization = () => {
+    setCurrentStep(-1);
     setIsPlaying(false);
   };
 
@@ -79,6 +115,12 @@ const RandomForestVisualizer = () => {
     if (yesVotes > noVotes) return 'Yes';
     if (noVotes > yesVotes) return 'No';
     return 'Tie';
+  };
+
+  const getStepDescription = () => {
+    if (currentStep === -1) return 'Ready to process sample through Random Forest';
+    if (currentStep < trees.length) return `Tree ${currentStep + 1} has made its prediction`;
+    return 'All trees have voted - calculating final prediction';
   };
 
   const renderTree = (tree: TreeVote) => {
@@ -130,7 +172,7 @@ const RandomForestVisualizer = () => {
             <p className="text-2xl font-bold text-red-800">{noVotes}</p>
           </div>
         </div>
-        {currentStep >= maxSteps && (
+        {currentStep >= maxSteps - 1 && (
           <div className="text-center p-4 bg-drona-green/20 rounded-lg">
             <h4 className="font-bold text-drona-dark">Final Prediction</h4>
             <p className={`text-3xl font-bold ${
@@ -161,100 +203,180 @@ const RandomForestVisualizer = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8">
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-drona-dark">Random Forest Ensemble</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-                  {getActiveTrees().map(renderTree)}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Controls Panel */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={skipToStart}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= -1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep} 
+                    disabled={currentStep >= maxSteps - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={skipToEnd}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
-
-              <div className="flex justify-center items-center gap-4 mb-4">
-                <Button
-                  onClick={skipToStart}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <SkipBack className="h-4 w-4" />
-                </Button>
                 
-                <Button
-                  onClick={togglePlayPause}
-                  variant="default"
-                  size="sm"
-                  className="px-6"
+                <Button 
+                  onClick={resetVisualization} 
+                  variant="outline" 
+                  disabled={isPlaying}
+                  className="w-full border-2 hover:border-drona-green/50"
                 >
-                  {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                  {isPlaying ? 'Pause' : 'Play'}
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
-                
-                <Button
-                  onClick={skipToEnd}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <SkipForward className="h-4 w-4" />
-                </Button>
-              </div>
 
-              <div className="flex justify-center items-center gap-4 mb-6">
-                <label className="text-sm font-medium">Speed:</label>
-                <select
-                  value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
-                  className="px-3 py-1 border rounded-md"
-                >
-                  <option value={2000}>0.5x</option>
-                  <option value={1000}>1x</option>
-                  <option value={500}>2x</option>
-                </select>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-drona-dark">
+                    Step: {currentStep + 2} of {maxSteps + 1}
+                  </label>
+                  <Slider
+                    value={[currentStep + 1]}
+                    onValueChange={([value]) => goToStep(value - 1)}
+                    max={maxSteps}
+                    min={0}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
 
-              {renderVotingResults()}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-drona-dark">
+                    Animation Speed: {(2000 / speed).toFixed(1)}x
+                  </label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([value]) => setSpeed(value)}
+                    max={2000}
+                    min={500}
+                    step={250}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
-                <h3 className="font-bold text-drona-dark mb-2">Process Step:</h3>
-                <p className="text-drona-gray">
-                  {currentStep === 0 && 'Ready to process sample through Random Forest'}
-                  {currentStep > 0 && currentStep <= trees.length && 
-                    `Tree ${currentStep} has made its prediction`}
-                  {currentStep > trees.length && 'All trees have voted - calculating final prediction'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Trees Voted</p>
+                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Total Trees</p>
+                    <p className="text-3xl font-bold text-drona-dark">{trees.length}</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
+                    <p className="text-sm font-semibold text-drona-gray">Consensus</p>
+                    <p className="text-xl font-bold text-drona-dark">
+                      {currentStep >= maxSteps - 1 ? getFinalPrediction() : '-'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-drona-dark">How Random Forest Works</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 text-sm text-drona-gray">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
-                  <p><strong>Bootstrap Sampling:</strong> Each tree is trained on a different random sample of the data</p>
+          {/* Visualization Panel */}
+          <div className="lg:col-span-3">
+            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">Random Forest Ensemble</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                    {getActiveTrees().map(renderTree)}
+                  </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
-                  <p><strong>Feature Randomization:</strong> Each tree uses a random subset of features at each split</p>
+
+                {renderVotingResults()}
+
+                <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
+                  <h3 className="font-bold text-drona-dark mb-2">Process Step:</h3>
+                  <p className="text-drona-gray">
+                    {getStepDescription()}
+                  </p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
-                  <p><strong>Independent Predictions:</strong> Each tree makes its own prediction independently</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
-                  <p><strong>Majority Voting:</strong> The final prediction is determined by majority vote</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <Card className="mt-6 bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-drona-dark">How Random Forest Works</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 text-sm text-drona-gray">
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                        <p><strong>Bootstrap Sampling:</strong> Each tree is trained on a different random sample of the data</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                        <p><strong>Feature Randomization:</strong> Each tree uses a random subset of features at each split</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+                        <p><strong>Independent Predictions:</strong> Each tree makes its own prediction independently</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 bg-drona-green text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
+                        <p><strong>Majority Voting:</strong> The final prediction is determined by majority vote</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
