@@ -3,7 +3,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Target, Navigation, Square } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -31,6 +31,8 @@ interface Step {
   finalPath?: Node[];
 }
 
+type Mode = 'start' | 'goal' | 'wall' | 'none';
+
 const AStarVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
@@ -39,6 +41,7 @@ const AStarVisualizer = () => {
   const [grid, setGrid] = useState<Node[][]>([]);
   const [start, setStart] = useState<Node | null>(null);
   const [goal, setGoal] = useState<Node | null>(null);
+  const [mode, setMode] = useState<Mode>('none');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const GRID_SIZE = 15;
@@ -56,8 +59,8 @@ const AStarVisualizer = () => {
           h: 0,
           f: 0,
           isWall: false,
-          isStart: x === 2 && y === 2,
-          isGoal: x === 12 && y === 12,
+          isStart: false,
+          isGoal: false,
           inOpenSet: false,
           inClosedSet: false,
           isPath: false,
@@ -66,7 +69,7 @@ const AStarVisualizer = () => {
       newGrid.push(row);
     }
 
-    // Add some walls
+    // Add some default walls for demonstration
     const walls = [
       [5, 3], [5, 4], [5, 5], [5, 6], [5, 7],
       [8, 2], [8, 3], [8, 4], [8, 5],
@@ -80,8 +83,11 @@ const AStarVisualizer = () => {
       }
     });
 
+    // Set default start and goal
     const startNode = newGrid[2][2];
     const goalNode = newGrid[12][12];
+    startNode.isStart = true;
+    goalNode.isGoal = true;
     
     setGrid(newGrid);
     setStart(startNode);
@@ -89,6 +95,69 @@ const AStarVisualizer = () => {
     
     return { grid: newGrid, start: startNode, goal: goalNode };
   }, []);
+
+  const handleCellClick = (x: number, y: number) => {
+    if (isPlaying) return;
+
+    setGrid(prevGrid => {
+      const newGrid = prevGrid.map(row => row.map(cell => ({ ...cell })));
+      const clickedCell = newGrid[y][x];
+
+      if (mode === 'start') {
+        // Clear previous start
+        if (start) {
+          newGrid[start.y][start.x].isStart = false;
+        }
+        // Set new start (only if not a wall or goal)
+        if (!clickedCell.isWall && !clickedCell.isGoal) {
+          clickedCell.isStart = true;
+          setStart(clickedCell);
+        }
+      } else if (mode === 'goal') {
+        // Clear previous goal
+        if (goal) {
+          newGrid[goal.y][goal.x].isGoal = false;
+        }
+        // Set new goal (only if not a wall or start)
+        if (!clickedCell.isWall && !clickedCell.isStart) {
+          clickedCell.isGoal = true;
+          setGoal(clickedCell);
+        }
+      } else if (mode === 'wall') {
+        // Toggle wall (only if not start or goal)
+        if (!clickedCell.isStart && !clickedCell.isGoal) {
+          clickedCell.isWall = !clickedCell.isWall;
+        }
+      }
+
+      return newGrid;
+    });
+
+    // Reset visualization when grid changes
+    setCurrentStep(-1);
+    setSteps([]);
+  };
+
+  const clearGrid = () => {
+    setGrid(prevGrid => {
+      const newGrid = prevGrid.map(row => 
+        row.map(cell => ({
+          ...cell,
+          isWall: false,
+          inOpenSet: false,
+          inClosedSet: false,
+          isPath: false,
+          g: 0,
+          h: 0,
+          f: 0,
+          parent: undefined
+        }))
+      );
+      return newGrid;
+    });
+    setCurrentStep(-1);
+    setSteps([]);
+  };
 
   // Heuristic function (Manhattan distance)
   const heuristic = (a: Node, b: Node): number => {
@@ -132,14 +201,33 @@ const AStarVisualizer = () => {
 
   // Generate A* algorithm steps
   const generateAStarSteps = useCallback(() => {
-    const { grid: newGrid, start: startNode, goal: goalNode } = initializeGrid();
-    if (!startNode || !goalNode) return;
+    if (!start || !goal) {
+      console.log("No start or goal set");
+      return;
+    }
+
+    // Reset grid state
+    const workingGrid = grid.map(row => 
+      row.map(cell => ({
+        ...cell,
+        g: 0,
+        h: 0,
+        f: 0,
+        parent: undefined,
+        inOpenSet: false,
+        inClosedSet: false,
+        isPath: false
+      }))
+    );
 
     const newSteps: Step[] = [];
-    const openSet: Node[] = [startNode];
+    const openSet: Node[] = [workingGrid[start.y][start.x]];
     const closedSet: Node[] = [];
 
     // Initialize start node
+    const startNode = workingGrid[start.y][start.x];
+    const goalNode = workingGrid[goal.y][goal.x];
+    
     startNode.g = 0;
     startNode.h = heuristic(startNode, goalNode);
     startNode.f = startNode.g + startNode.h;
@@ -161,8 +249,8 @@ const AStarVisualizer = () => {
       closedSet.push(current);
 
       // Check if we reached the goal
-      if (current === goalNode) {
-        const finalPath = reconstructPath(goalNode);
+      if (current.x === goalNode.x && current.y === goalNode.y) {
+        const finalPath = reconstructPath(current);
         finalPath.forEach(node => {
           if (!node.isStart && !node.isGoal) {
             node.isPath = true;
@@ -173,7 +261,7 @@ const AStarVisualizer = () => {
           current,
           openSet: [...openSet],
           closedSet: [...closedSet],
-          description: `Goal reached! Path found with total cost ${goalNode.g}`,
+          description: `Goal reached! Path found with total cost ${current.g}`,
           pathFound: true,
           finalPath
         });
@@ -188,7 +276,7 @@ const AStarVisualizer = () => {
       });
 
       // Check all neighbors
-      const neighbors = getNeighbors(current, newGrid);
+      const neighbors = getNeighbors(current, workingGrid);
       
       neighbors.forEach(neighbor => {
         if (neighbor.inClosedSet) return;
@@ -212,7 +300,7 @@ const AStarVisualizer = () => {
 
     if (openSet.length === 0 && !goalNode.inClosedSet) {
       newSteps.push({
-        current: closedSet[closedSet.length - 1],
+        current: closedSet[closedSet.length - 1] || startNode,
         openSet: [],
         closedSet: [...closedSet],
         description: "No path found! Open set is empty and goal was not reached.",
@@ -221,10 +309,16 @@ const AStarVisualizer = () => {
     }
 
     setSteps(newSteps);
+  }, [grid, start, goal]);
+
+  useEffect(() => {
+    initializeGrid();
   }, [initializeGrid]);
 
   useEffect(() => {
-    generateAStarSteps();
+    if (start && goal) {
+      generateAStarSteps();
+    }
   }, [generateAStarSteps]);
 
   useEffect(() => {
@@ -247,6 +341,11 @@ const AStarVisualizer = () => {
   }, [isPlaying, currentStep, steps.length, speed]);
 
   const togglePlayPause = () => {
+    if (!start || !goal) {
+      alert("Please set both start and goal points first!");
+      return;
+    }
+    
     if (currentStep >= steps.length - 1) {
       resetVisualization();
       setIsPlaying(true);
@@ -287,11 +386,13 @@ const AStarVisualizer = () => {
   const resetVisualization = () => {
     setCurrentStep(-1);
     setIsPlaying(false);
-    generateAStarSteps();
+    if (start && goal) {
+      generateAStarSteps();
+    }
   };
 
   const getStepDescription = () => {
-    if (currentStep === -1) return 'Ready to start A* pathfinding algorithm';
+    if (currentStep === -1) return 'Ready to start A* pathfinding algorithm. Click start and goal points, then press play!';
     const step = steps[currentStep];
     return step ? step.description : 'A* algorithm complete!';
   };
@@ -304,13 +405,23 @@ const AStarVisualizer = () => {
   };
 
   const getCellClass = (node: Node) => {
-    if (node.isStart) return 'bg-green-500';
-    if (node.isGoal) return 'bg-red-500';
-    if (node.isWall) return 'bg-gray-800';
-    if (node.isPath) return 'bg-yellow-400';
-    if (node.inClosedSet) return 'bg-red-200';
-    if (node.inOpenSet) return 'bg-blue-200';
-    return 'bg-gray-100';
+    const stepData = getCurrentStepData();
+    
+    if (node.isStart) return 'bg-green-500 border-green-600';
+    if (node.isGoal) return 'bg-red-500 border-red-600';
+    if (node.isWall) return 'bg-gray-800 border-gray-900';
+    
+    // Show path if algorithm is complete and path was found
+    if (stepData?.pathFound && node.isPath) return 'bg-yellow-400 border-yellow-500';
+    
+    // Show current exploration state
+    if (stepData) {
+      if (stepData.current === node) return 'bg-purple-500 border-purple-600';
+      if (node.inClosedSet) return 'bg-red-200 border-red-300';
+      if (node.inOpenSet) return 'bg-blue-200 border-blue-300';
+    }
+    
+    return 'bg-gray-100 border-gray-200 hover:bg-gray-50';
   };
 
   const getCellContent = (node: Node) => {
@@ -336,13 +447,71 @@ const AStarVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">A* Pathfinding Algorithm</h1>
           <p className="text-lg text-drona-gray">
-            Watch A* algorithm find the optimal path using heuristics and cost evaluation
+            Click to set start and goal points, then watch A* find the optimal path using heuristics
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Grid Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    onClick={() => setMode(mode === 'start' ? 'none' : 'start')}
+                    variant={mode === 'start' ? 'default' : 'outline'}
+                    size="sm"
+                    className="font-semibold"
+                    disabled={isPlaying}
+                  >
+                    <Navigation className="mr-1 h-3 w-3" />
+                    Start
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setMode(mode === 'goal' ? 'none' : 'goal')}
+                    variant={mode === 'goal' ? 'default' : 'outline'}
+                    size="sm"
+                    className="font-semibold"
+                    disabled={isPlaying}
+                  >
+                    <Target className="mr-1 h-3 w-3" />
+                    Goal
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setMode(mode === 'wall' ? 'none' : 'wall')}
+                    variant={mode === 'wall' ? 'default' : 'outline'}
+                    size="sm"
+                    className="font-semibold"
+                    disabled={isPlaying}
+                  >
+                    <Square className="mr-1 h-3 w-3" />
+                    Wall
+                  </Button>
+                </div>
+                
+                <Button 
+                  onClick={clearGrid}
+                  variant="outline"
+                  className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  disabled={isPlaying}
+                >
+                  Clear Walls
+                </Button>
+                
+                <div className="text-xs text-drona-gray p-3 bg-drona-light/30 rounded-lg">
+                  {mode === 'start' && "Click on a cell to set the start point"}
+                  {mode === 'goal' && "Click on a cell to set the goal point"}
+                  {mode === 'wall' && "Click on cells to toggle walls"}
+                  {mode === 'none' && "Select a mode above, then click on the grid"}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
                 <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
@@ -489,9 +658,12 @@ const AStarVisualizer = () => {
                       row.map((node, x) => (
                         <div
                           key={`${x}-${y}`}
-                          className={`w-8 h-8 border border-gray-300 flex items-center justify-center text-xs font-bold ${getCellClass(node)} transition-colors duration-300`}
+                          onClick={() => handleCellClick(x, y)}
+                          className={`w-8 h-8 border-2 flex items-center justify-center text-xs font-bold cursor-pointer transition-all duration-200 ${getCellClass(node)}`}
                         >
-                          {getCellContent(node)}
+                          {node.isStart && <Navigation className="h-3 w-3 text-white" />}
+                          {node.isGoal && <Target className="h-3 w-3 text-white" />}
+                          {!node.isStart && !node.isGoal && getCellContent(node)}
                         </div>
                       ))
                     )}
@@ -515,17 +687,30 @@ const AStarVisualizer = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                {getCurrentStepData()?.pathFound === false && (
+                  <div className="mt-6 p-6 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-2 border-red-300">
+                    <h3 className="text-xl font-bold text-drona-dark mb-2">❌ No Path Found!</h3>
+                    <p className="text-sm text-drona-gray">
+                      A* could not find a path to the goal. Try removing some walls or changing the goal position.
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
                   <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
                     <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-green-500 rounded mx-auto mb-2"></div>
+                      <div className="w-4 h-4 bg-green-500 rounded mx-auto mb-2 flex items-center justify-center">
+                        <Navigation className="h-2 w-2 text-white" />
+                      </div>
                       <p className="text-sm font-bold text-drona-dark">Start</p>
                     </CardContent>
                   </Card>
                   
                   <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
                     <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-red-500 rounded mx-auto mb-2"></div>
+                      <div className="w-4 h-4 bg-red-500 rounded mx-auto mb-2 flex items-center justify-center">
+                        <Target className="h-2 w-2 text-white" />
+                      </div>
                       <p className="text-sm font-bold text-drona-dark">Goal</p>
                     </CardContent>
                   </Card>
@@ -543,21 +728,26 @@ const AStarVisualizer = () => {
                       <p className="text-sm font-bold text-drona-dark">Closed Set</p>
                     </CardContent>
                   </Card>
+
+                  <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-200">
+                    <CardContent className="text-center p-4">
+                      <div className="w-4 h-4 bg-yellow-400 rounded mx-auto mb-2"></div>
+                      <p className="text-sm font-bold text-drona-dark">Path</p>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 <Card className="mt-6 bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
                   <CardHeader>
-                    <CardTitle className="text-lg font-bold text-drona-dark">A* Algorithm Formula</CardTitle>
+                    <CardTitle className="text-lg font-bold text-drona-dark">A* Algorithm Steps</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center space-y-2">
-                      <p className="text-lg font-mono">f(n) = g(n) + h(n)</p>
-                      <div className="text-sm text-drona-gray space-y-1">
-                        <p>g(n) = Cost from start to node n</p>
-                        <p>h(n) = Heuristic cost from node n to goal</p>
-                        <p>f(n) = Total estimated cost of path through n</p>
-                      </div>
-                    </div>
+                    <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                      <li>Click to set start point (green) and goal point (red)</li>
+                      <li>Optionally add walls by selecting wall mode and clicking cells</li>
+                      <li>Press play to watch A* find the optimal path</li>
+                      <li>Algorithm uses f(n) = g(n) + h(n) to evaluate nodes</li>
+                    </ol>
                   </CardContent>
                 </Card>
               </CardContent>
