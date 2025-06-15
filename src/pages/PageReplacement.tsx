@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
@@ -53,21 +52,18 @@ const PageReplacement = () => {
             description="Simplest page replacement algorithm that removes the oldest page in memory. Easy to implement but may suffer from Belady's anomaly."
             icon={<Clock size={28} />}
             to="/page-replacement/fifo"
-            delay={100}
           />
           <CategoryCard
             title="LRU (Least Recently Used)"
             description="Replaces the page that hasn't been accessed for the longest time. Performs well but requires tracking page access history."
             icon={<History size={28} />}
             to="/page-replacement/lru"
-            delay={200}
           />
           <CategoryCard
             title="MRU (Most Recently Used)"
             description="Opposite of LRU, replaces the most recently used page. Useful in specific scenarios with certain access patterns."
             icon={<MemoryStick size={28} />}
             to="/page-replacement/mru"
-            delay={300}
           />
         </div>
         

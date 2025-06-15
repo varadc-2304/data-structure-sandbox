@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
@@ -28,42 +27,36 @@ const ECEAlgorithms = () => {
             description="Visualize the Viterbi algorithm for finding the most likely sequence of hidden states in Hidden Markov Models."
             icon={<Zap size={28} />}
             to="/ece-algorithms/viterbi"
-            delay={100}
           />
           <CategoryCard
             title="Fast Fourier Transform"
             description="Interactive visualization of FFT algorithm showing frequency domain transformation of signals."
             icon={<Waves size={28} />}
             to="/ece-algorithms/fft"
-            delay={200}
           />
           <CategoryCard
             title="Kalman Filter"
             description="Visualize the Kalman Filter algorithm for optimal state estimation in noisy systems."
             icon={<Target size={28} />}
             to="/ece-algorithms/kalman"
-            delay={300}
           />
           <CategoryCard
             title="LDPC Decoding"
             description="Low-Density Parity-Check decoding algorithm with iterative belief propagation visualization."
             icon={<Cpu size={28} />}
             to="/ece-algorithms/ldpc"
-            delay={400}
           />
           <CategoryCard
             title="Turbo Decoding"
             description="Turbo decoding algorithm with parallel concatenated convolutional codes visualization."
             icon={<Radio size={28} />}
             to="/ece-algorithms/turbo"
-            delay={500}
           />
           <CategoryCard
             title="Modulation Techniques"
             description="Interactive visualization of digital modulation techniques including QAM, PSK, and FSK."
             icon={<Antenna size={28} />}
             to="/ece-algorithms/modulation"
-            delay={600}
           />
         </div>
       </div>

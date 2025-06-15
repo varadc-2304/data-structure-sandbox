@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
@@ -28,28 +27,24 @@ const AIAlgorithms = () => {
             description="Visualize CNN architecture and see how convolution, pooling, and fully connected layers process image data."
             icon={<Network size={28} />}
             to="/ai-algorithms/cnn"
-            delay={100}
           />
           <CategoryCard
             title="Decision Trees"
             description="Interactive visualization of decision tree construction, splits, and prediction paths through tree structures."
             icon={<TreePine size={28} />}
             to="/ai-algorithms/decision-tree"
-            delay={200}
           />
           <CategoryCard
             title="Random Forests"
             description="Explore ensemble learning with multiple decision trees and see how voting mechanisms improve predictions."
             icon={<Trees size={28} />}
             to="/ai-algorithms/random-forest"
-            delay={300}
           />
           <CategoryCard
             title="K-means Clustering"
             description="Watch K-means algorithm find clusters in data through iterative centroid updates and point assignments."
             icon={<Target size={28} />}
             to="/ai-algorithms/kmeans"
-            delay={400}
           />
         </div>
       </div>

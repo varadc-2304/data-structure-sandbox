@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
@@ -53,28 +52,24 @@ const CPUScheduling = () => {
             description="Simplest scheduling algorithm where processes are executed in arrival order. Non-preemptive with potential convoy effect."
             icon={<Clock size={28} />}
             to="/cpu-scheduling/fcfs"
-            delay={100}
           />
           <CategoryCard
             title="Shortest Job First"
             description="Optimal algorithm that minimizes average waiting time by executing shortest jobs first. Can be preemptive or non-preemptive."
             icon={<Timer size={28} />}
             to="/cpu-scheduling/sjf"
-            delay={200}
           />
           <CategoryCard
             title="Round Robin"
             description="Time-sharing algorithm with fixed time quantum. Ensures fairness by giving each process equal CPU time slices."
             icon={<RotateCcw size={28} />}
             to="/cpu-scheduling/round-robin"
-            delay={300}
           />
           <CategoryCard
             title="Priority Scheduling"
             description="Processes are scheduled based on priority levels. Higher priority processes get CPU first, with aging to prevent starvation."
             icon={<TrendingUp size={28} />}
             to="/cpu-scheduling/priority"
-            delay={400}
           />
         </div>
         

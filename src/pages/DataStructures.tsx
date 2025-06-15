@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
@@ -53,56 +52,48 @@ const DataStructures = () => {
             description="Learn about contiguous memory allocation, indexing, and dynamic resizing with interactive array operations."
             icon={<Database size={28} />}
             to="/data-structures/array"
-            delay={100}
           />
           <CategoryCard
             title="Linked Lists"
             description="Understand pointer-based structures, memory allocation, and traversal through singly and doubly linked lists."
             icon={<Link size={28} />}
             to="/data-structures/linked-list"
-            delay={200}
           />
           <CategoryCard
             title="Stacks"
             description="Explore LIFO (Last In, First Out) operations with push, pop, and peek through visual stack manipulations."
             icon={<Layers size={28} />}
             to="/data-structures/stack"
-            delay={300}
           />
           <CategoryCard
             title="Queues"
             description="Master FIFO (First In, First Out) operations with enqueue, dequeue, and front/rear pointer management."
             icon={<ArrowRightLeft size={28} />}
             to="/data-structures/queue"
-            delay={400}
           />
           <CategoryCard
             title="Double-ended Queues"
             description="Learn about deques that allow insertion and deletion at both ends with efficient operations."
             icon={<Shuffle size={28} />}
             to="/data-structures/deque"
-            delay={500}
           />
           <CategoryCard
             title="Binary Trees"
             description="Visualize hierarchical data structures, tree traversals (in-order, pre-order, post-order), and node relationships."
             icon={<ListTree size={28} />}
             to="/data-structures/binary-tree"
-            delay={600}
           />
           <CategoryCard
             title="Binary Search Trees"
             description="Understand self-organizing trees with search, insertion, and deletion operations maintaining sorted order."
             icon={<Search size={28} />}
             to="/data-structures/bst"
-            delay={700}
           />
           <CategoryCard
             title="Graphs"
             description="Explore vertices, edges, adjacency representations, and graph traversal algorithms (BFS, DFS)."
             icon={<Share2 size={28} />}
             to="/data-structures/graph"
-            delay={800}
           />
         </div>
         
