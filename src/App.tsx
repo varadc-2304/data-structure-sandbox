@@ -54,6 +54,8 @@ import TowerOfHanoiVisualizer from "./pages/visualizers/TowerOfHanoiVisualizer";
 import NQueensVisualizer from "./pages/visualizers/NQueensVisualizer";
 import ECEAlgorithms from "./pages/ECEAlgorithms";
 import ViterbiVisualizer from "./pages/visualizers/ViterbiVisualizer";
+import FFTVisualizer from "./pages/visualizers/FFTVisualizer";
+import KalmanVisualizer from "./pages/visualizers/KalmanVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +97,8 @@ const App = () => (
           {/* ECE Algorithms */}
           <Route path="/ece-algorithms" element={<ECEAlgorithms />} />
           <Route path="/ece-algorithms/viterbi" element={<ViterbiVisualizer />} />
+          <Route path="/ece-algorithms/fft" element={<FFTVisualizer />} />
+          <Route path="/ece-algorithms/kalman" element={<KalmanVisualizer />} />
           
           {/* CPU Scheduling */}
           <Route path="/cpu-scheduling" element={<CPUScheduling />} />

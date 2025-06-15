@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, Waves, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ECEAlgorithms = () => {
@@ -29,6 +29,20 @@ const ECEAlgorithms = () => {
             icon={<Zap size={28} />}
             to="/ece-algorithms/viterbi"
             delay={100}
+          />
+          <CategoryCard
+            title="Fast Fourier Transform"
+            description="Interactive visualization of FFT algorithm showing frequency domain transformation of signals."
+            icon={<Waves size={28} />}
+            to="/ece-algorithms/fft"
+            delay={200}
+          />
+          <CategoryCard
+            title="Kalman Filter"
+            description="Visualize the Kalman Filter algorithm for optimal state estimation in noisy systems."
+            icon={<Target size={28} />}
+            to="/ece-algorithms/kalman"
+            delay={300}
           />
         </div>
       </div>
