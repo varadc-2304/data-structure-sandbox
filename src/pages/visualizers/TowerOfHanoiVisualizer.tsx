@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +135,19 @@ const TowerOfHanoiVisualizer = () => {
     };
 
     hanoi(n, sourceTower, destTower, auxTower);
+    
+    // Add the final state to show all disks properly placed
+    steps.push({
+      towers: [
+        [...towers[0]],
+        [...towers[1]],
+        [...towers[2]]
+      ],
+      movingDisk: null,
+      fromTower: null,
+      toTower: null
+    });
+    
     return steps;
   };
 
