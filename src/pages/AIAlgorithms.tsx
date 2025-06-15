@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Network, TreePine, Forest } from 'lucide-react';
+import { ArrowLeft, Network, TreePine, Trees } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -40,7 +40,7 @@ const AIAlgorithms = () => {
           <CategoryCard
             title="Random Forests"
             description="Explore ensemble learning with multiple decision trees and see how voting mechanisms improve predictions."
-            icon={<Forest size={28} />}
+            icon={<Trees size={28} />}
             to="/ai-algorithms/random-forest"
             delay={300}
           />
