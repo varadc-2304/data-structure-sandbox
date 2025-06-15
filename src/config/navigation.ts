@@ -1,5 +1,5 @@
 
-import { Brain, List, Cpu, Folder, HardDrive, Code } from 'lucide-react';
+import { Brain, List, Cpu, Folder, HardDrive, Code, Zap } from 'lucide-react';
 
 export interface NavigationItem {
   title: string;
@@ -44,5 +44,11 @@ export const navigationItems: NavigationItem[] = [
     to: "/algorithms",
     icon: Code,
     pathMatch: "/algorithms"
+  },
+  {
+    title: "ECE Algorithms",
+    to: "/ece-algorithms",
+    icon: Zap,
+    pathMatch: "/ece-algorithms"
   }
 ];

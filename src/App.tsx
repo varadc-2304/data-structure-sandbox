@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,6 +52,8 @@ import FractionalKnapsackVisualizer from "./pages/visualizers/FractionalKnapsack
 import JobSequencingVisualizer from "./pages/visualizers/JobSequencingVisualizer";
 import TowerOfHanoiVisualizer from "./pages/visualizers/TowerOfHanoiVisualizer";
 import NQueensVisualizer from "./pages/visualizers/NQueensVisualizer";
+import ECEAlgorithms from "./pages/ECEAlgorithms";
+import ViterbiVisualizer from "./pages/visualizers/ViterbiVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,10 @@ const App = () => (
           <Route path="/algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
           <Route path="/algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
           <Route path="/algorithms/n-queens" element={<NQueensVisualizer />} />
+          
+          {/* ECE Algorithms */}
+          <Route path="/ece-algorithms" element={<ECEAlgorithms />} />
+          <Route path="/ece-algorithms/viterbi" element={<ViterbiVisualizer />} />
           
           {/* CPU Scheduling */}
           <Route path="/cpu-scheduling" element={<CPUScheduling />} />

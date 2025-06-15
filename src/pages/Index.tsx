@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { List, Cpu, HardDrive, Folder, Code, Sparkles } from 'lucide-react';
+import { List, Cpu, HardDrive, Folder, Code, Sparkles, Zap } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -61,6 +61,13 @@ const Index = () => {
             icon={<Code size={28} />}
             to="/algorithms"
             delay={500}
+          />
+          <CategoryCard
+            title="ECE Algorithms"
+            description="Explore Electrical and Computer Engineering algorithms including the Viterbi Algorithm for optimal sequence detection."
+            icon={<Zap size={28} />}
+            to="/ece-algorithms"
+            delay={600}
           />
         </div>
       </div>
