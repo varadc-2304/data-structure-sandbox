@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Network, TreePine, Trees, Target, TrendingUp, Mountain, Route } from 'lucide-react';
+import { ArrowLeft, Trees, Target, TrendingUp, Mountain, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -23,12 +23,6 @@ const AIAlgorithms = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <CategoryCard
-            title="Convolutional Neural Networks"
-            description="Visualize CNN architecture and see how convolution, pooling, and fully connected layers process image data."
-            icon={<Network size={28} />}
-            to="/ai-algorithms/cnn"
-          />
           <CategoryCard
             title="Random Forests"
             description="Explore ensemble learning with multiple decision trees and see how voting mechanisms improve predictions."

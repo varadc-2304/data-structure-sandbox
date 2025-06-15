@@ -37,7 +37,7 @@ type Mode = 'start' | 'goal' | 'wall' | 'none';
 const AStarVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [speed, setSpeed] = useState(1000);
+  const [speed, setSpeed] = useState(500); // Changed from 1000 to 500 to match linear search
   const [steps, setSteps] = useState<Step[]>([]);
   const [grid, setGrid] = useState<Node[][]>([]);
   const [start, setStart] = useState<Node | null>(null);
@@ -333,7 +333,7 @@ const AStarVisualizer = () => {
 
       intervalRef.current = setTimeout(() => {
         setCurrentStep(prev => prev + 1);
-      }, speed);
+      }, 2100 - speed); // Changed to match linear search pattern: 2100 - speed
     }
 
     return () => {
@@ -594,16 +594,20 @@ const AStarVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Speed: {(2000 / speed).toFixed(1)}x
+                    Speed: {((2100 - speed) / 100).toFixed(1)}x
                   </label>
                   <Slider
                     value={[speed]}
                     onValueChange={([value]) => setSpeed(value)}
                     max={2000}
-                    min={500}
-                    step={250}
+                    min={100}
+                    step={100}
                     className="w-full"
                   />
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slow</span>
+                    <span>Fast</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
