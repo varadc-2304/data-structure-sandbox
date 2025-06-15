@@ -273,6 +273,14 @@ const TowerOfHanoiVisualizer = () => {
                       className="border-2 focus:border-drona-green"
                     />
                   </div>
+                  
+                  <Button 
+                    onClick={generateTowers} 
+                    variant="outline"
+                    className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  >
+                    Generate Towers
+                  </Button>
                 </div>
                 
                 <div className="space-y-2">
