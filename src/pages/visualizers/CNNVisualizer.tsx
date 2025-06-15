@@ -2,7 +2,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, Upload, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -10,58 +13,176 @@ interface CNNLayer {
   type: 'input' | 'conv' | 'pool' | 'fc';
   name: string;
   size: { width: number; height: number; depth: number };
-  active: boolean;
+  description: string;
+  operation: string;
+}
+
+interface ProcessingStep {
+  layerIndex: number;
+  description: string;
+  operation: string;
+  inputSize: string;
+  outputSize: string;
+  parameters?: string;
 }
 
 const CNNVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(-1);
   const [speed, setSpeed] = useState(1000);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const layers: CNNLayer[] = [
-    { type: 'input', name: 'Input Image', size: { width: 32, height: 32, depth: 3 }, active: false },
-    { type: 'conv', name: 'Conv Layer 1', size: { width: 28, height: 28, depth: 6 }, active: false },
-    { type: 'pool', name: 'MaxPool 1', size: { width: 14, height: 14, depth: 6 }, active: false },
-    { type: 'conv', name: 'Conv Layer 2', size: { width: 10, height: 10, depth: 16 }, active: false },
-    { type: 'pool', name: 'MaxPool 2', size: { width: 5, height: 5, depth: 16 }, active: false },
-    { type: 'fc', name: 'Fully Connected', size: { width: 120, height: 1, depth: 1 }, active: false },
-    { type: 'fc', name: 'Output', size: { width: 10, height: 1, depth: 1 }, active: false },
+    { 
+      type: 'input', 
+      name: 'Input Image', 
+      size: { width: 224, height: 224, depth: 3 }, 
+      description: 'RGB image normalized to 224x224 pixels',
+      operation: 'Image preprocessing and normalization'
+    },
+    { 
+      type: 'conv', 
+      name: 'Conv Layer 1', 
+      size: { width: 220, height: 220, depth: 32 }, 
+      description: 'First convolutional layer with 32 filters',
+      operation: 'Convolution with 5x5 kernels, ReLU activation'
+    },
+    { 
+      type: 'pool', 
+      name: 'MaxPool 1', 
+      size: { width: 110, height: 110, depth: 32 }, 
+      description: 'Max pooling reduces spatial dimensions',
+      operation: '2x2 max pooling with stride 2'
+    },
+    { 
+      type: 'conv', 
+      name: 'Conv Layer 2', 
+      size: { width: 106, height: 106, depth: 64 }, 
+      description: 'Second convolutional layer with 64 filters',
+      operation: 'Convolution with 5x5 kernels, ReLU activation'
+    },
+    { 
+      type: 'pool', 
+      name: 'MaxPool 2', 
+      size: { width: 53, height: 53, depth: 64 }, 
+      description: 'Second max pooling layer',
+      operation: '2x2 max pooling with stride 2'
+    },
+    { 
+      type: 'fc', 
+      name: 'Fully Connected 1', 
+      size: { width: 128, height: 1, depth: 1 }, 
+      description: 'First dense layer with 128 neurons',
+      operation: 'Flatten → Dense layer with ReLU activation'
+    },
+    { 
+      type: 'fc', 
+      name: 'Output Layer', 
+      size: { width: 10, height: 1, depth: 1 }, 
+      description: 'Classification output with 10 classes',
+      operation: 'Dense layer with Softmax activation'
+    },
   ];
 
-  const updateLayers = useCallback(() => {
-    setCurrentStep(prev => {
-      const newStep = (prev + 1) % layers.length;
-      return newStep;
+  const generateProcessingSteps = useCallback(() => {
+    const steps: ProcessingStep[] = [];
+    
+    layers.forEach((layer, index) => {
+      const prevLayer = index > 0 ? layers[index - 1] : null;
+      const inputSize = prevLayer ? `${prevLayer.size.width}×${prevLayer.size.height}×${prevLayer.size.depth}` : 'Original Image';
+      const outputSize = `${layer.size.width}×${layer.size.height}×${layer.size.depth}`;
+      
+      let parameters = '';
+      if (layer.type === 'conv') {
+        parameters = `Filters: ${layer.size.depth}, Kernel: 5×5, Padding: 0, Stride: 1`;
+      } else if (layer.type === 'pool') {
+        parameters = `Pool size: 2×2, Stride: 2`;
+      } else if (layer.type === 'fc') {
+        parameters = `Neurons: ${layer.size.width}`;
+      }
+      
+      steps.push({
+        layerIndex: index,
+        description: layer.description,
+        operation: layer.operation,
+        inputSize,
+        outputSize,
+        parameters
+      });
     });
-  }, [layers.length]);
+    
+    setProcessingSteps(steps);
+  }, []);
 
   useEffect(() => {
-    if (isPlaying) {
-      intervalRef.current = setInterval(updateLayers, speed);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    generateProcessingSteps();
+  }, [generateProcessingSteps]);
+
+  useEffect(() => {
+    if (!isPlaying || !uploadedImage) return;
+    
+    if (currentStep >= processingSteps.length - 1) {
+      setIsPlaying(false);
+      return;
     }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isPlaying, speed, updateLayers]);
+    const timer = setTimeout(() => {
+      nextStep();
+    }, speed);
 
-  const togglePlayPause = () => setIsPlaying(!isPlaying);
+    return () => clearTimeout(timer);
+  }, [isPlaying, currentStep, processingSteps.length, speed, uploadedImage]);
 
-  const skipToStart = () => {
-    setCurrentStep(0);
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadedImage(e.target?.result as string);
+        resetProcessing();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const resetProcessing = () => {
+    setCurrentStep(-1);
     setIsPlaying(false);
   };
 
-  const skipToEnd = () => {
-    setCurrentStep(layers.length - 1);
+  const nextStep = () => {
+    if (currentStep >= processingSteps.length - 1) {
+      setIsPlaying(false);
+      return;
+    }
+    setCurrentStep(prev => prev + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep <= -1) return;
+    setCurrentStep(prev => prev - 1);
+  };
+
+  const goToStep = (step: number) => {
+    if (step < -1 || step >= processingSteps.length) return;
+    setCurrentStep(step);
     setIsPlaying(false);
+  };
+
+  const togglePlayPause = () => {
+    if (!uploadedImage) return;
+    
+    if (currentStep >= processingSteps.length - 1) {
+      resetProcessing();
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const renderLayer = (layer: CNNLayer, index: number) => {
@@ -85,8 +206,8 @@ const CNNVisualizer = () => {
             {Array.from({ length: Math.min(width, 10) }).map((_, i) => (
               <div
                 key={i}
-                className={`w-4 h-2 m-0.5 rounded ${getLayerColor(layer.type)} ${
-                  isActive ? 'opacity-100' : 'opacity-30'
+                className={`w-3 h-2 m-0.5 rounded ${getLayerColor(layer.type)} ${
+                  isActive ? 'opacity-100 animate-pulse' : 'opacity-30'
                 } transition-all duration-500`}
               />
             ))}
@@ -94,7 +215,7 @@ const CNNVisualizer = () => {
         );
       }
 
-      const displaySize = Math.min(width, 8);
+      const displaySize = Math.min(width, 6);
       return (
         <div className="relative">
           {Array.from({ length: Math.min(depth, 3) }).map((_, d) => (
@@ -110,8 +231,8 @@ const CNNVisualizer = () => {
               {Array.from({ length: displaySize * displaySize }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 ${getLayerColor(layer.type)} ${
-                    isActive ? 'opacity-100' : 'opacity-30'
+                  className={`w-1.5 h-1.5 ${getLayerColor(layer.type)} ${
+                    isActive ? 'opacity-100 animate-pulse' : 'opacity-30'
                   } transition-all duration-500`}
                   style={{
                     animationDelay: isActive ? `${i * 50}ms` : '0ms',
@@ -125,12 +246,12 @@ const CNNVisualizer = () => {
     };
 
     return (
-      <div key={index} className="flex flex-col items-center mx-4">
+      <div key={index} className="flex flex-col items-center mx-2">
         <div className="mb-2">
           {renderFeatureMap()}
         </div>
         <div className="text-center">
-          <p className={`font-bold text-sm ${isActive ? 'text-drona-green' : 'text-gray-400'}`}>
+          <p className={`font-bold text-xs ${isActive ? 'text-drona-green' : 'text-gray-400'}`}>
             {layer.name}
           </p>
           <p className="text-xs text-gray-500">
@@ -138,9 +259,9 @@ const CNNVisualizer = () => {
           </p>
         </div>
         {index < layers.length - 1 && (
-          <div className="flex items-center mt-4">
-            <div className={`w-8 h-0.5 ${isActive ? 'bg-drona-green' : 'bg-gray-300'} transition-colors duration-500`} />
-            <div className={`w-2 h-2 ${isActive ? 'bg-drona-green' : 'bg-gray-300'} transform rotate-45 -ml-1 transition-colors duration-500`} />
+          <div className="flex items-center mt-2">
+            <div className={`w-6 h-0.5 ${isActive ? 'bg-drona-green' : 'bg-gray-300'} transition-colors duration-500`} />
+            <div className={`w-1.5 h-1.5 ${isActive ? 'bg-drona-green' : 'bg-gray-300'} transform rotate-45 -ml-0.5 transition-colors duration-500`} />
           </div>
         )}
       </div>
@@ -159,83 +280,253 @@ const CNNVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Convolutional Neural Networks</h1>
           <p className="text-lg text-drona-gray">
-            Visualize how CNNs process images through convolution, pooling, and fully connected layers
+            Upload an image and visualize how CNNs process it through convolution, pooling, and fully connected layers
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-drona-dark">CNN Architecture Flow</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-6">
-                <div className="flex flex-wrap justify-center items-center py-8 overflow-x-auto">
-                  {layers.map(renderLayer)}
-                </div>
-              </div>
-
-              <div className="flex justify-center items-center gap-4 mb-4">
-                <Button
-                  onClick={skipToStart}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <SkipBack className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  onClick={togglePlayPause}
-                  variant="default"
-                  size="sm"
-                  className="px-6"
-                >
-                  {isPlaying ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
-                
-                <Button
-                  onClick={skipToEnd}
-                  variant="outline"
-                  size="sm"
-                  className="p-2"
-                >
-                  <SkipForward className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="flex justify-center items-center gap-4">
-                <label className="text-sm font-medium">Speed:</label>
-                <select
-                  value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
-                  className="px-3 py-1 border rounded-md"
-                >
-                  <option value={2000}>0.5x</option>
-                  <option value={1000}>1x</option>
-                  <option value={500}>2x</option>
-                </select>
-              </div>
-
-              <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
-                <h3 className="font-bold text-drona-dark mb-2">Current Layer:</h3>
-                <p className="text-drona-gray">
-                  {currentStep < layers.length ? (
-                    <>
-                      <strong>{layers[currentStep].name}</strong> - 
-                      {layers[currentStep].type === 'input' && ' Original image data'}
-                      {layers[currentStep].type === 'conv' && ' Applies filters to detect features'}
-                      {layers[currentStep].type === 'pool' && ' Reduces spatial dimensions'}
-                      {layers[currentStep].type === 'fc' && ' Fully connected layer for classification'}
-                    </>
-                  ) : (
-                    'CNN processing complete!'
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Controls Panel */}
+          <div className="xl:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Image Upload</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-drona-dark">Upload Image</Label>
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="border-2 focus:border-drona-green"
+                  />
+                  
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Choose Image
+                  </Button>
+                  
+                  {uploadedImage && (
+                    <div className="border-2 border-drona-green/20 rounded-lg overflow-hidden">
+                      <img 
+                        src={uploadedImage} 
+                        alt="Uploaded" 
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
                   )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-drona-dark">
+                    Processing Speed: {(10 - (speed / 100)).toFixed(1)}x
+                  </Label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([value]) => setSpeed(value)}
+                    max={2000}
+                    min={300}
+                    step={100}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-drona-gray">
+                    <span>Slower</span>
+                    <span>Faster</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid grid-cols-5 gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(-1)}
+                    disabled={!uploadedImage}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevStep}
+                    disabled={currentStep <= -1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipBack className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    size="sm"
+                    onClick={togglePlayPause}
+                    disabled={!uploadedImage}
+                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                  >
+                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextStep} 
+                    disabled={currentStep >= processingSteps.length - 1}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => goToStep(processingSteps.length - 1)}
+                    disabled={!uploadedImage}
+                    className="border-2 hover:border-drona-green/50"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <Button 
+                  onClick={resetProcessing} 
+                  variant="outline" 
+                  disabled={isPlaying}
+                  className="w-full border-2 hover:border-drona-green/50"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+
+                {processingSteps.length > 0 && uploadedImage && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-drona-dark">
+                      Step: {currentStep + 1} of {processingSteps.length}
+                    </Label>
+                    <Slider
+                      value={[currentStep + 1]}
+                      onValueChange={([value]) => goToStep(value - 1)}
+                      max={processingSteps.length}
+                      min={0}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Current Layer Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                {currentStep >= 0 && currentStep < processingSteps.length ? (
+                  <div className="space-y-3">
+                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                      <p className="text-sm font-semibold text-drona-gray">Layer</p>
+                      <p className="text-lg font-bold text-drona-dark">{layers[processingSteps[currentStep].layerIndex].name}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                      <p className="text-sm font-semibold text-drona-gray">Operation</p>
+                      <p className="text-sm text-drona-dark">{processingSteps[currentStep].operation}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                      <p className="text-sm font-semibold text-drona-gray">Input → Output</p>
+                      <p className="text-sm text-drona-dark">{processingSteps[currentStep].inputSize} → {processingSteps[currentStep].outputSize}</p>
+                    </div>
+                    {processingSteps[currentStep].parameters && (
+                      <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                        <p className="text-sm font-semibold text-drona-gray">Parameters</p>
+                        <p className="text-sm text-drona-dark">{processingSteps[currentStep].parameters}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-drona-gray">
+                    <p>Upload an image and start processing to see layer details</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Visualization Panel */}
+          <div className="xl:col-span-3">
+            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">CNN Architecture Processing</CardTitle>
+                {imageFile && (
+                  <p className="text-lg font-semibold text-drona-green">
+                    Processing: {imageFile.name}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent className="p-8">
+                {!uploadedImage ? (
+                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                    <div className="text-center">
+                      <Upload className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                      <p className="text-xl font-semibold">Upload an image to start CNN processing</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <div className="flex flex-wrap justify-center items-center py-6 overflow-x-auto">
+                      {layers.map(renderLayer)}
+                    </div>
+
+                    {currentStep >= 0 && currentStep < processingSteps.length && (
+                      <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
+                        <p className="text-lg font-semibold text-drona-dark mb-2">
+                          {processingSteps[currentStep].description}
+                        </p>
+                        <p className="text-sm text-drona-gray">
+                          {processingSteps[currentStep].operation}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {currentStep >= processingSteps.length - 1 && (
+                      <div className="text-center p-6 rounded-xl border-2 bg-gradient-to-r from-green-50 to-green-100">
+                        <div className="text-green-600 text-xl font-bold">
+                          ✅ CNN Processing Complete!
+                          <div className="text-sm font-medium text-drona-gray mt-2">
+                            Image successfully processed through all {processingSteps.length} layers
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">How CNNs Process Images</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                          <li><strong>Input Layer:</strong> Receives the normalized RGB image (224×224×3)</li>
+                          <li><strong>Convolutional Layers:</strong> Apply filters to detect features like edges, shapes</li>
+                          <li><strong>Pooling Layers:</strong> Reduce spatial dimensions while preserving important features</li>
+                          <li><strong>Feature Maps:</strong> Each layer creates feature maps highlighting different patterns</li>
+                          <li><strong>Fully Connected:</strong> Flatten features and learn complex relationships</li>
+                          <li><strong>Classification:</strong> Output probabilities for different classes</li>
+                        </ol>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
