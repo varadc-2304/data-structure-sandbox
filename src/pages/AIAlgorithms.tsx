@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Trees, Target, TrendingUp, Mountain, Route } from 'lucide-react';
+import { ArrowLeft, Target, Mountain, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -24,22 +24,10 @@ const AIAlgorithms = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <CategoryCard
-            title="Random Forests"
-            description="Explore ensemble learning with multiple decision trees and see how voting mechanisms improve predictions."
-            icon={<Trees size={28} />}
-            to="/ai-algorithms/random-forest"
-          />
-          <CategoryCard
             title="K-means Clustering"
             description="Watch K-means algorithm find clusters in data through iterative centroid updates and point assignments."
             icon={<Target size={28} />}
             to="/ai-algorithms/kmeans"
-          />
-          <CategoryCard
-            title="Logistic Regression"
-            description="Watch logistic regression learn to classify data points using gradient descent and sigmoid activation."
-            icon={<TrendingUp size={28} />}
-            to="/ai-algorithms/logistic-regression"
           />
           <CategoryCard
             title="Hill Climbing Algorithm"
