@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Database, Link, Stack, Queue, ListTree, Search, Shuffle, Share2 } from 'lucide-react';
+import { ArrowLeft, Database, Link, Layers, ArrowRightLeft, ListTree, Search, Shuffle, Share2 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const DataStructures = () => {
@@ -65,14 +65,14 @@ const DataStructures = () => {
           <CategoryCard
             title="Stacks"
             description="Explore LIFO (Last In, First Out) operations with push, pop, and peek through visual stack manipulations."
-            icon={<Stack size={28} />}
+            icon={<Layers size={28} />}
             to="/data-structures/stack"
             delay={300}
           />
           <CategoryCard
             title="Queues"
             description="Master FIFO (First In, First Out) operations with enqueue, dequeue, and front/rear pointer management."
-            icon={<Queue size={28} />}
+            icon={<ArrowRightLeft size={28} />}
             to="/data-structures/queue"
             delay={400}
           />
