@@ -1,120 +1,215 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { HardDrive, Play, Disc } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
+import CategoryCard from '@/components/CategoryCard';
+import { ArrowLeft, HardDrive, Clock, Scan, Search, Eye, RotateCcw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const DiskScheduling = () => {
-  const algorithms = [
-    {
-      id: 'fcfs',
-      name: 'FCFS',
-      fullName: 'First-Come-First-Served',
-      description: 'Services disk requests in the order they arrive without any optimization.',
-      icon: <HardDrive size={24} />,
-    },
-    {
-      id: 'sstf',
-      name: 'SSTF',
-      fullName: 'Shortest Seek Time First',
-      description: 'Selects the disk request that requires the least head movement from the current position.',
-      icon: <HardDrive size={24} />,
-    },
-    {
-      id: 'scan',
-      name: 'SCAN',
-      fullName: 'Elevator Algorithm',
-      description: 'Moves the disk head in one direction until all requests are serviced, then changes direction.',
-      icon: <HardDrive size={24} />,
-    },
-    {
-      id: 'c-scan',
-      name: 'C-SCAN',
-      fullName: 'Circular SCAN',
-      description: 'A variant of SCAN that always moves the head in the same direction.',
-      icon: <HardDrive size={24} />,
-    },
-    {
-      id: 'look',
-      name: 'LOOK',
-      fullName: 'LOOK Algorithm',
-      description: 'An improved version of SCAN that only moves as far as the last request in each direction.',
-      icon: <HardDrive size={24} />,
-    },
-    {
-      id: 'c-look',
-      name: 'C-LOOK',
-      fullName: 'Circular LOOK',
-      description: 'A variant of LOOK that always moves in one direction, similar to C-SCAN.',
-      icon: <HardDrive size={24} />,
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
       
-      <div className="page-container pt-24">
-        <div className="mb-10 text-center">
-          <div className="drona-chip mb-3 animate-fade-in">Operating Systems</div>
-          <h1 className="text-3xl md:text-5xl font-bold text-drona-dark mb-4 animate-slide-in bg-clip-text text-transparent bg-gradient-to-r from-drona-green to-blue-600">
-            Disk Scheduling Algorithms
-          </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-drona-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Understand how operating systems optimize disk access with different scheduling algorithms.
-          </p>
-        </div>
-        
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-drona-light to-blue-50 rounded-xl p-8 mb-10 shadow-sm border border-gray-100">
-            <div className="flex items-start">
-              <Disc className="h-8 w-8 text-drona-green mr-4 flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-xl font-semibold text-drona-dark mb-3">What are Disk Scheduling Algorithms?</h2>
-                <p className="text-drona-gray mb-3">
-                  Disk scheduling algorithms determine the order in which disk I/O requests are serviced. Their main goal is to minimize disk head movement and reduce the total time required to serve requests.
-                </p>
-                <p className="text-drona-gray">
-                  These algorithms are crucial for improving the overall performance of secondary storage devices like hard drives.
-                </p>
+      <div className="page-container mt-20">
+        <div className="mb-12">
+          <Link to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold text-drona-dark mb-4">Disk Scheduling Algorithms</h1>
+            <p className="text-xl text-drona-gray max-w-4xl mx-auto leading-relaxed">
+              Understand how operating systems optimize disk I/O operations through intelligent scheduling algorithms. 
+              Minimize seek time and maximize throughput with various disk head movement strategies.
+            </p>
+          </div>
+          
+          <div className="bg-gradient-to-r from-drona-green/10 to-drona-green/5 rounded-2xl p-6 border-2 border-drona-green/20 mb-8">
+            <h2 className="text-2xl font-bold text-drona-dark mb-3">Disk Performance Factors</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-drona-gray">
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Seek time: Moving the disk head to the target track</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Rotational latency: Waiting for sector rotation</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Transfer time: Actual data read/write operation</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Queue management and request ordering</p>
               </div>
             </div>
           </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {algorithms.map((algorithm, index) => (
-              <div 
-                key={algorithm.id} 
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-drona-green/40 animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center mb-3">
-                    <div className="p-2 rounded-lg bg-drona-green/10 text-drona-green mr-3">
-                      {algorithm.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-drona-dark">{algorithm.name}</h3>
-                      <p className="text-xs text-drona-gray">{algorithm.fullName}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-drona-gray flex-grow">{algorithm.description}</p>
-                  <div className="mt-4">
-                    <Link to={`/disk-scheduling/${algorithm.id}`}>
-                      <Button
-                        variant="default"
-                        className="w-full group hover:bg-drona-green"
-                      >
-                        <Play className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                        Visualize Algorithm
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <CategoryCard
+            title="FCFS (First Come First Serve)"
+            description="Processes disk requests in arrival order. Simple but may result in excessive head movement and poor performance."
+            icon={<Clock size={28} />}
+            to="/disk-scheduling/fcfs"
+            delay={100}
+          />
+          <CategoryCard
+            title="SSTF (Shortest Seek Time First)"
+            description="Services the request closest to current head position. Reduces seek time but may cause starvation of distant requests."
+            icon={<Search size={28} />}
+            to="/disk-scheduling/sstf"
+            delay={200}
+          />
+          <CategoryCard
+            title="SCAN (Elevator Algorithm)"
+            description="Head moves in one direction serving requests until reaching end, then reverses. Provides uniform wait times."
+            icon={<Scan size={28} />}
+            to="/disk-scheduling/scan"
+            delay={300}
+          />
+          <CategoryCard
+            title="C-SCAN (Circular SCAN)"
+            description="Head moves in one direction only, jumping to beginning when reaching end. More uniform service times than SCAN."
+            icon={<RotateCcw size={28} />}
+            to="/disk-scheduling/c-scan"
+            delay={400}
+          />
+          <CategoryCard
+            title="LOOK"
+            description="Similar to SCAN but reverses direction when no more requests exist in current direction. More efficient than SCAN."
+            icon={<Eye size={28} />}
+            to="/disk-scheduling/look"
+            delay={500}
+          />
+          <CategoryCard
+            title="C-LOOK (Circular LOOK)"
+            description="Combines benefits of C-SCAN and LOOK. Head serves requests in one direction then jumps to lowest unserved request."
+            icon={<HardDrive size={28} />}
+            to="/disk-scheduling/c-look"
+            delay={600}
+          />
+        </div>
+        
+        <div className="mt-16">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-200">
+            <h3 className="text-2xl font-bold text-drona-dark mb-6 text-center">
+              Algorithm Performance Analysis
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-green-200">
+                    <th className="text-left p-3 font-semibold text-drona-dark">Algorithm</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Seek Pattern</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Starvation</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Throughput</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Best Use Case</th>
+                  </tr>
+                </thead>
+                <tbody className="text-drona-gray">
+                  <tr className="border-b border-green-100">
+                    <td className="p-3 font-medium">FCFS</td>
+                    <td className="p-3">Random movement</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Poor</td>
+                    <td className="p-3">Light workloads</td>
+                  </tr>
+                  <tr className="border-b border-green-100">
+                    <td className="p-3 font-medium">SSTF</td>
+                    <td className="p-3">Shortest distance</td>
+                    <td className="p-3">Possible</td>
+                    <td className="p-3">Good</td>
+                    <td className="p-3">Clustered requests</td>
+                  </tr>
+                  <tr className="border-b border-green-100">
+                    <td className="p-3 font-medium">SCAN</td>
+                    <td className="p-3">Back and forth</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Very Good</td>
+                    <td className="p-3">Heavy workloads</td>
+                  </tr>
+                  <tr className="border-b border-green-100">
+                    <td className="p-3 font-medium">C-SCAN</td>
+                    <td className="p-3">Circular sweep</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Excellent</td>
+                    <td className="p-3">Uniform distribution</td>
+                  </tr>
+                  <tr className="border-b border-green-100">
+                    <td className="p-3 font-medium">LOOK</td>
+                    <td className="p-3">Optimized sweep</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Very Good</td>
+                    <td className="p-3">Moderate workloads</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">C-LOOK</td>
+                    <td className="p-3">Optimized circular</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Excellent</td>
+                    <td className="p-3">Real-time systems</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
+        </div>
+        
+        <div className="mt-12">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border-2 border-blue-200">
+            <h3 className="text-2xl font-bold text-drona-dark mb-4 text-center">
+              Disk Scheduling Benefits
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+              <div>
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <HardDrive className="h-8 w-8 text-blue-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Reduced Seek Time</h4>
+                <p className="text-sm text-drona-gray">Minimize disk head movement for faster access</p>
+              </div>
+              <div>
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Clock className="h-8 w-8 text-green-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Better Response Time</h4>
+                <p className="text-sm text-drona-gray">Improved average response time for I/O requests</p>
+              </div>
+              <div>
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Scan className="h-8 w-8 text-purple-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Higher Throughput</h4>
+                <p className="text-sm text-drona-gray">Process more requests per unit time</p>
+              </div>
+              <div>
+                <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Search className="h-8 w-8 text-orange-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Fair Access</h4>
+                <p className="text-sm text-drona-gray">Prevent starvation of distant requests</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-12">
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-200">
+            <h3 className="text-xl font-bold text-drona-dark mb-3">🚀 Modern Considerations</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-drona-gray">
+              <p>• SSDs don't have mechanical seek time, changing algorithm effectiveness</p>
+              <p>• NCQ (Native Command Queuing) allows drives to reorder requests internally</p>
+              <p>• RAID systems require coordination across multiple drives</p>
+              <p>• Real-time systems may need deadline-aware scheduling algorithms</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Copyright Notice */}
+        <div className="mt-16 text-center text-sm text-drona-gray">
+          © 2024 Ikshvaku Innovations. All rights reserved.
         </div>
       </div>
     </div>

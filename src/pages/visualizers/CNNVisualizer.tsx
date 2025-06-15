@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,21 +8,6 @@ import { Slider } from '@/components/ui/slider';
 import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, Upload, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { 
-  imageToArray, 
-  applyConvolution, 
-  applyMaxPooling, 
-  flattenToFC, 
-  applyDenseLayer, 
-  applySoftmax,
-  featureMapToCanvas,
-  createOriginalImageCanvas,
-  analyzeImageFeatures,
-  classifyBasedOnFeatures,
-  EDGE_DETECTION_KERNELS,
-  FEATURE_KERNELS,
-  type FeatureMap 
-} from '@/utils/cnnProcessor';
 
 interface CNNLayer {
   type: 'input' | 'conv' | 'pool' | 'fc';
@@ -29,9 +15,6 @@ interface CNNLayer {
   size: { width: number; height: number; depth: number };
   description: string;
   operation: string;
-  featureMap?: FeatureMap;
-  fcData?: number[];
-  canvas?: HTMLCanvasElement;
 }
 
 interface ProcessingStep {
@@ -49,13 +32,7 @@ const CNNVisualizer = () => {
   const [currentStep, setCurrentStep] = useState(-1);
   const [speed, setSpeed] = useState(1000);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [processedLayers, setProcessedLayers] = useState<CNNLayer[]>([]);
-  const [currentFeatureMap, setCurrentFeatureMap] = useState<HTMLCanvasElement | null>(null);
-  const [processingProgress, setProcessingProgress] = useState<string>('');
-  const [classificationResult, setClassificationResult] = useState<{ class: string; confidence: number }[]>([]);
-  const [originalImageCanvas, setOriginalImageCanvas] = useState<HTMLCanvasElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,28 +47,28 @@ const CNNVisualizer = () => {
     { 
       type: 'conv', 
       name: 'Conv Layer 1', 
-      size: { width: 222, height: 222, depth: 4 }, 
-      description: 'First convolutional layer with edge detection filters',
+      size: { width: 222, height: 222, depth: 32 }, 
+      description: 'First convolutional layer with 32 filters',
       operation: 'Convolution with 3x3 kernels, ReLU activation'
     },
     { 
       type: 'pool', 
       name: 'MaxPool 1', 
-      size: { width: 111, height: 111, depth: 4 }, 
+      size: { width: 111, height: 111, depth: 32 }, 
       description: 'Max pooling reduces spatial dimensions',
       operation: '2x2 max pooling with stride 2'
     },
     { 
       type: 'conv', 
       name: 'Conv Layer 2', 
-      size: { width: 109, height: 109, depth: 4 }, 
-      description: 'Second convolutional layer with feature detection',
+      size: { width: 109, height: 109, depth: 64 }, 
+      description: 'Second convolutional layer with 64 filters',
       operation: 'Convolution with 3x3 kernels, ReLU activation'
     },
     { 
       type: 'pool', 
       name: 'MaxPool 2', 
-      size: { width: 54, height: 54, depth: 4 }, 
+      size: { width: 54, height: 54, depth: 64 }, 
       description: 'Second max pooling layer',
       operation: '2x2 max pooling with stride 2'
     },
@@ -109,11 +86,6 @@ const CNNVisualizer = () => {
       description: 'Classification output with 10 classes',
       operation: 'Dense layer with Softmax activation'
     },
-  ];
-
-  const CLASS_NAMES = [
-    'Airplane', 'Automobile', 'Bird', 'Cat', 'Deer',
-    'Dog', 'Frog', 'Horse', 'Ship', 'Truck'
   ];
 
   const generateProcessingSteps = useCallback(() => {
@@ -147,152 +119,12 @@ const CNNVisualizer = () => {
     setProcessingSteps(steps);
   }, []);
 
-  const processImageThroughCNN = useCallback(async (imgElement: HTMLImageElement) => {
-    if (!imgElement) return;
-
-    console.log('Starting CNN processing on uploaded image...');
-    const newProcessedLayers: CNNLayer[] = [...layers];
-    
-    // Create original image canvas
-    const originalCanvas = createOriginalImageCanvas(imgElement);
-    setOriginalImageCanvas(originalCanvas);
-    
-    try {
-      // Convert image to array
-      setProcessingProgress('Converting uploaded image to array...');
-      const inputArray = imageToArray(imgElement, 224);
-      console.log('Image converted to array:', inputArray.length, 'x', inputArray[0].length, 'x', inputArray[0][0].length);
-
-      let currentData: any = inputArray;
-      let edgeFeatures: FeatureMap | null = null;
-      let detailedFeatures: FeatureMap | null = null;
-      
-      for (let i = 0; i < layers.length; i++) {
-        const layer = layers[i];
-        console.log(`Processing layer ${i}: ${layer.name} on actual image`);
-        setProcessingProgress(`Applying ${layer.name} to your image...`);
-        
-        if (layer.type === 'input') {
-          // Input layer - store original image data
-          newProcessedLayers[i] = {
-            ...layer,
-            featureMap: {
-              data: currentData,
-              width: 224,
-              height: 224,
-              depth: 3
-            },
-            canvas: originalCanvas
-          };
-        } else if (layer.type === 'conv') {
-          // Convolutional layer - apply real convolution on the image
-          const kernels = i === 1 ? EDGE_DETECTION_KERNELS : FEATURE_KERNELS;
-          const featureMap = applyConvolution(currentData, kernels, 1, 0);
-          console.log('Conv output size:', featureMap.width, 'x', featureMap.height, 'x', featureMap.depth);
-          
-          // Store feature maps for analysis
-          if (i === 1) {
-            edgeFeatures = featureMap;
-          } else if (i === 3) {
-            detailedFeatures = featureMap;
-          }
-          
-          newProcessedLayers[i] = {
-            ...layer,
-            featureMap,
-            canvas: featureMapToCanvas(featureMap, 0)
-          };
-          currentData = featureMap;
-        } else if (layer.type === 'pool') {
-          // Pooling layer - apply max pooling
-          const pooledMap = applyMaxPooling(currentData, 2, 2);
-          console.log('Pool output size:', pooledMap.width, 'x', pooledMap.height, 'x', pooledMap.depth);
-          
-          newProcessedLayers[i] = {
-            ...layer,
-            featureMap: pooledMap,
-            canvas: featureMapToCanvas(pooledMap, 0)
-          };
-          currentData = pooledMap;
-        } else if (layer.type === 'fc') {
-          // Fully connected layer
-          if (i === 5) { // First FC layer
-            const flattened = flattenToFC(currentData);
-            console.log('Flattened size:', flattened.length);
-            const fcOutput = applyDenseLayer(flattened, 128);
-            console.log('FC1 output size:', fcOutput.length);
-            
-            newProcessedLayers[i] = {
-              ...layer,
-              fcData: fcOutput
-            };
-            currentData = fcOutput;
-          } else { // Output layer - use feature-based classification
-            console.log('Analyzing image features for classification...');
-            
-            if (edgeFeatures && detailedFeatures) {
-              // Analyze extracted features
-              const imageFeatures = analyzeImageFeatures(inputArray, edgeFeatures, detailedFeatures);
-              console.log('Extracted image features:', imageFeatures);
-              
-              // Classify based on actual features
-              const classificationScores = classifyBasedOnFeatures(imageFeatures);
-              const softmaxOutput = applySoftmax(classificationScores);
-              console.log('Feature-based classification output for your image:', softmaxOutput);
-              
-              newProcessedLayers[i] = {
-                ...layer,
-                fcData: softmaxOutput
-              };
-              
-              // Generate classification results
-              const results = softmaxOutput.map((confidence, index) => ({
-                class: CLASS_NAMES[index],
-                confidence: confidence * 100
-              })).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
-              
-              console.log('Top 3 predictions based on image analysis:', results);
-              setClassificationResult(results);
-            } else {
-              // Fallback to simple dense layer if features not available
-              const fcOutput = applyDenseLayer(currentData, 10);
-              const softmaxOutput = applySoftmax(fcOutput);
-              
-              newProcessedLayers[i] = {
-                ...layer,
-                fcData: softmaxOutput
-              };
-              
-              const results = softmaxOutput.map((confidence, index) => ({
-                class: CLASS_NAMES[index],
-                confidence: confidence * 100
-              })).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
-              
-              setClassificationResult(results);
-            }
-          }
-        }
-        
-        // Small delay to show processing
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      
-      setProcessedLayers(newProcessedLayers);
-      setProcessingProgress('CNN processing complete with feature-based classification!');
-      console.log('CNN processing completed on uploaded image with intelligent classification');
-      
-    } catch (error) {
-      console.error('Error processing uploaded image:', error);
-      setProcessingProgress('Error during image processing');
-    }
-  }, []);
-
   useEffect(() => {
     generateProcessingSteps();
   }, [generateProcessingSteps]);
 
   useEffect(() => {
-    if (!isPlaying || !uploadedImage || !imageElement) return;
+    if (!isPlaying || !uploadedImage) return;
     
     if (currentStep >= processingSteps.length - 1) {
       setIsPlaying(false);
@@ -304,7 +136,7 @@ const CNNVisualizer = () => {
     }, speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, processingSteps.length, speed, uploadedImage, imageElement]);
+  }, [isPlaying, currentStep, processingSteps.length, speed, uploadedImage]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -313,15 +145,6 @@ const CNNVisualizer = () => {
       reader.onload = (e) => {
         const imageSrc = e.target?.result as string;
         setUploadedImage(imageSrc);
-        
-        // Create image element for processing
-        const img = new Image();
-        img.onload = () => {
-          setImageElement(img);
-          processImageThroughCNN(img);
-        };
-        img.src = imageSrc;
-        
         resetProcessing();
       };
       reader.readAsDataURL(file);
@@ -331,8 +154,6 @@ const CNNVisualizer = () => {
   const resetProcessing = () => {
     setCurrentStep(-1);
     setIsPlaying(false);
-    setCurrentFeatureMap(null);
-    setClassificationResult([]);
   };
 
   const nextStep = () => {
@@ -340,52 +161,22 @@ const CNNVisualizer = () => {
       setIsPlaying(false);
       return;
     }
-    const newStep = currentStep + 1;
-    setCurrentStep(newStep);
-    
-    // Update current feature map display
-    if (newStep < processedLayers.length && processedLayers[newStep]) {
-      const layer = processedLayers[newStep];
-      if (layer.canvas) {
-        setCurrentFeatureMap(layer.canvas);
-      }
-    }
+    setCurrentStep(prev => prev + 1);
   };
 
   const prevStep = () => {
     if (currentStep <= -1) return;
-    const newStep = currentStep - 1;
-    setCurrentStep(newStep);
-    
-    // Update current feature map display
-    if (newStep >= 0 && newStep < processedLayers.length && processedLayers[newStep]) {
-      const layer = processedLayers[newStep];
-      if (layer.canvas) {
-        setCurrentFeatureMap(layer.canvas);
-      }
-    } else {
-      setCurrentFeatureMap(null);
-    }
+    setCurrentStep(prev => prev - 1);
   };
 
   const goToStep = (step: number) => {
     if (step < -1 || step >= processingSteps.length) return;
     setCurrentStep(step);
     setIsPlaying(false);
-    
-    // Update current feature map display
-    if (step >= 0 && step < processedLayers.length && processedLayers[step]) {
-      const layer = processedLayers[step];
-      if (layer.canvas) {
-        setCurrentFeatureMap(layer.canvas);
-      }
-    } else {
-      setCurrentFeatureMap(null);
-    }
   };
 
   const togglePlayPause = () => {
-    if (!uploadedImage || !imageElement) return;
+    if (!uploadedImage) return;
     
     if (currentStep >= processingSteps.length - 1) {
       resetProcessing();
@@ -397,7 +188,6 @@ const CNNVisualizer = () => {
 
   const renderLayer = (layer: CNNLayer, index: number) => {
     const isActive = index <= currentStep;
-    const processedLayer = processedLayers[index];
 
     const getLayerColor = (type: string) => {
       switch (type) {
@@ -411,12 +201,11 @@ const CNNVisualizer = () => {
 
     const renderFeatureMap = () => {
       if (layer.type === 'fc') {
-        const neurons = processedLayer?.fcData ? Math.min(processedLayer.fcData.length, 10) : Math.min(layer.size.width, 10);
+        const neurons = Math.min(layer.size.width, 10);
         return (
           <div className="flex flex-col items-center">
             {Array.from({ length: neurons }).map((_, i) => {
-              const activation = processedLayer?.fcData?.[i] || 0;
-              const opacity = isActive ? Math.max(0.3, Math.min(1, activation * 2)) : 0.3;
+              const opacity = isActive ? Math.random() * 0.7 + 0.3 : 0.3;
               return (
                 <div
                   key={i}
@@ -451,7 +240,6 @@ const CNNVisualizer = () => {
                     className={`w-1.5 h-1.5 ${getLayerColor(layer.type)} transition-all duration-500`}
                     style={{
                       opacity: baseIntensity * randomVariation,
-                      animationDelay: isActive ? `${i * 50}ms` : '0ms',
                     }}
                   />
                 );
@@ -495,9 +283,9 @@ const CNNVisualizer = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to AI Algorithms
           </Link>
-          <h1 className="text-4xl font-bold text-drona-dark mb-2">Real-Time CNN Image Processing</h1>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">CNN Architecture Visualization</h1>
           <p className="text-lg text-drona-gray">
-            Upload any image and watch real CNN operations with intelligent feature-based classification
+            Explore how Convolutional Neural Networks process images through different layers
           </p>
         </div>
 
@@ -532,25 +320,19 @@ const CNNVisualizer = () => {
                     <div className="border-2 border-drona-green/20 rounded-lg overflow-hidden">
                       <img 
                         src={uploadedImage} 
-                        alt="Your uploaded image" 
+                        alt="Uploaded image" 
                         className="w-full h-32 object-cover"
                       />
                       <div className="p-2 bg-drona-green/5 text-xs text-drona-dark font-medium">
-                        CNN will analyze this image intelligently
+                        Ready for CNN processing
                       </div>
-                    </div>
-                  )}
-
-                  {processingProgress && (
-                    <div className="text-sm text-drona-green font-medium bg-green-50 p-2 rounded">
-                      {processingProgress}
                     </div>
                   )}
                 </div>
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-drona-dark">
-                    Processing Speed: {(10 - (speed / 200)).toFixed(1)}x
+                    Processing Speed: {(2000 / speed).toFixed(1)}x
                   </Label>
                   <Slider
                     value={[speed]}
@@ -684,43 +466,21 @@ const CNNVisualizer = () => {
                 )}
               </CardContent>
             </Card>
-
-            {classificationResult.length > 0 && (
-              <Card className="shadow-lg border-2 border-drona-green/20">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
-                  <CardTitle className="text-xl font-bold text-drona-dark">Intelligent Classification</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-6">
-                  <div className="text-sm text-drona-gray font-medium mb-2">
-                    CNN prediction based on extracted image features:
-                  </div>
-                  {classificationResult.map((result, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
-                      <span className="font-medium text-drona-dark">{result.class}</span>
-                      <span className="text-drona-green font-bold">{result.confidence.toFixed(1)}%</span>
-                    </div>
-                  ))}
-                  <div className="text-xs text-drona-gray mt-2 p-2 bg-blue-50 rounded">
-                    ✨ This prediction analyzes actual image features: colors, edges, textures, and patterns
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
           
           {/* Visualization Panel */}
           <div className="xl:col-span-3">
             <Card className="shadow-lg border-2 border-drona-green/20 h-full">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">CNN Processing Your Image</CardTitle>
+                <CardTitle className="text-2xl font-bold text-drona-dark">CNN Architecture Flow</CardTitle>
               </CardHeader>
               <CardContent className="p-8">
                 {!uploadedImage ? (
                   <div className="flex items-center justify-center h-64 text-drona-gray">
                     <div className="text-center">
                       <Upload className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Upload your image to see intelligent CNN processing</p>
-                      <p className="text-sm mt-2">Watch how CNN algorithms analyze your actual image features</p>
+                      <p className="text-xl font-semibold">Upload an image to visualize CNN processing</p>
+                      <p className="text-sm mt-2">See how your image flows through each layer of the network</p>
                     </div>
                   </div>
                 ) : (
@@ -728,34 +488,6 @@ const CNNVisualizer = () => {
                     <div className="flex flex-wrap justify-center items-center py-6 overflow-x-auto">
                       {layers.map(renderLayer)}
                     </div>
-
-                    {currentFeatureMap && (
-                      <div className="text-center">
-                        <h3 className="text-lg font-bold text-drona-dark mb-4">
-                          {currentStep >= 0 ? `${layers[currentStep].name} Output` : 'Feature Map'}
-                        </h3>
-                        <div className="inline-block border-2 border-drona-green/20 rounded-lg overflow-hidden bg-white">
-                          <canvas 
-                            ref={(canvas) => {
-                              if (canvas && currentFeatureMap) {
-                                const ctx = canvas.getContext('2d');
-                                if (ctx) {
-                                  const scale = Math.min(300 / currentFeatureMap.width, 300 / currentFeatureMap.height);
-                                  canvas.width = currentFeatureMap.width * scale;
-                                  canvas.height = currentFeatureMap.height * scale;
-                                  ctx.imageSmoothingEnabled = false;
-                                  ctx.drawImage(currentFeatureMap, 0, 0, canvas.width, canvas.height);
-                                }
-                              }
-                            }}
-                            className="max-w-xs max-h-64"
-                          />
-                          <div className="p-2 bg-drona-green/5 text-xs font-medium">
-                            {currentStep >= 0 ? `Processing result from ${layers[currentStep].name}` : 'CNN Feature Map'}
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {currentStep >= 0 && currentStep < processingSteps.length && (
                       <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
@@ -773,7 +505,7 @@ const CNNVisualizer = () => {
                         <div className="text-green-600 text-xl font-bold">
                           ✅ CNN Processing Complete!
                           <div className="text-sm font-medium text-drona-gray mt-2">
-                            Image successfully processed through all {processingSteps.length} layers with real convolution operations
+                            Image successfully processed through all {processingSteps.length} layers
                           </div>
                         </div>
                       </div>
@@ -781,16 +513,15 @@ const CNNVisualizer = () => {
                     
                     <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
                       <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">Intelligent CNN Operations</CardTitle>
+                        <CardTitle className="text-lg font-bold text-drona-dark">CNN Layer Operations</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li><strong>Input Processing:</strong> Your uploaded image converted to 224×224×3 array</li>
-                          <li><strong>Edge Detection:</strong> Real convolution kernels extract edges and boundaries</li>
-                          <li><strong>Feature Extraction:</strong> Advanced kernels detect textures and patterns</li>
-                          <li><strong>Pooling:</strong> Max pooling reduces dimensions while preserving features</li>
-                          <li><strong>Feature Analysis:</strong> Intelligent analysis of colors, brightness, and complexity</li>
-                          <li><strong>Smart Classification:</strong> Prediction based on actual extracted features</li>
+                          <li><strong>Input Layer:</strong> Normalizes input image to standard dimensions</li>
+                          <li><strong>Convolutional Layers:</strong> Apply filters to detect features like edges and patterns</li>
+                          <li><strong>Pooling Layers:</strong> Reduce spatial dimensions while preserving important features</li>
+                          <li><strong>Fully Connected:</strong> Transform features into dense representations</li>
+                          <li><strong>Output Layer:</strong> Final classification probabilities</li>
                         </ol>
                       </CardContent>
                     </Card>
@@ -799,6 +530,11 @@ const CNNVisualizer = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+        
+        {/* Copyright Notice */}
+        <div className="mt-16 text-center text-sm text-drona-gray">
+          © 2024 Ikshvaku Innovations. All rights reserved.
         </div>
       </div>
     </div>

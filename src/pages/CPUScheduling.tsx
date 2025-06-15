@@ -1,103 +1,176 @@
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
-import { Timer, Clock, ListOrdered, RefreshCw, Cpu, Play } from 'lucide-react';
+import CategoryCard from '@/components/CategoryCard';
+import { ArrowLeft, Clock, Timer, RotateCcw, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-
-const cpuSchedulingAlgorithms = [
-  {
-    title: 'First Come First Serve (FCFS)',
-    description: 'Non-preemptive scheduling algorithm that executes processes in order of arrival.',
-    icon: <Clock size={24} />,
-    to: '/cpu-scheduling/fcfs',
-  },
-  {
-    title: 'Shortest Job First (SJF)',
-    description: 'Scheduling algorithm that executes the process with the shortest burst time first. Supports both preemptive and non-preemptive modes.',
-    icon: <Timer size={24} />,
-    to: '/cpu-scheduling/sjf',
-  },
-  {
-    title: 'Priority Scheduling',
-    description: 'Scheduling algorithm that executes processes based on priority values. Supports both preemptive and non-preemptive modes.',
-    icon: <ListOrdered size={24} />,
-    to: '/cpu-scheduling/priority',
-  },
-  {
-    title: 'Round Robin (RR)',
-    description: 'Time-sliced scheduling algorithm that allocates CPU time in turns. Inherently preemptive with configurable time quantum.',
-    icon: <RefreshCw size={24} />,
-    to: '/cpu-scheduling/round-robin',
-  },
-];
 
 const CPUScheduling = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
       
-      <div className="page-container pt-24">
-        <div className="mb-10 text-center">
-          <div className="drona-chip mb-3 animate-fade-in">Operating Systems</div>
-          <h1 className="text-3xl md:text-5xl font-bold text-drona-dark mb-4 animate-slide-in bg-clip-text text-transparent bg-gradient-to-r from-drona-green to-blue-600">
-            CPU Scheduling Algorithms
-          </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-drona-gray animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Select a CPU scheduling algorithm to visualize how processes are scheduled and executed.
-          </p>
-        </div>
-        
-        <div className="max-w-4xl mx-auto mb-12">
-          <div className="bg-gradient-to-r from-drona-light to-blue-50 rounded-xl p-8 mb-10 shadow-sm border border-gray-100">
-            <div className="flex items-start">
-              <Cpu className="h-8 w-8 text-drona-green mr-4 flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-xl font-semibold text-drona-dark mb-3">What are CPU Scheduling Algorithms?</h2>
-                <p className="text-drona-gray mb-3">
-                  CPU scheduling algorithms determine which process gets CPU time, in what order, and for how long. They directly impact system efficiency, throughput, and response times.
-                </p>
-                <p className="text-drona-gray">
-                  Understanding these algorithms is essential for optimizing operating system performance.
-                </p>
-              </div>
-            </div>
+      <div className="page-container mt-20">
+        <div className="mb-12">
+          <Link to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold text-drona-dark mb-4">CPU Scheduling Algorithms</h1>
+            <p className="text-xl text-drona-gray max-w-4xl mx-auto leading-relaxed">
+              Understand how operating systems manage process execution with interactive Gantt charts and performance metrics. 
+              Explore different scheduling strategies and their impact on system efficiency.
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mx-auto">
-            {cpuSchedulingAlgorithms.map((algo, index) => (
-              <div 
-                key={algo.title} 
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-drona-green/40 animate-fade-in" 
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="flex items-start mb-4">
-                  <div className="bg-drona-green/10 p-3 rounded-lg text-drona-green mr-4">
-                    {algo.icon}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-drona-dark">{algo.title}</h3>
-                  </div>
-                </div>
-                <p className="text-drona-gray text-sm mb-5">{algo.description}</p>
-                <Link to={algo.to}>
-                  <Button className="w-full group hover:bg-drona-green" variant="default">
-                    <Play className="w-4 h-4 mr-2 transition-transform group-hover:scale-110" />
-                    Visualize Algorithm
-                  </Button>
-                </Link>
+          <div className="bg-gradient-to-r from-drona-green/10 to-drona-green/5 rounded-2xl p-6 border-2 border-drona-green/20 mb-8">
+            <h2 className="text-2xl font-bold text-drona-dark mb-3">Key Concepts</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-drona-gray">
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Process arrival and burst times</p>
               </div>
-            ))}
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Waiting time and turnaround time calculations</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>CPU utilization and throughput metrics</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+                <p>Preemptive vs non-preemptive scheduling</p>
+              </div>
+            </div>
           </div>
         </div>
         
-        <footer className="bg-drona-light/50 py-6 mt-12 border-t border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center text-drona-gray text-sm">
-              <p>© {new Date().getFullYear()} ArenaTools. All rights reserved.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <CategoryCard
+            title="First Come First Serve"
+            description="Simplest scheduling algorithm where processes are executed in arrival order. Non-preemptive with potential convoy effect."
+            icon={<Clock size={28} />}
+            to="/cpu-scheduling/fcfs"
+            delay={100}
+          />
+          <CategoryCard
+            title="Shortest Job First"
+            description="Optimal algorithm that minimizes average waiting time by executing shortest jobs first. Can be preemptive or non-preemptive."
+            icon={<Timer size={28} />}
+            to="/cpu-scheduling/sjf"
+            delay={200}
+          />
+          <CategoryCard
+            title="Round Robin"
+            description="Time-sharing algorithm with fixed time quantum. Ensures fairness by giving each process equal CPU time slices."
+            icon={<RotateCcw size={28} />}
+            to="/cpu-scheduling/round-robin"
+            delay={300}
+          />
+          <CategoryCard
+            title="Priority Scheduling"
+            description="Processes are scheduled based on priority levels. Higher priority processes get CPU first, with aging to prevent starvation."
+            icon={<TrendingUp size={28} />}
+            to="/cpu-scheduling/priority"
+            delay={400}
+          />
+        </div>
+        
+        <div className="mt-16">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border-2 border-blue-200">
+            <h3 className="text-2xl font-bold text-drona-dark mb-6 text-center">
+              Scheduling Algorithm Comparison
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-blue-200">
+                    <th className="text-left p-3 font-semibold text-drona-dark">Algorithm</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Preemptive</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Complexity</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Starvation</th>
+                    <th className="text-left p-3 font-semibold text-drona-dark">Use Case</th>
+                  </tr>
+                </thead>
+                <tbody className="text-drona-gray">
+                  <tr className="border-b border-blue-100">
+                    <td className="p-3 font-medium">FCFS</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">O(1)</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Batch systems</td>
+                  </tr>
+                  <tr className="border-b border-blue-100">
+                    <td className="p-3 font-medium">SJF</td>
+                    <td className="p-3">Optional</td>
+                    <td className="p-3">O(n log n)</td>
+                    <td className="p-3">Possible</td>
+                    <td className="p-3">Known burst times</td>
+                  </tr>
+                  <tr className="border-b border-blue-100">
+                    <td className="p-3 font-medium">Round Robin</td>
+                    <td className="p-3">Yes</td>
+                    <td className="p-3">O(1)</td>
+                    <td className="p-3">No</td>
+                    <td className="p-3">Time-sharing systems</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-medium">Priority</td>
+                    <td className="p-3">Optional</td>
+                    <td className="p-3">O(n)</td>
+                    <td className="p-3">Possible</td>
+                    <td className="p-3">Real-time systems</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        </footer>
+        </div>
+        
+        <div className="mt-12">
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 border-2 border-orange-200">
+            <h3 className="text-2xl font-bold text-drona-dark mb-4 text-center">
+              Performance Metrics
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+              <div>
+                <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Clock className="h-8 w-8 text-orange-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Turnaround Time</h4>
+                <p className="text-sm text-drona-gray">Total time from submission to completion</p>
+              </div>
+              <div>
+                <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Timer className="h-8 w-8 text-red-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Waiting Time</h4>
+                <p className="text-sm text-drona-gray">Time spent waiting in the ready queue</p>
+              </div>
+              <div>
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Response Time</h4>
+                <p className="text-sm text-drona-gray">Time from submission to first response</p>
+              </div>
+              <div>
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <RotateCcw className="h-8 w-8 text-purple-600" />
+                </div>
+                <h4 className="font-semibold text-drona-dark mb-2">Throughput</h4>
+                <p className="text-sm text-drona-gray">Number of processes completed per unit time</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Copyright Notice */}
+        <div className="mt-16 text-center text-sm text-drona-gray">
+          © 2024 Ikshvaku Innovations. All rights reserved.
+        </div>
       </div>
     </div>
   );
