@@ -27,22 +27,6 @@ const Hero = () => {
               <span className="text-drona-green font-bold"> immersive interactive visualizations</span> 
               that make complex concepts crystal clear.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row gap-6 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <Link
-                to="/data-structures"
-                className="group px-10 py-5 bg-gradient-to-r from-drona-green to-drona-green/90 text-white rounded-2xl font-bold shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 active:scale-95 inline-flex items-center text-lg border border-drona-green/20 backdrop-blur-sm"
-              >
-                Explore Data Structures
-                <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
-              <Link
-                to="/page-replacement"
-                className="group px-10 py-5 bg-white/80 text-drona-dark border-2 border-drona-green/30 rounded-2xl font-bold shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-drona-green/5 hover:border-drona-green/50 backdrop-blur-sm inline-flex items-center text-lg"
-              >
-                Page Replacement
-                <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
-            </div>
           </div>
         </div>
       </div>

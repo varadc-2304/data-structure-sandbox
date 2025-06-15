@@ -2,7 +2,7 @@
 import React from 'react';
 import Hero from '@/components/Hero';
 import CategoryCard from '@/components/CategoryCard';
-import { Database, Cpu, MemoryStick, HardDrive, Calculator, Brain, Zap, Sparkles } from 'lucide-react';
+import { Database, Cpu, MemoryStick, HardDrive, Calculator, Brain, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
 const Index = () => {
@@ -72,13 +72,6 @@ const Index = () => {
             to="/ai-algorithms"
             delay={700}
           />
-          <CategoryCard
-            title="Advanced Topics"
-            description="Dive into specialized algorithms and cutting-edge computer science concepts."
-            icon={<Sparkles size={32} />}
-            to="/advanced-topics"
-            delay={800}
-          />
         </div>
         
         <div className="mt-20 text-center">
@@ -95,7 +88,7 @@ const Index = () => {
         
         {/* Copyright Notice */}
         <div className="mt-16 text-center text-sm text-drona-gray">
-          © 2024 Ikshvaku Innovations. All rights reserved.
+          © 2025 Ikshvaku Innovations. All rights reserved.
         </div>
       </div>
     </div>
