@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,27 @@ const TowerOfHanoiVisualizer = () => {
   const [fromTower, setFromTower] = useState<number | null>(null);
   const [toTower, setToTower] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
+
+  // Color palette for disks - vibrant and distinct colors
+  const diskColors = [
+    'bg-red-500',      // Disk 1 - Red
+    'bg-blue-500',     // Disk 2 - Blue
+    'bg-green-500',    // Disk 3 - Green
+    'bg-yellow-500',   // Disk 4 - Yellow
+    'bg-purple-500',   // Disk 5 - Purple
+    'bg-pink-500',     // Disk 6 - Pink
+    'bg-indigo-500',   // Disk 7 - Indigo
+  ];
+
+  const diskBorderColors = [
+    'border-red-600',
+    'border-blue-600', 
+    'border-green-600',
+    'border-yellow-600',
+    'border-purple-600',
+    'border-pink-600',
+    'border-indigo-600',
+  ];
 
   useEffect(() => {
     generateTowers();
@@ -158,6 +180,14 @@ const TowerOfHanoiVisualizer = () => {
 
   const getDiskWidth = (diskSize: number) => {
     return `${(diskSize / numDisks) * 80 + 20}%`;
+  };
+
+  const getDiskColor = (diskSize: number) => {
+    return diskColors[diskSize - 1] || 'bg-gray-500';
+  };
+
+  const getDiskBorderColor = (diskSize: number) => {
+    return diskBorderColors[diskSize - 1] || 'border-gray-600';
   };
 
   const goToStep = (step: number) => {
@@ -361,30 +391,46 @@ const TowerOfHanoiVisualizer = () => {
               </CardHeader>
               <CardContent className="p-8">
                 {towers[0].length === numDisks ? (
-                  <div className="flex justify-around h-64">
-                    {towers.map((tower, index) => (
-                      <div key={index} className="flex flex-col-reverse items-center justify-end w-1/3">
-                        <div className="bg-gray-400 h-2 w-24 mb-2"></div>
-                        {tower.map((diskSize, diskIndex) => (
-                          <div
-                            key={diskIndex}
-                            className={`h-6 rounded-md bg-drona-green transition-all duration-300`}
-                            style={{
-                              width: getDiskWidth(diskSize),
-                              marginBottom: '4px',
-                              opacity: (movingDisk === diskSize && (fromTower === index || toTower === index)) ? 0.5 : 1,
-                            }}
-                          >
-                            <div className="flex items-center justify-center h-full text-white font-bold">
-                              {diskSize}
+                  <div className="flex justify-around h-80 items-end">
+                    {towers.map((tower, towerIndex) => (
+                      <div key={towerIndex} className="flex flex-col-reverse items-center justify-start w-1/3 h-full relative">
+                        {/* Tower base */}
+                        <div className="bg-gradient-to-r from-gray-600 to-gray-700 h-4 w-32 rounded-lg shadow-md border-2 border-gray-800 mb-2"></div>
+                        
+                        {/* Tower pole */}
+                        <div className="absolute bottom-16 bg-gradient-to-r from-gray-500 to-gray-600 w-2 h-64 rounded-full shadow-lg border border-gray-700"></div>
+                        
+                        {/* Tower label */}
+                        <div className="absolute -bottom-8 text-lg font-bold text-drona-dark">
+                          Tower {String.fromCharCode(65 + towerIndex)}
+                        </div>
+                        
+                        {/* Disks */}
+                        <div className="flex flex-col-reverse items-center justify-start relative z-10" style={{ paddingBottom: '1rem' }}>
+                          {tower.map((diskSize, diskIndex) => (
+                            <div
+                              key={diskIndex}
+                              className={`h-8 rounded-lg border-2 shadow-lg transition-all duration-500 transform hover:scale-105 ${getDiskColor(diskSize)} ${getDiskBorderColor(diskSize)}`}
+                              style={{
+                                width: getDiskWidth(diskSize),
+                                marginBottom: '2px',
+                                opacity: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) ? 0.7 : 1,
+                                transform: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) 
+                                  ? 'translateY(-10px) scale(1.05)' 
+                                  : 'translateY(0) scale(1)',
+                              }}
+                            >
+                              <div className="flex items-center justify-center h-full text-white font-bold text-sm drop-shadow-md">
+                                {diskSize}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                  <div className="flex items-center justify-center h-80 text-drona-gray">
                     <div className="text-center">
                       <Mountain className="mx-auto h-16 w-16 mb-4 opacity-50" />
                       <p className="text-xl font-semibold">Configure the number of disks to start visualization</p>
@@ -394,8 +440,23 @@ const TowerOfHanoiVisualizer = () => {
 
                 <div className="mt-8 text-center">
                   <p className="text-lg font-semibold text-drona-dark">
-                    Moves: {moves}
+                    Moves: <span className="text-drona-green">{moves}</span>
                   </p>
+                </div>
+                
+                {/* Color Legend */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-drona-light to-white rounded-lg border-2 border-drona-green/20">
+                  <h4 className="text-lg font-bold text-drona-dark mb-3 text-center">Disk Colors</h4>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {Array.from({ length: numDisks }, (_, i) => i + 1).map((diskNum) => (
+                      <div key={diskNum} className="flex items-center space-x-2">
+                        <div 
+                          className={`w-6 h-6 rounded border-2 ${getDiskColor(diskNum)} ${getDiskBorderColor(diskNum)}`}
+                        ></div>
+                        <span className="text-sm font-medium text-drona-gray">Disk {diskNum}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
                 <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20 mt-6">
