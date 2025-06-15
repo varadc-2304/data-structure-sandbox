@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -59,6 +58,7 @@ import FFTVisualizer from "./pages/visualizers/FFTVisualizer";
 import KalmanVisualizer from "./pages/visualizers/KalmanVisualizer";
 import LDPCVisualizer from "./pages/visualizers/LDPCVisualizer";
 import TurboVisualizer from "./pages/visualizers/TurboVisualizer";
+import ModulationVisualizer from "./pages/visualizers/ModulationVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +104,7 @@ const App = () => (
           <Route path="/ece-algorithms/kalman" element={<KalmanVisualizer />} />
           <Route path="/ece-algorithms/ldpc" element={<LDPCVisualizer />} />
           <Route path="/ece-algorithms/turbo" element={<TurboVisualizer />} />
+          <Route path="/ece-algorithms/modulation" element={<ModulationVisualizer />} />
           
           {/* CPU Scheduling */}
           <Route path="/cpu-scheduling" element={<CPUScheduling />} />

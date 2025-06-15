@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Zap, Waves, Target, Cpu, Radio } from 'lucide-react';
+import { ArrowLeft, Zap, Waves, Target, Cpu, Radio, Antenna } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ECEAlgorithms = () => {
@@ -57,6 +57,13 @@ const ECEAlgorithms = () => {
             icon={<Radio size={28} />}
             to="/ece-algorithms/turbo"
             delay={500}
+          />
+          <CategoryCard
+            title="Modulation Techniques"
+            description="Interactive visualization of digital modulation techniques including QAM, PSK, and FSK."
+            icon={<Antenna size={28} />}
+            to="/ece-algorithms/modulation"
+            delay={600}
           />
         </div>
       </div>
