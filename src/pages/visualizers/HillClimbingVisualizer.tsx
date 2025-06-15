@@ -23,7 +23,7 @@ interface Step {
 const HillClimbingVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1500); // Changed to 1500 as middle value
   const [steps, setSteps] = useState<Step[]>([]);
   const [path, setPath] = useState<Position[]>([]);
   const [startPosition, setStartPosition] = useState<Position>({ x: 1, y: 1, value: 0 });
@@ -175,7 +175,7 @@ const HillClimbingVisualizer = () => {
 
       intervalRef.current = setTimeout(() => {
         setCurrentStep(prev => prev + 1);
-      }, 2100 - speed);
+      }, speed);
     }
 
     return () => {
@@ -394,13 +394,13 @@ const HillClimbingVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Speed: {((2100 - speed) / 100).toFixed(1)}x
+                    Speed: {((3000 - speed) / 100).toFixed(1)}x
                   </label>
                   <Slider
                     value={[speed]}
                     onValueChange={([value]) => setSpeed(value)}
-                    max={2000}
-                    min={100}
+                    max={2500}
+                    min={500}
                     step={100}
                     className="w-full"
                   />

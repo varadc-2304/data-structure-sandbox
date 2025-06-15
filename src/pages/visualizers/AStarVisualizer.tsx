@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +38,7 @@ type Mode = 'start' | 'goal' | 'wall' | 'none';
 const AStarVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [speed, setSpeed] = useState(500); // Changed from 1000 to 500 to match linear search
+  const [speed, setSpeed] = useState(1500); // Changed back to 1500 as middle value
   const [steps, setSteps] = useState<Step[]>([]);
   const [grid, setGrid] = useState<Node[][]>([]);
   const [start, setStart] = useState<Node | null>(null);
@@ -237,21 +238,10 @@ const AStarVisualizer = () => {
 
       // Build current path to show progress
       const currentPath = reconstructPath(current);
-      currentPath.forEach(node => {
-        if (!node.isStart && !node.isGoal) {
-          node.isCurrentPath = true;
-        }
-      });
 
       if (current.x === goalNode.x && current.y === goalNode.y) {
         const finalPath = reconstructPath(current);
-        finalPath.forEach(node => {
-          if (!node.isStart && !node.isGoal) {
-            node.isPath = true;
-            node.isCurrentPath = false;
-          }
-        });
-
+        
         newSteps.push({
           current,
           openSet: [...openSet],
@@ -291,13 +281,6 @@ const AStarVisualizer = () => {
         neighbor.h = heuristic(neighbor, goalNode);
         neighbor.f = neighbor.g + neighbor.h;
       });
-
-      // Clear previous current path markers
-      workingGrid.forEach(row => {
-        row.forEach(cell => {
-          cell.isCurrentPath = false;
-        });
-      });
     }
 
     if (openSet.length === 0 && !goalNode.inClosedSet) {
@@ -333,7 +316,7 @@ const AStarVisualizer = () => {
 
       intervalRef.current = setTimeout(() => {
         setCurrentStep(prev => prev + 1);
-      }, 2100 - speed); // Changed to match linear search pattern: 2100 - speed
+      }, speed);
     }
 
     return () => {
@@ -414,13 +397,33 @@ const AStarVisualizer = () => {
     if (node.isGoal) return 'bg-red-500 border-red-600 shadow-md';
     if (node.isWall) return 'bg-gray-800 border-gray-900';
     
-    if (stepData?.pathFound && node.isPath) return 'bg-yellow-400 border-yellow-500 shadow-md';
+    // Check if this node is part of the final path
+    if (stepData?.pathFound && stepData.finalPath) {
+      const isInFinalPath = stepData.finalPath.some(pathNode => pathNode.x === node.x && pathNode.y === node.y);
+      if (isInFinalPath && !node.isStart && !node.isGoal) {
+        return 'bg-yellow-400 border-yellow-500 shadow-md';
+      }
+    }
+    
+    // Check if this node is part of the current exploration path
+    if (stepData?.currentPath) {
+      const isInCurrentPath = stepData.currentPath.some(pathNode => pathNode.x === node.x && pathNode.y === node.y);
+      if (isInCurrentPath && !node.isStart && !node.isGoal && !stepData.pathFound) {
+        return 'bg-yellow-200 border-yellow-300';
+      }
+    }
     
     if (stepData) {
-      if (stepData.current === node) return 'bg-purple-500 border-purple-600 shadow-lg animate-pulse';
-      if (node.isCurrentPath) return 'bg-yellow-200 border-yellow-300';
-      if (node.inClosedSet) return 'bg-red-200 border-red-300';
-      if (node.inOpenSet) return 'bg-blue-200 border-blue-300';
+      if (stepData.current.x === node.x && stepData.current.y === node.y) {
+        return 'bg-purple-500 border-purple-600 shadow-lg animate-pulse';
+      }
+      
+      // Check sets based on the step data
+      const isInClosedSet = stepData.closedSet.some(n => n.x === node.x && n.y === node.y);
+      const isInOpenSet = stepData.openSet.some(n => n.x === node.x && n.y === node.y);
+      
+      if (isInClosedSet) return 'bg-red-200 border-red-300';
+      if (isInOpenSet) return 'bg-blue-200 border-blue-300';
     }
     
     return 'bg-white border-gray-300 hover:bg-gray-50';
@@ -432,10 +435,17 @@ const AStarVisualizer = () => {
     const stepData = getCurrentStepData();
     if (!stepData) return '';
     
-    if (stepData.current === node) return 'C';
-    if (node.inOpenSet || node.inClosedSet) {
-      return node.f > 0 ? node.f.toFixed(0) : '';
+    if (stepData.current.x === node.x && stepData.current.y === node.y) return 'C';
+    
+    // Show f-score for nodes in open or closed set
+    const isInClosedSet = stepData.closedSet.some(n => n.x === node.x && n.y === node.y);
+    const isInOpenSet = stepData.openSet.some(n => n.x === node.x && n.y === node.y);
+    
+    if (isInOpenSet || isInClosedSet) {
+      const matchingNode = [...stepData.openSet, ...stepData.closedSet].find(n => n.x === node.x && n.y === node.y);
+      return matchingNode && matchingNode.f > 0 ? matchingNode.f.toFixed(0) : '';
     }
+    
     return '';
   };
 
@@ -594,13 +604,13 @@ const AStarVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Speed: {((2100 - speed) / 100).toFixed(1)}x
+                    Speed: {((3000 - speed) / 100).toFixed(1)}x
                   </label>
                   <Slider
                     value={[speed]}
                     onValueChange={([value]) => setSpeed(value)}
-                    max={2000}
-                    min={100}
+                    max={2500}
+                    min={500}
                     step={100}
                     className="w-full"
                   />

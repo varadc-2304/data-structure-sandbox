@@ -36,7 +36,7 @@ interface ForestStep {
 const RandomForestVisualizer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [speed, setSpeed] = useState(1000);
+  const [speed, setSpeed] = useState(1500); // Changed to 1500 as middle value
   const [forest, setForest] = useState<TreeNode[]>([]);
   const [forestSteps, setForestSteps] = useState<ForestStep[]>([]);
   const [predictions, setPredictions] = useState<string[]>([]);
@@ -443,19 +443,19 @@ const RandomForestVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {(2000 / speed).toFixed(1)}x
+                    Speed: {((3000 - speed) / 100).toFixed(1)}x
                   </label>
                   <Slider
                     value={[speed]}
                     onValueChange={([value]) => setSpeed(value)}
-                    max={2000}
+                    max={2500}
                     min={500}
-                    step={250}
+                    step={100}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-drona-gray">
-                    <span>Slower</span>
-                    <span>Faster</span>
+                    <span>Slow</span>
+                    <span>Fast</span>
                   </div>
                 </div>
               </CardContent>
