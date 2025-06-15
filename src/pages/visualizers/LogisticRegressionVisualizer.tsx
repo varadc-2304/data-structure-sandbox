@@ -62,7 +62,7 @@ const LogisticRegressionVisualizer = () => {
         const prediction = sigmoid(z);
         const error = prediction - point.label;
         
-        totalCost += -point.label * Math.log(prediction) - (1 - point.label) * Math.log(1 - prediction);
+        totalCost += -point.label * Math.log(prediction + 1e-15) - (1 - point.label) * Math.log(1 - prediction + 1e-15);
         
         gradients.w0 += error;
         gradients.w1 += error * point.x;
@@ -80,7 +80,7 @@ const LogisticRegressionVisualizer = () => {
         epoch: epoch + 1,
         weights: { ...weights },
         cost: totalCost,
-        description: `Epoch ${epoch + 1}: Updating weights based on gradient descent`
+        description: `Epoch ${epoch + 1}: Updating weights based on gradient descent. Cost: ${totalCost.toFixed(4)}`
       });
     }
 
@@ -271,7 +271,7 @@ const LogisticRegressionVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Epoch: {currentStep + 2} of {trainingSteps.length + 1}
+                    Epoch: {currentStep + 1} of {trainingSteps.length}
                   </label>
                   <Slider
                     value={[currentStep + 1]}
@@ -362,7 +362,7 @@ const LogisticRegressionVisualizer = () => {
                     {/* Data points */}
                     {dataPoints.map((point, index) => {
                       const prediction = currentStep >= 0 ? getPrediction(point) : 0.5;
-                      const opacity = currentStep >= 0 ? prediction : 1;
+                      const opacity = currentStep >= 0 ? (point.label === 1 ? prediction : 1 - prediction) + 0.3 : 1;
                       
                       return (
                         <circle
@@ -371,7 +371,7 @@ const LogisticRegressionVisualizer = () => {
                           cy={(10 - point.y) * 40}
                           r="8"
                           fill={point.label === 1 ? '#3b82f6' : '#ef4444'}
-                          opacity={currentStep >= 0 ? (point.label === 1 ? opacity : 1 - opacity) + 0.3 : 1}
+                          opacity={Math.max(0.3, Math.min(1, opacity))}
                           stroke={point.label === 1 ? '#1d4ed8' : '#dc2626'}
                           strokeWidth="2"
                         />
@@ -392,7 +392,7 @@ const LogisticRegressionVisualizer = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-6">
-                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200">
+                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
                     <CardHeader>
                       <CardTitle className="text-lg font-bold text-drona-dark">Class 0 (Red)</CardTitle>
                     </CardHeader>

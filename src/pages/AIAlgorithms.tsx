@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Network, TreePine, Trees, Target, TrendingUp, Mountain } from 'lucide-react';
+import { ArrowLeft, Network, TreePine, Trees, Target, TrendingUp, Mountain, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -52,6 +52,12 @@ const AIAlgorithms = () => {
             description="See how hill climbing searches for optimal solutions by moving to better neighboring states."
             icon={<Mountain size={28} />}
             to="/ai-algorithms/hill-climbing"
+          />
+          <CategoryCard
+            title="A* Pathfinding Algorithm"
+            description="Watch A* algorithm find the optimal path using heuristics and cost evaluation functions."
+            icon={<Route size={28} />}
+            to="/ai-algorithms/a-star"
           />
         </div>
       </div>
