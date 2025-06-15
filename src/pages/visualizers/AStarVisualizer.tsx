@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +9,9 @@ import Navbar from '@/components/Navbar';
 interface Node {
   x: number;
   y: number;
-  g: number; // Distance from start
-  h: number; // Heuristic (distance to goal)
-  f: number; // g + h
+  g: number;
+  h: number;
+  f: number;
   parent?: Node;
   isWall: boolean;
   isStart: boolean;
@@ -20,12 +19,14 @@ interface Node {
   inOpenSet: boolean;
   inClosedSet: boolean;
   isPath: boolean;
+  isCurrentPath: boolean;
 }
 
 interface Step {
   current: Node;
   openSet: Node[];
   closedSet: Node[];
+  currentPath: Node[];
   description: string;
   pathFound?: boolean;
   finalPath?: Node[];
@@ -44,7 +45,7 @@ const AStarVisualizer = () => {
   const [mode, setMode] = useState<Mode>('none');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const GRID_SIZE = 15;
+  const GRID_SIZE = 12;
 
   // Initialize grid
   const initializeGrid = useCallback(() => {
@@ -64,17 +65,18 @@ const AStarVisualizer = () => {
           inOpenSet: false,
           inClosedSet: false,
           isPath: false,
+          isCurrentPath: false,
         });
       }
       newGrid.push(row);
     }
 
-    // Add some default walls for demonstration
+    // Add some walls for demonstration
     const walls = [
-      [5, 3], [5, 4], [5, 5], [5, 6], [5, 7],
-      [8, 2], [8, 3], [8, 4], [8, 5],
-      [3, 8], [4, 8], [5, 8], [6, 8], [7, 8],
-      [10, 6], [10, 7], [10, 8], [10, 9], [10, 10]
+      [4, 2], [4, 3], [4, 4], [4, 5],
+      [7, 1], [7, 2], [7, 3], [7, 4], [7, 5],
+      [2, 7], [3, 7], [4, 7], [5, 7], [6, 7],
+      [9, 6], [9, 7], [9, 8], [9, 9]
     ];
 
     walls.forEach(([x, y]) => {
@@ -84,8 +86,8 @@ const AStarVisualizer = () => {
     });
 
     // Set default start and goal
-    const startNode = newGrid[2][2];
-    const goalNode = newGrid[12][12];
+    const startNode = newGrid[1][1];
+    const goalNode = newGrid[10][10];
     startNode.isStart = true;
     goalNode.isGoal = true;
     
@@ -104,27 +106,22 @@ const AStarVisualizer = () => {
       const clickedCell = newGrid[y][x];
 
       if (mode === 'start') {
-        // Clear previous start
         if (start) {
           newGrid[start.y][start.x].isStart = false;
         }
-        // Set new start (only if not a wall or goal)
         if (!clickedCell.isWall && !clickedCell.isGoal) {
           clickedCell.isStart = true;
           setStart(clickedCell);
         }
       } else if (mode === 'goal') {
-        // Clear previous goal
         if (goal) {
           newGrid[goal.y][goal.x].isGoal = false;
         }
-        // Set new goal (only if not a wall or start)
         if (!clickedCell.isWall && !clickedCell.isStart) {
           clickedCell.isGoal = true;
           setGoal(clickedCell);
         }
       } else if (mode === 'wall') {
-        // Toggle wall (only if not start or goal)
         if (!clickedCell.isStart && !clickedCell.isGoal) {
           clickedCell.isWall = !clickedCell.isWall;
         }
@@ -133,7 +130,6 @@ const AStarVisualizer = () => {
       return newGrid;
     });
 
-    // Reset visualization when grid changes
     setCurrentStep(-1);
     setSteps([]);
   };
@@ -147,6 +143,7 @@ const AStarVisualizer = () => {
           inOpenSet: false,
           inClosedSet: false,
           isPath: false,
+          isCurrentPath: false,
           g: 0,
           h: 0,
           f: 0,
@@ -159,17 +156,13 @@ const AStarVisualizer = () => {
     setSteps([]);
   };
 
-  // Heuristic function (Manhattan distance)
   const heuristic = (a: Node, b: Node): number => {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   };
 
-  // Get neighbors of a node
   const getNeighbors = (node: Node, grid: Node[][]): Node[] => {
     const neighbors: Node[] = [];
-    const directions = [
-      [-1, 0], [1, 0], [0, -1], [0, 1] // 4-directional movement
-    ];
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
     directions.forEach(([dx, dy]) => {
       const x = node.x + dx;
@@ -186,7 +179,6 @@ const AStarVisualizer = () => {
     return neighbors;
   };
 
-  // Reconstruct path from goal to start
   const reconstructPath = (goalNode: Node): Node[] => {
     const path: Node[] = [];
     let current: Node | undefined = goalNode;
@@ -199,14 +191,9 @@ const AStarVisualizer = () => {
     return path;
   };
 
-  // Generate A* algorithm steps
   const generateAStarSteps = useCallback(() => {
-    if (!start || !goal) {
-      console.log("No start or goal set");
-      return;
-    }
+    if (!start || !goal) return;
 
-    // Reset grid state
     const workingGrid = grid.map(row => 
       row.map(cell => ({
         ...cell,
@@ -216,7 +203,8 @@ const AStarVisualizer = () => {
         parent: undefined,
         inOpenSet: false,
         inClosedSet: false,
-        isPath: false
+        isPath: false,
+        isCurrentPath: false
       }))
     );
 
@@ -224,7 +212,6 @@ const AStarVisualizer = () => {
     const openSet: Node[] = [workingGrid[start.y][start.x]];
     const closedSet: Node[] = [];
 
-    // Initialize start node
     const startNode = workingGrid[start.y][start.x];
     const goalNode = workingGrid[goal.y][goal.x];
     
@@ -237,23 +224,31 @@ const AStarVisualizer = () => {
       current: startNode,
       openSet: [...openSet],
       closedSet: [...closedSet],
-      description: `Starting A* algorithm. Added start node (${startNode.x}, ${startNode.y}) to open set with f=${startNode.f.toFixed(1)}`
+      currentPath: [],
+      description: `Starting A* algorithm. Added start node (${startNode.x}, ${startNode.y}) to open set`
     });
 
     while (openSet.length > 0) {
-      // Find node with lowest f score
       openSet.sort((a, b) => a.f - b.f);
       const current = openSet.shift()!;
       current.inOpenSet = false;
       current.inClosedSet = true;
       closedSet.push(current);
 
-      // Check if we reached the goal
+      // Build current path to show progress
+      const currentPath = reconstructPath(current);
+      currentPath.forEach(node => {
+        if (!node.isStart && !node.isGoal) {
+          node.isCurrentPath = true;
+        }
+      });
+
       if (current.x === goalNode.x && current.y === goalNode.y) {
         const finalPath = reconstructPath(current);
         finalPath.forEach(node => {
           if (!node.isStart && !node.isGoal) {
             node.isPath = true;
+            node.isCurrentPath = false;
           }
         });
 
@@ -261,7 +256,8 @@ const AStarVisualizer = () => {
           current,
           openSet: [...openSet],
           closedSet: [...closedSet],
-          description: `Goal reached! Path found with total cost ${current.g}`,
+          currentPath: finalPath,
+          description: `🎯 Goal reached! Optimal path found with cost ${current.g}`,
           pathFound: true,
           finalPath
         });
@@ -272,29 +268,35 @@ const AStarVisualizer = () => {
         current,
         openSet: [...openSet],
         closedSet: [...closedSet],
-        description: `Exploring node (${current.x}, ${current.y}) with f=${current.f.toFixed(1)} (g=${current.g}, h=${current.h.toFixed(1)})`
+        currentPath: [...currentPath],
+        description: `Exploring (${current.x}, ${current.y}). f=${current.f.toFixed(1)} (g=${current.g}, h=${current.h.toFixed(1)})`
       });
 
-      // Check all neighbors
       const neighbors = getNeighbors(current, workingGrid);
       
       neighbors.forEach(neighbor => {
         if (neighbor.inClosedSet) return;
 
-        const tentativeG = current.g + 1; // Cost is 1 for adjacent cells
+        const tentativeG = current.g + 1;
 
         if (!neighbor.inOpenSet) {
           neighbor.inOpenSet = true;
           openSet.push(neighbor);
         } else if (tentativeG >= neighbor.g) {
-          return; // This path is not better
+          return;
         }
 
-        // This path is the best until now
         neighbor.parent = current;
         neighbor.g = tentativeG;
         neighbor.h = heuristic(neighbor, goalNode);
         neighbor.f = neighbor.g + neighbor.h;
+      });
+
+      // Clear previous current path markers
+      workingGrid.forEach(row => {
+        row.forEach(cell => {
+          cell.isCurrentPath = false;
+        });
       });
     }
 
@@ -303,7 +305,8 @@ const AStarVisualizer = () => {
         current: closedSet[closedSet.length - 1] || startNode,
         openSet: [],
         closedSet: [...closedSet],
-        description: "No path found! Open set is empty and goal was not reached.",
+        currentPath: [],
+        description: "❌ No path found! Open set is empty.",
         pathFound: false
       });
     }
@@ -392,7 +395,7 @@ const AStarVisualizer = () => {
   };
 
   const getStepDescription = () => {
-    if (currentStep === -1) return 'Ready to start A* pathfinding algorithm. Click start and goal points, then press play!';
+    if (currentStep === -1) return 'Ready to start A* pathfinding. Set start and goal points, then press play!';
     const step = steps[currentStep];
     return step ? step.description : 'A* algorithm complete!';
   };
@@ -407,30 +410,31 @@ const AStarVisualizer = () => {
   const getCellClass = (node: Node) => {
     const stepData = getCurrentStepData();
     
-    if (node.isStart) return 'bg-green-500 border-green-600';
-    if (node.isGoal) return 'bg-red-500 border-red-600';
+    if (node.isStart) return 'bg-green-500 border-green-600 shadow-md';
+    if (node.isGoal) return 'bg-red-500 border-red-600 shadow-md';
     if (node.isWall) return 'bg-gray-800 border-gray-900';
     
-    // Show path if algorithm is complete and path was found
-    if (stepData?.pathFound && node.isPath) return 'bg-yellow-400 border-yellow-500';
+    if (stepData?.pathFound && node.isPath) return 'bg-yellow-400 border-yellow-500 shadow-md';
     
-    // Show current exploration state
     if (stepData) {
-      if (stepData.current === node) return 'bg-purple-500 border-purple-600';
+      if (stepData.current === node) return 'bg-purple-500 border-purple-600 shadow-lg animate-pulse';
+      if (node.isCurrentPath) return 'bg-yellow-200 border-yellow-300';
       if (node.inClosedSet) return 'bg-red-200 border-red-300';
       if (node.inOpenSet) return 'bg-blue-200 border-blue-300';
     }
     
-    return 'bg-gray-100 border-gray-200 hover:bg-gray-50';
+    return 'bg-white border-gray-300 hover:bg-gray-50';
   };
 
   const getCellContent = (node: Node) => {
+    if (node.isStart || node.isGoal) return '';
+    
     const stepData = getCurrentStepData();
     if (!stepData) return '';
     
     if (stepData.current === node) return 'C';
     if (node.inOpenSet || node.inClosedSet) {
-      return node.f.toFixed(1);
+      return node.f > 0 ? node.f.toFixed(0) : '';
     }
     return '';
   };
@@ -447,11 +451,11 @@ const AStarVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">A* Pathfinding Algorithm</h1>
           <p className="text-lg text-drona-gray">
-            Click to set start and goal points, then watch A* find the optimal path using heuristics
+            Interactive matrix visualization - click to set start/goal points and watch the optimal path unfold
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="shadow-lg border-2 border-drona-green/20">
@@ -590,7 +594,7 @@ const AStarVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {(2000 / speed).toFixed(1)}x
+                    Speed: {(2000 / speed).toFixed(1)}x
                   </label>
                   <Slider
                     value={[speed]}
@@ -600,10 +604,6 @@ const AStarVisualizer = () => {
                     step={250}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-drona-gray">
-                    <span>Slower</span>
-                    <span>Faster</span>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -646,110 +646,97 @@ const AStarVisualizer = () => {
           </div>
 
           {/* Visualization Panel */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <Card className="shadow-lg border-2 border-drona-green/20 h-full">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">A* Pathfinding Visualization</CardTitle>
+                <CardTitle className="text-2xl font-bold text-drona-dark">A* Matrix Visualization</CardTitle>
               </CardHeader>
-              <CardContent className="p-8">
-                <div className="mb-6">
-                  <div className="grid grid-cols-15 gap-1 max-w-4xl mx-auto">
-                    {grid.map((row, y) =>
-                      row.map((node, x) => (
-                        <div
-                          key={`${x}-${y}`}
-                          onClick={() => handleCellClick(x, y)}
-                          className={`w-8 h-8 border-2 flex items-center justify-center text-xs font-bold cursor-pointer transition-all duration-200 ${getCellClass(node)}`}
-                        >
-                          {node.isStart && <Navigation className="h-3 w-3 text-white" />}
-                          {node.isGoal && <Target className="h-3 w-3 text-white" />}
-                          {!node.isStart && !node.isGoal && getCellContent(node)}
-                        </div>
-                      ))
-                    )}
+              <CardContent className="p-6">
+                {/* Matrix Grid */}
+                <div className="mb-6 flex justify-center">
+                  <div className="inline-block p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                    <div className="grid grid-cols-12 gap-1">
+                      {grid.map((row, y) =>
+                        row.map((node, x) => (
+                          <div
+                            key={`${x}-${y}`}
+                            onClick={() => handleCellClick(x, y)}
+                            className={`w-10 h-10 border-2 flex items-center justify-center text-xs font-bold cursor-pointer transition-all duration-300 rounded ${getCellClass(node)}`}
+                            title={`(${x}, ${y}) ${node.f > 0 ? `f=${node.f.toFixed(1)}` : ''}`}
+                          >
+                            {node.isStart && <Navigation className="h-4 w-4 text-white" />}
+                            {node.isGoal && <Target className="h-4 w-4 text-white" />}
+                            {!node.isStart && !node.isGoal && getCellContent(node)}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
+                {/* Algorithm Status */}
+                <div className="mb-6 p-4 bg-drona-light/30 rounded-lg border border-drona-green/20">
                   <h3 className="font-bold text-drona-dark mb-2">Algorithm Status:</h3>
                   <p className="text-sm text-drona-gray">
                     {getStepDescription()}
                   </p>
                 </div>
 
+                {/* Success/Failure Messages */}
                 {getCurrentStepData()?.pathFound && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-2 border-green-300">
-                    <h3 className="text-xl font-bold text-drona-dark mb-2">🎯 Path Found!</h3>
-                    <p className="text-sm text-drona-gray">
-                      A* successfully found the optimal path from start to goal.
-                      Total path cost: {goal?.g || 0} steps.
+                  <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border-2 border-green-300">
+                    <h3 className="text-lg font-bold text-green-800 mb-2">🎯 Optimal Path Found!</h3>
+                    <p className="text-sm text-green-700">
+                      A* successfully found the shortest path with total cost: {goal?.g || 0} steps.
                     </p>
                   </div>
                 )}
 
                 {getCurrentStepData()?.pathFound === false && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-2 border-red-300">
-                    <h3 className="text-xl font-bold text-drona-dark mb-2">❌ No Path Found!</h3>
-                    <p className="text-sm text-drona-gray">
-                      A* could not find a path to the goal. Try removing some walls or changing the goal position.
+                  <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border-2 border-red-300">
+                    <h3 className="text-lg font-bold text-red-800 mb-2">❌ No Path Available!</h3>
+                    <p className="text-sm text-red-700">
+                      Remove some walls or change the goal position to find a path.
                     </p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
-                  <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-green-500 rounded mx-auto mb-2 flex items-center justify-center">
-                        <Navigation className="h-2 w-2 text-white" />
-                      </div>
-                      <p className="text-sm font-bold text-drona-dark">Start</p>
-                    </CardContent>
-                  </Card>
+                {/* Legend */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="flex items-center space-x-2 p-2 bg-green-50 rounded border border-green-200">
+                    <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center">
+                      <Navigation className="h-2 w-2 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-green-800">Start</span>
+                  </div>
                   
-                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-red-500 rounded mx-auto mb-2 flex items-center justify-center">
-                        <Target className="h-2 w-2 text-white" />
-                      </div>
-                      <p className="text-sm font-bold text-drona-dark">Goal</p>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center space-x-2 p-2 bg-red-50 rounded border border-red-200">
+                    <div className="w-4 h-4 bg-red-500 rounded flex items-center justify-center">
+                      <Target className="h-2 w-2 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-red-800">Goal</span>
+                  </div>
                   
-                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-blue-200 rounded mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Open Set</p>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded border border-blue-200">
+                    <div className="w-4 h-4 bg-blue-200 rounded"></div>
+                    <span className="text-sm font-semibold text-blue-800">Open Set</span>
+                  </div>
                   
-                  <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-red-200 rounded mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Closed Set</p>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded border border-gray-200">
+                    <div className="w-4 h-4 bg-red-200 rounded"></div>
+                    <span className="text-sm font-semibold text-gray-800">Closed Set</span>
+                  </div>
 
-                  <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-yellow-400 rounded mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Path</p>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center space-x-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+                    <div className="w-4 h-4 bg-yellow-400 rounded"></div>
+                    <span className="text-sm font-semibold text-yellow-800">Final Path</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 p-2 bg-purple-50 rounded border border-purple-200">
+                    <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                    <span className="text-sm font-semibold text-purple-800">Current</span>
+                  </div>
                 </div>
-
-                <Card className="mt-6 bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-bold text-drona-dark">A* Algorithm Steps</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                      <li>Click to set start point (green) and goal point (red)</li>
-                      <li>Optionally add walls by selecting wall mode and clicking cells</li>
-                      <li>Press play to watch A* find the optimal path</li>
-                      <li>Algorithm uses f(n) = g(n) + h(n) to evaluate nodes</li>
-                    </ol>
-                  </CardContent>
-                </Card>
               </CardContent>
             </Card>
           </div>
