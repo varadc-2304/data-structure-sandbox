@@ -17,18 +17,22 @@ const AutoLogin = () => {
     const processAutoLogin = async () => {
       const token = searchParams.get('token');
       
+      console.log('Auto-login processing with token:', token);
+      
       if (!token) {
+        console.log('No token provided');
         toast({
           variant: "destructive",
           title: "Invalid Login Link",
           description: "No token provided",
         });
-        // Redirect to ikshvaku-innovations.in instead of auth page
         window.location.href = 'https://ikshvaku-innovations.in';
         return;
       }
 
       try {
+        console.log('Verifying token...');
+        
         // Verify token and get user info
         const { data: tokenData, error: tokenError } = await supabase
           .from('auto_login_tokens')
@@ -36,7 +40,10 @@ const AutoLogin = () => {
           .eq('token', token)
           .single();
 
+        console.log('Token verification result:', { tokenData, tokenError });
+
         if (tokenError || !tokenData) {
+          console.log('Token verification failed:', tokenError);
           toast({
             variant: "destructive",
             title: "Invalid Token",
@@ -48,6 +55,7 @@ const AutoLogin = () => {
 
         // Check if token is expired
         if (new Date() > new Date(tokenData.expires_at)) {
+          console.log('Token expired');
           toast({
             variant: "destructive",
             title: "Token Expired",
@@ -59,6 +67,7 @@ const AutoLogin = () => {
 
         // Check if token is already used
         if (tokenData.used) {
+          console.log('Token already used');
           toast({
             variant: "destructive",
             title: "Token Already Used",
@@ -68,6 +77,8 @@ const AutoLogin = () => {
           return;
         }
 
+        console.log('Getting user details for user_id:', tokenData.user_id);
+
         // Get user details
         const { data: userData, error: userError } = await supabase
           .from('auth')
@@ -75,7 +86,10 @@ const AutoLogin = () => {
           .eq('id', tokenData.user_id)
           .single();
 
+        console.log('User details result:', { userData, userError });
+
         if (userError || !userData) {
+          console.log('User not found:', userError);
           toast({
             variant: "destructive",
             title: "User Not Found",
@@ -85,13 +99,21 @@ const AutoLogin = () => {
           return;
         }
 
+        console.log('Marking token as used...');
+
         // Mark token as used
-        await supabase
+        const { error: updateError } = await supabase
           .from('auto_login_tokens')
           .update({ used: true })
           .eq('token', token);
 
-        // Set user in context (this will handle localStorage automatically)
+        if (updateError) {
+          console.log('Error marking token as used:', updateError);
+        }
+
+        console.log('Setting user in context...');
+
+        // Set user in context
         setUser({
           id: userData.id,
           email: userData.email
@@ -102,6 +124,7 @@ const AutoLogin = () => {
           description: "You have been automatically logged in",
         });
 
+        console.log('Redirecting to home page...');
         navigate('/', { replace: true });
 
       } catch (error) {

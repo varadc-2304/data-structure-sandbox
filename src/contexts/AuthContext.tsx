@@ -1,62 +1,98 @@
 
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
-type User = {
+type AuthUser = {
   id: string;
   email: string;
 };
 
 type AuthContextType = {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  setUser: (user: User | null) => void;
+  setUser: (user: AuthUser | null) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Check for user in localStorage
-    const checkAuth = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          // Check if the session is still valid (optional: add expiration check)
-          setUser({
-            id: parsedUser.id,
-            email: parsedUser.email
-          });
-        } catch (error) {
-          console.error("Error parsing stored user:", error);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        
+        if (session?.user) {
+          // Check if user exists in our auth table
+          const { data: authUser, error } = await supabase
+            .from('auth')
+            .select('id, email')
+            .eq('id', session.user.id)
+            .single();
+
+          if (authUser && !error) {
+            const userData = {
+              id: authUser.id,
+              email: authUser.email
+            };
+            setUserState(userData);
+            localStorage.setItem('user', JSON.stringify({
+              id: userData.id,
+              email: userData.email,
+              timestamp: new Date().getTime()
+            }));
+          } else {
+            console.log('User not found in auth table:', error);
+            setUserState(null);
+            localStorage.removeItem('user');
+          }
+        } else {
+          setUserState(null);
           localStorage.removeItem('user');
         }
+        setLoading(false);
       }
-      setLoading(false);
-    };
+    );
 
-    checkAuth();
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    }
     localStorage.removeItem('user');
-    setUser(null);
+    setUserState(null);
+    setSession(null);
   };
 
-  const setUserData = (userData: User | null) => {
+  const setUser = (userData: AuthUser | null) => {
     if (userData) {
-      // Store user in localStorage
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,
         email: userData.email,
         timestamp: new Date().getTime()
       }));
+    } else {
+      localStorage.removeItem('user');
     }
-    setUser(userData);
+    setUserState(userData);
   };
 
   return (
@@ -65,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         signOut,
-        setUser: setUserData,
+        setUser,
       }}
     >
       {children}
