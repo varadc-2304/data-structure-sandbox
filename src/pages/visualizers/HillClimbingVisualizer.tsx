@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -258,9 +259,10 @@ const HillClimbingVisualizer = () => {
   const getColorForHeight = (height: number): string => {
     const maxHeight = 200;
     const intensity = Math.min(height / maxHeight, 1);
-    const red = Math.floor(255 * (1 - intensity));
-    const green = Math.floor(255 * intensity);
-    return `rgb(${red}, ${green}, 0)`;
+    // Changed to use green scale instead of red-green for better visibility on white background
+    const green = Math.floor(100 + 155 * intensity); // Range from 100 to 255
+    const blue = Math.floor(50 + 100 * intensity); // Range from 50 to 150
+    return `rgb(200, ${green}, ${blue})`;
   };
 
   return (
@@ -279,348 +281,431 @@ const HillClimbingVisualizer = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Controls Panel */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Map Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <Button 
-                  onClick={changeMap}
-                  variant="outline"
-                  className="w-full font-semibold border-2 hover:border-drona-green/50"
-                  disabled={isPlaying}
-                >
-                  <Map className="mr-2 h-4 w-4" />
-                  Change Map
-                </Button>
-                <div className="text-sm text-drona-gray">
-                  Current map: {mapNames[currentMap]}
-                </div>
-                <div className="text-xs text-drona-gray mt-2 p-3 bg-drona-light/30 rounded-lg">
-                  Click on any square in the map to set the starting position
-                </div>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="visualization" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mb-8">
+            <TabsTrigger value="visualization">Visualization</TabsTrigger>
+            <TabsTrigger value="algorithm">Algorithm</TabsTrigger>
+          </TabsList>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Starting Position</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="text-sm text-drona-gray">
-                  Current start: ({startPosition.x}, {startPosition.y}) → Height: {startPosition.value.toFixed(2)}
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="visualization">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Controls Panel */}
+              <div className="lg:col-span-1 space-y-6">
+                <Card className="shadow-lg border-2 border-drona-green/20">
+                  <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                    <CardTitle className="text-xl font-bold text-drona-dark">Map Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <Button 
+                      onClick={changeMap}
+                      variant="outline"
+                      className="w-full font-semibold border-2 hover:border-drona-green/50"
+                      disabled={isPlaying}
+                    >
+                      <Map className="mr-2 h-4 w-4" />
+                      Change Map
+                    </Button>
+                    <div className="text-sm text-drona-gray">
+                      Current map: {mapNames[currentMap]}
+                    </div>
+                    <div className="text-xs text-drona-gray mt-2 p-3 bg-drona-light/30 rounded-lg">
+                      Click on any square in the map to set the starting position
+                    </div>
+                  </CardContent>
+                </Card>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid grid-cols-5 gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={skipToStart}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={prevStep}
-                    disabled={currentStep <= -1}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm"
-                    onClick={togglePlayPause}
-                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
-                  >
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={nextStep} 
-                    disabled={currentStep >= steps.length - 1}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={skipToEnd}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <Button 
-                  onClick={resetVisualization} 
-                  variant="outline" 
-                  disabled={isPlaying}
-                  className="w-full border-2 hover:border-drona-green/50"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
-                </Button>
+                <Card className="shadow-lg border-2 border-drona-green/20">
+                  <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                    <CardTitle className="text-xl font-bold text-drona-dark">Starting Position</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <div className="text-sm text-drona-gray">
+                      Current start: ({startPosition.x}, {startPosition.y}) → Height: {startPosition.value.toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-drona-dark">
-                    Step: {currentStep + 2} of {steps.length + 1}
-                  </label>
-                  <Slider
-                    value={[currentStep + 1]}
-                    onValueChange={([value]) => goToStep(value - 1)}
-                    max={steps.length}
-                    min={0}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
+                <Card className="shadow-lg border-2 border-drona-green/20">
+                  <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                    <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <div className="grid grid-cols-5 gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={skipToStart}
+                        className="border-2 hover:border-drona-green/50"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={prevStep}
+                        disabled={currentStep <= -1}
+                        className="border-2 hover:border-drona-green/50"
+                      >
+                        <SkipBack className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        size="sm"
+                        onClick={togglePlayPause}
+                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
+                      >
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={nextStep} 
+                        disabled={currentStep >= steps.length - 1}
+                        className="border-2 hover:border-drona-green/50"
+                      >
+                        <SkipForward className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={skipToEnd}
+                        className="border-2 hover:border-drona-green/50"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <Button 
+                      onClick={resetVisualization} 
+                      variant="outline" 
+                      disabled={isPlaying}
+                      className="w-full border-2 hover:border-drona-green/50"
+                    >
+                      <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                    </Button>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-drona-dark">
-                    Speed: {((3000 - speed) / 100).toFixed(1)}x
-                  </label>
-                  <Slider
-                    value={[speed]}
-                    onValueChange={([value]) => setSpeed(value)}
-                    max={2500}
-                    min={500}
-                    step={100}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-drona-gray">
-                    <span>Slow</span>
-                    <span>Fast</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-drona-dark">
+                        Step: {currentStep + 2} of {steps.length + 1}
+                      </label>
+                      <Slider
+                        value={[currentStep + 1]}
+                        onValueChange={([value]) => goToStep(value - 1)}
+                        max={steps.length}
+                        min={0}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Current State</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                {getCurrentPosition() && (
-                  <div className="space-y-3">
-                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
-                      <p className="text-sm font-semibold text-drona-gray">Position</p>
-                      <p className="text-lg font-bold text-drona-dark">
-                        ({getCurrentPosition()!.x}, {getCurrentPosition()!.y})
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-drona-dark">
+                        Speed: {((3000 - speed) / 100).toFixed(1)}x
+                      </label>
+                      <Slider
+                        value={[speed]}
+                        onValueChange={([value]) => setSpeed(value)}
+                        max={2500}
+                        min={500}
+                        step={100}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-drona-gray">
+                        <span>Slow</span>
+                        <span>Fast</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-lg border-2 border-drona-green/20">
+                  <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                    <CardTitle className="text-xl font-bold text-drona-dark">Current State</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    {getCurrentPosition() && (
+                      <div className="space-y-3">
+                        <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                          <p className="text-sm font-semibold text-drona-gray">Position</p>
+                          <p className="text-lg font-bold text-drona-dark">
+                            ({getCurrentPosition()!.x}, {getCurrentPosition()!.y})
+                          </p>
+                        </div>
+                        <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                          <p className="text-sm font-semibold text-drona-gray">Height</p>
+                          <p className="text-lg font-bold text-drona-dark">
+                            {getCurrentPosition()!.value.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                          <p className="text-sm font-semibold text-drona-gray">Neighbors</p>
+                          <p className="text-lg font-bold text-drona-dark">
+                            {getCurrentNeighbors().length}
+                          </p>
+                        </div>
+                        {getBestNeighbor() && (
+                          <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border-2 border-green-300">
+                            <p className="text-sm font-semibold text-drona-gray">Best Neighbor</p>
+                            <p className="text-sm font-bold text-drona-dark">
+                              ({getBestNeighbor()!.x}, {getBestNeighbor()!.y}) → {getBestNeighbor()!.value.toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Visualization Panel */}
+              <div className="lg:col-span-3">
+                <Card className="shadow-lg border-2 border-drona-green/20 h-full">
+                  <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                    <CardTitle className="text-2xl font-bold text-drona-dark">Hill Climbing Search</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-8">
+                    <div className="mb-6">
+                      <svg 
+                        width="550" 
+                        height="450" 
+                        viewBox="0 0 550 450" 
+                        className="border rounded-lg bg-white mx-auto cursor-pointer"
+                        onClick={handleMapClick}
+                      >
+                        {/* Grid and height map */}
+                        {Array.from({ length: 11 }, (_, x) =>
+                          Array.from({ length: 11 }, (_, y) => {
+                            const height = getHeight(x, y);
+                            return (
+                              <rect
+                                key={`${x}-${y}`}
+                                x={x * 50}
+                                y={y * 40}
+                                width="50"
+                                height="40"
+                                fill={getColorForHeight(height)}
+                                opacity="0.7"
+                                stroke="#ddd"
+                                strokeWidth="1"
+                                className="hover:opacity-90 transition-opacity cursor-pointer"
+                              />
+                            );
+                          })
+                        )}
+                        
+                        {/* Start position marker */}
+                        <circle
+                          cx={startPosition.x * 50 + 25}
+                          cy={startPosition.y * 40 + 20}
+                          r="8"
+                          fill="#8b5cf6"
+                          stroke="#7c3aed"
+                          strokeWidth="2"
+                          opacity="0.8"
+                        />
+                        
+                        {/* Path */}
+                        {path.length > 1 && currentStep >= 0 && (
+                          <polyline
+                            points={path.slice(0, Math.min(currentStep + 1, path.length)).map(p => `${p.x * 50 + 25},${p.y * 40 + 20}`).join(' ')}
+                            fill="none"
+                            stroke="#8b5cf6"
+                            strokeWidth="3"
+                            strokeDasharray="5,5"
+                          />
+                        )}
+                        
+                        {/* Current position */}
+                        {getCurrentPosition() && (
+                          <circle
+                            cx={getCurrentPosition()!.x * 50 + 25}
+                            cy={getCurrentPosition()!.y * 40 + 20}
+                            r="12"
+                            fill="#dc2626"
+                            stroke="#991b1b"
+                            strokeWidth="3"
+                          />
+                        )}
+                        
+                        {/* Neighbors */}
+                        {getCurrentNeighbors().map((neighbor, index) => (
+                          <circle
+                            key={index}
+                            cx={neighbor.x * 50 + 25}
+                            cy={neighbor.y * 40 + 20}
+                            r="8"
+                            fill="#60a5fa"
+                            opacity="0.7"
+                            stroke="#2563eb"
+                            strokeWidth="2"
+                          />
+                        ))}
+                        
+                        {/* Best neighbor */}
+                        {getBestNeighbor() && (
+                          <circle
+                            cx={getBestNeighbor()!.x * 50 + 25}
+                            cy={getBestNeighbor()!.y * 40 + 20}
+                            r="10"
+                            fill="#22c55e"
+                            stroke="#16a34a"
+                            strokeWidth="3"
+                          />
+                        )}
+                        
+                        {/* Coordinate labels */}
+                        {Array.from({ length: 11 }, (_, i) => (
+                          <g key={i}>
+                            <text x={i * 50 + 25} y="435" textAnchor="middle" className="text-xs text-drona-gray">{i}</text>
+                            <text x="10" y={i * 40 + 25} textAnchor="middle" className="text-xs text-drona-gray">{i}</text>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
+                      <h3 className="font-bold text-drona-dark mb-2">Algorithm Status:</h3>
+                      <p className="text-sm text-drona-gray">
+                        {getStepDescription()}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
-                      <p className="text-sm font-semibold text-drona-gray">Height</p>
-                      <p className="text-lg font-bold text-drona-dark">
-                        {getCurrentPosition()!.value.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
-                      <p className="text-sm font-semibold text-drona-gray">Neighbors</p>
-                      <p className="text-lg font-bold text-drona-dark">
-                        {getCurrentNeighbors().length}
-                      </p>
-                    </div>
-                    {getBestNeighbor() && (
-                      <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border-2 border-green-300">
-                        <p className="text-sm font-semibold text-drona-gray">Best Neighbor</p>
-                        <p className="text-sm font-bold text-drona-dark">
-                          ({getBestNeighbor()!.x}, {getBestNeighbor()!.y}) → {getBestNeighbor()!.value.toFixed(2)}
+
+                    {currentStep >= 0 && steps[currentStep]?.isStuck && (
+                      <div className="mt-6 p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border-2 border-yellow-300">
+                        <h3 className="text-xl font-bold text-drona-dark mb-2">🏔️ Local Maximum Found!</h3>
+                        <p className="text-sm text-drona-gray">
+                          The algorithm has reached a local maximum and cannot improve further.
+                          This is a limitation of basic hill climbing - it can get stuck at local optima.
                         </p>
                       </div>
                     )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Visualization Panel */}
-          <div className="lg:col-span-3">
-            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">Hill Climbing Search</CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="mb-6">
-                  <svg 
-                    width="550" 
-                    height="450" 
-                    viewBox="0 0 550 450" 
-                    className="border rounded-lg bg-white mx-auto cursor-pointer"
-                    onClick={handleMapClick}
-                  >
-                    {/* Grid and height map */}
-                    {Array.from({ length: 11 }, (_, x) =>
-                      Array.from({ length: 11 }, (_, y) => {
-                        const height = getHeight(x, y);
-                        return (
-                          <rect
-                            key={`${x}-${y}`}
-                            x={x * 50}
-                            y={y * 40}
-                            width="50"
-                            height="40"
-                            fill={getColorForHeight(height)}
-                            opacity="0.7"
-                            stroke="#ddd"
-                            strokeWidth="1"
-                            className="hover:opacity-90 transition-opacity cursor-pointer"
-                          />
-                        );
-                      })
-                    )}
-                    
-                    {/* Start position marker */}
-                    <circle
-                      cx={startPosition.x * 50 + 25}
-                      cy={startPosition.y * 40 + 20}
-                      r="8"
-                      fill="#8b5cf6"
-                      stroke="#7c3aed"
-                      strokeWidth="2"
-                      opacity="0.8"
-                    />
-                    
-                    {/* Path */}
-                    {path.length > 1 && currentStep >= 0 && (
-                      <polyline
-                        points={path.slice(0, Math.min(currentStep + 1, path.length)).map(p => `${p.x * 50 + 25},${p.y * 40 + 20}`).join(' ')}
-                        fill="none"
-                        stroke="#8b5cf6"
-                        strokeWidth="3"
-                        strokeDasharray="5,5"
-                      />
-                    )}
-                    
-                    {/* Current position */}
-                    {getCurrentPosition() && (
-                      <circle
-                        cx={getCurrentPosition()!.x * 50 + 25}
-                        cy={getCurrentPosition()!.y * 40 + 20}
-                        r="12"
-                        fill="#dc2626"
-                        stroke="#991b1b"
-                        strokeWidth="3"
-                      />
-                    )}
-                    
-                    {/* Neighbors */}
-                    {getCurrentNeighbors().map((neighbor, index) => (
-                      <circle
-                        key={index}
-                        cx={neighbor.x * 50 + 25}
-                        cy={neighbor.y * 40 + 20}
-                        r="8"
-                        fill="#60a5fa"
-                        opacity="0.7"
-                        stroke="#2563eb"
-                        strokeWidth="2"
-                      />
-                    ))}
-                    
-                    {/* Best neighbor */}
-                    {getBestNeighbor() && (
-                      <circle
-                        cx={getBestNeighbor()!.x * 50 + 25}
-                        cy={getBestNeighbor()!.y * 40 + 20}
-                        r="10"
-                        fill="#22c55e"
-                        stroke="#16a34a"
-                        strokeWidth="3"
-                      />
-                    )}
-                    
-                    {/* Coordinate labels */}
-                    {Array.from({ length: 11 }, (_, i) => (
-                      <g key={i}>
-                        <text x={i * 50 + 25} y="435" textAnchor="middle" className="text-xs text-drona-gray">{i}</text>
-                        <text x="10" y={i * 40 + 25} textAnchor="middle" className="text-xs text-drona-gray">{i}</text>
-                      </g>
-                    ))}
-                  </svg>
-                </div>
+                    <div className="grid grid-cols-4 gap-4 mt-6">
+                      <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200">
+                        <CardContent className="text-center p-4">
+                          <div className="w-4 h-4 bg-purple-600 rounded-full mx-auto mb-2"></div>
+                          <p className="text-sm font-bold text-drona-dark">Start Position</p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
+                        <CardContent className="text-center p-4">
+                          <div className="w-4 h-4 bg-red-600 rounded-full mx-auto mb-2"></div>
+                          <p className="text-sm font-bold text-drona-dark">Current Position</p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200">
+                        <CardContent className="text-center p-4">
+                          <div className="w-4 h-4 bg-blue-400 rounded-full mx-auto mb-2"></div>
+                          <p className="text-sm font-bold text-drona-dark">Neighbors</p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
+                        <CardContent className="text-center p-4">
+                          <div className="w-4 h-4 bg-green-500 rounded-full mx-auto mb-2"></div>
+                          <p className="text-sm font-bold text-drona-dark">Best Neighbor</p>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
-                  <h3 className="font-bold text-drona-dark mb-2">Algorithm Status:</h3>
-                  <p className="text-sm text-drona-gray">
-                    {getStepDescription()}
-                  </p>
-                </div>
-
-                {currentStep >= 0 && steps[currentStep]?.isStuck && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border-2 border-yellow-300">
-                    <h3 className="text-xl font-bold text-drona-dark mb-2">🏔️ Local Maximum Found!</h3>
-                    <p className="text-sm text-drona-gray">
-                      The algorithm has reached a local maximum and cannot improve further.
-                      This is a limitation of basic hill climbing - it can get stuck at local optima.
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-4 gap-4 mt-6">
-                  <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-purple-600 rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Start Position</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-red-600 rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Current Position</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-blue-400 rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Neighbors</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
-                    <CardContent className="text-center p-4">
-                      <div className="w-4 h-4 bg-green-500 rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm font-bold text-drona-dark">Best Neighbor</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card className="mt-6 bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-bold text-drona-dark">Algorithm Steps</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                      <li>Start at an initial position (click on the map to set)</li>
-                      <li>Evaluate all neighboring positions</li>
-                      <li>Move to the neighbor with the highest value</li>
-                      <li>Repeat until no neighbor is better (local maximum)</li>
-                    </ol>
+                    <Card className="mt-6 bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Algorithm Steps</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
+                          <li>Start at an initial position (click on the map to set)</li>
+                          <li>Evaluate all neighboring positions</li>
+                          <li>Move to the neighbor with the highest value</li>
+                          <li>Repeat until no neighbor is better (local maximum)</li>
+                        </ol>
+                      </CardContent>
+                    </Card>
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="algorithm">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-2xl font-bold text-drona-dark">Hill Climbing Algorithm</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="prose max-w-none">
+                  <h3 className="text-xl font-bold text-drona-dark mb-4">How Hill Climbing Works</h3>
+                  
+                  <div className="bg-drona-light/30 p-6 rounded-lg mb-6">
+                    <h4 className="font-bold text-drona-dark mb-3">Algorithm Steps:</h4>
+                    <ol className="list-decimal list-inside space-y-2 text-drona-gray">
+                      <li><strong>Start:</strong> Begin at an initial position in the search space</li>
+                      <li><strong>Evaluate:</strong> Check all neighboring positions</li>
+                      <li><strong>Move:</strong> Move to the neighbor with the highest value</li>
+                      <li><strong>Repeat:</strong> Continue until no neighbor is better (local maximum)</li>
+                    </ol>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Time Complexity</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-drona-gray">O(k × n)</p>
+                        <ul className="text-sm text-drona-gray mt-2 space-y-1">
+                          <li>k = number of steps to reach local maximum</li>
+                          <li>n = number of neighbors per position</li>
+                          <li>Usually very efficient for simple landscapes</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Applications</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="text-sm text-drona-gray space-y-1">
+                          <li>• Function optimization</li>
+                          <li>• Route planning</li>
+                          <li>• Machine learning parameter tuning</li>
+                          <li>• Game AI decision making</li>
+                          <li>• Scheduling problems</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-lg">
+                    <h4 className="font-bold text-drona-dark mb-3">Limitations:</h4>
+                    <ul className="text-drona-gray space-y-2">
+                      <li>• <strong>Local Maxima:</strong> Gets stuck at local peaks, may miss global optimum</li>
+                      <li>• <strong>Plateaus:</strong> Can get stuck on flat areas with no improvement</li>
+                      <li>• <strong>Ridges:</strong> May oscillate on narrow ridges</li>
+                      <li>• <strong>Starting Point:</strong> Final result depends heavily on initial position</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-green-50 border-2 border-green-200 p-6 rounded-lg">
+                    <h4 className="font-bold text-drona-dark mb-3">Improvements:</h4>
+                    <ul className="text-drona-gray space-y-2">
+                      <li>• <strong>Random Restart:</strong> Try multiple starting points</li>
+                      <li>• <strong>Simulated Annealing:</strong> Allow occasional downhill moves</li>
+                      <li>• <strong>Stochastic Hill Climbing:</strong> Choose randomly among improving moves</li>
+                      <li>• <strong>First-Choice Hill Climbing:</strong> Take first improvement found</li>
+                    </ul>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
