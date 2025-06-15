@@ -69,16 +69,7 @@ const TowerOfHanoiVisualizer = () => {
   }, [isRunning, currentStep, hanoiSteps.length, speed]);
 
   const generateTowers = () => {
-    const initialTowers = [[], [], []];
-    for (let i = numDisks; i > 0; i--) {
-      initialTowers[0].push(i);
-    }
-    setTowers(initialTowers);
-    resetTowers();
-  };
-
-  const resetTowers = () => {
-    const initialTowers = [[], [], []];
+    const initialTowers: number[][] = [[], [], []];
     for (let i = numDisks; i > 0; i--) {
       initialTowers[0].push(i);
     }
@@ -92,50 +83,67 @@ const TowerOfHanoiVisualizer = () => {
     setMoves(0);
   };
 
-  const calculateHanoiSteps = (n: number, source: number[], destination: number[], auxiliary: number[]) => {
-    const steps: HanoiStep[] = [];
-
-    const moveDisk = (disk: number, from: number[], to: number[]) => {
-      steps.push({
-        towers: [
-          [...source],
-          [...destination],
-          [...auxiliary]
-        ],
-        movingDisk: disk,
-        fromTower: from === source ? 0 : (from === destination ? 1 : 2),
-        toTower: to === source ? 0 : (to === destination ? 1 : 2)
-      });
-      to.push(disk);
-      from.pop();
-    };
-
-    const hanoi = (n: number, source: number[], destination: number[], auxiliary: number[]) => {
-      if (n > 0) {
-        hanoi(n - 1, source, auxiliary, destination);
-        moveDisk(source[source.length - 1], source, destination);
-        hanoi(n - 1, auxiliary, destination, source);
-      }
-    };
-
-    hanoi(n, source, destination, auxiliary);
-    return steps;
-  };
-
-  const startHanoi = () => {
-    resetTowers();
-    const initialTowers = [[], [], []];
+  const resetTowers = () => {
+    const initialTowers: number[][] = [[], [], []];
     for (let i = numDisks; i > 0; i--) {
       initialTowers[0].push(i);
     }
     setTowers(initialTowers);
+    setHanoiSteps([]);
+    setCurrentStep(-1);
+    setIsRunning(false);
+    setMovingDisk(null);
+    setFromTower(null);
+    setToTower(null);
+    setMoves(0);
+  };
+
+  const calculateHanoiSteps = (n: number, sourceTower: number, destTower: number, auxTower: number): HanoiStep[] => {
+    const steps: HanoiStep[] = [];
+    const towers: number[][] = [[], [], []];
     
-    const source = [...initialTowers[0]];
-    const destination: number[] = [];
-    const auxiliary: number[] = [];
-    const steps = calculateHanoiSteps(numDisks, source, destination, auxiliary);
-    
+    // Initialize towers
+    for (let i = numDisks; i > 0; i--) {
+      towers[0].push(i);
+    }
+
+    const addStep = (from: number, to: number, disk: number) => {
+      steps.push({
+        towers: [
+          [...towers[0]],
+          [...towers[1]],
+          [...towers[2]]
+        ],
+        movingDisk: disk,
+        fromTower: from,
+        toTower: to
+      });
+      
+      // Move the disk
+      towers[to].push(towers[from].pop()!);
+    };
+
+    const hanoi = (n: number, source: number, dest: number, aux: number) => {
+      if (n === 1) {
+        const disk = towers[source][towers[source].length - 1];
+        addStep(source, dest, disk);
+      } else {
+        hanoi(n - 1, source, aux, dest);
+        const disk = towers[source][towers[source].length - 1]; 
+        addStep(source, dest, disk);
+        hanoi(n - 1, aux, dest, source);
+      }
+    };
+
+    hanoi(n, sourceTower, destTower, auxTower);
+    return steps;
+  };
+
+  const startHanoi = () => {
+    const steps = calculateHanoiSteps(numDisks, 0, 2, 1);
     setHanoiSteps(steps);
+    setCurrentStep(-1);
+    setMoves(0);
     setIsRunning(true);
   };
 
@@ -153,25 +161,35 @@ const TowerOfHanoiVisualizer = () => {
     setMovingDisk(step.movingDisk);
     setFromTower(step.fromTower);
     setToTower(step.toTower);
-    setMoves(nextStepIndex);
+    setMoves(nextStepIndex + 1);
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= 0) {
+      resetTowers();
+      return;
+    }
     
     const prevStepIndex = currentStep - 1;
     setCurrentStep(prevStepIndex);
     
-    const step = hanoiSteps[prevStepIndex];
-    setTowers(step.towers);
-    setMovingDisk(step.movingDisk);
-    setFromTower(step.fromTower);
-    setToTower(step.toTower);
-    setMoves(prevStepIndex);
+    if (prevStepIndex === -1) {
+      resetTowers();
+    } else {
+      const step = hanoiSteps[prevStepIndex];
+      setTowers(step.towers);
+      setMovingDisk(step.movingDisk);
+      setFromTower(step.fromTower);
+      setToTower(step.toTower);
+      setMoves(prevStepIndex + 1);
+    }
   };
 
   const togglePlayPause = () => {
-    if (currentStep >= hanoiSteps.length - 1) {
+    if (hanoiSteps.length === 0) {
+      startHanoi();
+    } else if (currentStep >= hanoiSteps.length - 1) {
+      resetTowers();
       startHanoi();
     } else {
       setIsRunning(!isRunning);
@@ -179,7 +197,9 @@ const TowerOfHanoiVisualizer = () => {
   };
 
   const getDiskWidth = (diskSize: number) => {
-    return `${(diskSize / numDisks) * 80 + 20}%`;
+    const baseWidth = 30;
+    const increment = 25;
+    return baseWidth + (diskSize * increment);
   };
 
   const getDiskColor = (diskSize: number) => {
@@ -201,7 +221,7 @@ const TowerOfHanoiVisualizer = () => {
     setMovingDisk(hanoiStep.movingDisk);
     setFromTower(hanoiStep.fromTower);
     setToTower(hanoiStep.toTower);
-    setMoves(step);
+    setMoves(step + 1);
   };
 
   return (
@@ -294,7 +314,7 @@ const TowerOfHanoiVisualizer = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={prevStep}
-                    disabled={currentStep <= 0}
+                    disabled={currentStep <= -1}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipBack className="h-4 w-4" />
@@ -303,7 +323,6 @@ const TowerOfHanoiVisualizer = () => {
                   <Button 
                     size="sm"
                     onClick={togglePlayPause}
-                    disabled={towers[0].length === 0}
                     className="bg-drona-green hover:bg-drona-green/90 font-semibold"
                   >
                     {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -313,7 +332,7 @@ const TowerOfHanoiVisualizer = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={nextStep}
-                    disabled={currentStep >= hanoiSteps.length - 1}
+                    disabled={currentStep >= hanoiSteps.length - 1 || hanoiSteps.length === 0}
                     className="border-2 hover:border-drona-green/50"
                   >
                     <SkipForward className="h-4 w-4" />
@@ -331,10 +350,7 @@ const TowerOfHanoiVisualizer = () => {
                 </div>
                 
                 <Button 
-                  onClick={() => {
-                    resetTowers();
-                    setIsRunning(false);
-                  }} 
+                  onClick={resetTowers} 
                   variant="outline" 
                   disabled={isRunning}
                   className="w-full border-2 hover:border-drona-green/50"
@@ -345,11 +361,11 @@ const TowerOfHanoiVisualizer = () => {
                 {hanoiSteps.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-drona-dark">
-                      Step: {currentStep + 1} of {hanoiSteps.length}
+                      Step: {Math.max(0, currentStep + 1)} of {hanoiSteps.length}
                     </Label>
                     <Slider
-                      value={[currentStep + 1]}
-                      onValueChange={([value]) => goToStep(value - 1)}
+                      value={[Math.max(1, currentStep + 2)]}
+                      onValueChange={([value]) => goToStep(value - 2)}
                       max={hanoiSteps.length}
                       min={1}
                       step={1}
@@ -367,8 +383,8 @@ const TowerOfHanoiVisualizer = () => {
               <CardContent className="space-y-4 pt-6">
                 <div className="grid gap-4">
                   <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
-                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                    <p className="text-sm font-semibold text-drona-gray">Current Move</p>
+                    <p className="text-3xl font-bold text-drona-dark">{moves}</p>
                   </div>
                   <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
                     <p className="text-sm font-semibold text-drona-gray">Number of Disks</p>
@@ -390,53 +406,52 @@ const TowerOfHanoiVisualizer = () => {
                 <CardTitle className="text-2xl font-bold text-drona-dark">Tower Visualization</CardTitle>
               </CardHeader>
               <CardContent className="p-8">
-                {towers[0].length === numDisks ? (
-                  <div className="flex justify-around h-80 items-end">
-                    {towers.map((tower, towerIndex) => (
-                      <div key={towerIndex} className="flex flex-col-reverse items-center justify-start w-1/3 h-full relative">
-                        {/* Tower base */}
-                        <div className="bg-gradient-to-r from-gray-600 to-gray-700 h-4 w-32 rounded-lg shadow-md border-2 border-gray-800 mb-2"></div>
-                        
-                        {/* Tower pole */}
-                        <div className="absolute bottom-16 bg-gradient-to-r from-gray-500 to-gray-600 w-2 h-64 rounded-full shadow-lg border border-gray-700"></div>
-                        
-                        {/* Tower label */}
-                        <div className="absolute -bottom-8 text-lg font-bold text-drona-dark">
-                          Tower {String.fromCharCode(65 + towerIndex)}
-                        </div>
-                        
-                        {/* Disks */}
-                        <div className="flex flex-col-reverse items-center justify-start relative z-10" style={{ paddingBottom: '1rem' }}>
-                          {tower.map((diskSize, diskIndex) => (
-                            <div
-                              key={diskIndex}
-                              className={`h-8 rounded-lg border-2 shadow-lg transition-all duration-500 transform hover:scale-105 ${getDiskColor(diskSize)} ${getDiskBorderColor(diskSize)}`}
-                              style={{
-                                width: getDiskWidth(diskSize),
-                                marginBottom: '2px',
-                                opacity: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) ? 0.7 : 1,
-                                transform: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) 
-                                  ? 'translateY(-10px) scale(1.05)' 
-                                  : 'translateY(0) scale(1)',
-                              }}
-                            >
-                              <div className="flex items-center justify-center h-full text-white font-bold text-sm drop-shadow-md">
-                                {diskSize}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                <div className="flex justify-around items-end" style={{ height: '450px' }}>
+                  {towers.map((tower, towerIndex) => (
+                    <div key={towerIndex} className="flex flex-col items-center justify-end relative" style={{ width: '300px', height: '100%' }}>
+                      {/* Tower base */}
+                      <div className="bg-gradient-to-r from-gray-600 to-gray-700 h-6 w-48 rounded-lg shadow-md border-2 border-gray-800 mb-4 z-10"></div>
+                      
+                      {/* Tower pole */}
+                      <div 
+                        className="absolute bg-gradient-to-r from-gray-500 to-gray-600 w-3 rounded-full shadow-lg border border-gray-700 z-0"
+                        style={{ 
+                          height: '380px',
+                          bottom: '24px',
+                          left: '50%',
+                          transform: 'translateX(-50%)'
+                        }}
+                      ></div>
+                      
+                      {/* Tower label */}
+                      <div className="absolute -bottom-8 text-lg font-bold text-drona-dark">
+                        Tower {String.fromCharCode(65 + towerIndex)}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-80 text-drona-gray">
-                    <div className="text-center">
-                      <Mountain className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Configure the number of disks to start visualization</p>
+                      
+                      {/* Disks */}
+                      <div className="absolute bottom-6 flex flex-col-reverse items-center z-20">
+                        {tower.map((diskSize, diskIndex) => (
+                          <div
+                            key={`${diskSize}-${diskIndex}`}
+                            className={`h-12 rounded-lg border-2 shadow-lg transition-all duration-500 transform hover:scale-105 flex items-center justify-center ${getDiskColor(diskSize)} ${getDiskBorderColor(diskSize)}`}
+                            style={{
+                              width: `${getDiskWidth(diskSize)}px`,
+                              marginBottom: '2px',
+                              opacity: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) ? 0.7 : 1,
+                              transform: (movingDisk === diskSize && (fromTower === towerIndex || toTower === towerIndex)) 
+                                ? 'translateY(-20px) scale(1.1)' 
+                                : 'translateY(0) scale(1)',
+                            }}
+                          >
+                            <span className="text-white font-bold text-lg drop-shadow-md">
+                              {diskSize}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
 
                 <div className="mt-8 text-center">
                   <p className="text-lg font-semibold text-drona-dark">
@@ -451,8 +466,10 @@ const TowerOfHanoiVisualizer = () => {
                     {Array.from({ length: numDisks }, (_, i) => i + 1).map((diskNum) => (
                       <div key={diskNum} className="flex items-center space-x-2">
                         <div 
-                          className={`w-6 h-6 rounded border-2 ${getDiskColor(diskNum)} ${getDiskBorderColor(diskNum)}`}
-                        ></div>
+                          className={`w-8 h-8 rounded border-2 ${getDiskColor(diskNum)} ${getDiskBorderColor(diskNum)} flex items-center justify-center`}
+                        >
+                          <span className="text-white font-bold text-sm">{diskNum}</span>
+                        </div>
                         <span className="text-sm font-medium text-drona-gray">Disk {diskNum}</span>
                       </div>
                     ))}
@@ -467,11 +484,16 @@ const TowerOfHanoiVisualizer = () => {
                     <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
                       <li>Move (n-1) disks from the source to the auxiliary tower.</li>
                       <li>Move the largest disk from the source to the destination tower.</li>
-                      <li>Move the (n-1) disks from the auxiliary to the destination tower.</li>
-                      <li>Repeat until all disks are in the destination tower.</li>
+                      <li>Repeat recursively until all disks are moved to the destination.</li>
+                      <li>The minimum number of moves required is 2^n - 1.</li>
                     </ol>
                   </CardContent>
                 </Card>
+                
+                {/* Copyright */}
+                <div className="mt-8 text-center">
+                  <p className="text-sm text-drona-gray">© 2024 Ikshvaku Innovations. All rights reserved.</p>
+                </div>
               </CardContent>
             </Card>
           </div>
