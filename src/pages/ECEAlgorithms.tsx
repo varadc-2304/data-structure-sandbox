@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Zap, Waves, Target } from 'lucide-react';
+import { ArrowLeft, Zap, Waves, Target, Cpu, Radio } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ECEAlgorithms = () => {
@@ -43,6 +43,20 @@ const ECEAlgorithms = () => {
             icon={<Target size={28} />}
             to="/ece-algorithms/kalman"
             delay={300}
+          />
+          <CategoryCard
+            title="LDPC Decoding"
+            description="Low-Density Parity-Check decoding algorithm with iterative belief propagation visualization."
+            icon={<Cpu size={28} />}
+            to="/ece-algorithms/ldpc"
+            delay={400}
+          />
+          <CategoryCard
+            title="Turbo Decoding"
+            description="Turbo decoding algorithm with parallel concatenated convolutional codes visualization."
+            icon={<Radio size={28} />}
+            to="/ece-algorithms/turbo"
+            delay={500}
           />
         </div>
       </div>
