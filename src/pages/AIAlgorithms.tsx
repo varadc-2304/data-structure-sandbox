@@ -1,7 +1,8 @@
+
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Network, TreePine, Trees, Target } from 'lucide-react';
+import { ArrowLeft, Network, TreePine, Trees, Target, TrendingUp, Mountain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -29,12 +30,6 @@ const AIAlgorithms = () => {
             to="/ai-algorithms/cnn"
           />
           <CategoryCard
-            title="Decision Trees"
-            description="Interactive visualization of decision tree construction, splits, and prediction paths through tree structures."
-            icon={<TreePine size={28} />}
-            to="/ai-algorithms/decision-tree"
-          />
-          <CategoryCard
             title="Random Forests"
             description="Explore ensemble learning with multiple decision trees and see how voting mechanisms improve predictions."
             icon={<Trees size={28} />}
@@ -45,6 +40,18 @@ const AIAlgorithms = () => {
             description="Watch K-means algorithm find clusters in data through iterative centroid updates and point assignments."
             icon={<Target size={28} />}
             to="/ai-algorithms/kmeans"
+          />
+          <CategoryCard
+            title="Logistic Regression"
+            description="Watch logistic regression learn to classify data points using gradient descent and sigmoid activation."
+            icon={<TrendingUp size={28} />}
+            to="/ai-algorithms/logistic-regression"
+          />
+          <CategoryCard
+            title="Hill Climbing Algorithm"
+            description="See how hill climbing searches for optimal solutions by moving to better neighboring states."
+            icon={<Mountain size={28} />}
+            to="/ai-algorithms/hill-climbing"
           />
         </div>
       </div>

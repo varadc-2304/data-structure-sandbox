@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +32,10 @@ const CNNVisualizer = () => {
   const [speed, setSpeed] = useState(1000);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
+  const [processedImageData, setProcessedImageData] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const layers: CNNLayer[] = [
     { 
@@ -88,6 +89,64 @@ const CNNVisualizer = () => {
     },
   ];
 
+  // Process image through CNN simulation
+  const processImageThroughCNN = useCallback((imageSrc: string, stepIndex: number) => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 224;
+      canvas.height = 224;
+      
+      // Draw and process based on current step
+      if (stepIndex === 0) {
+        // Input layer - show original resized image
+        ctx.drawImage(img, 0, 0, 224, 224);
+      } else if (stepIndex === 1 || stepIndex === 3) {
+        // Convolution layers - apply edge detection effect
+        ctx.drawImage(img, 0, 0, 224, 224);
+        const imageData = ctx.getImageData(0, 0, 224, 224);
+        const data = imageData.data;
+        
+        // Simple edge detection simulation
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          const edge = Math.random() > 0.7 ? gray + 50 : gray;
+          data[i] = edge;     // Red
+          data[i + 1] = edge; // Green
+          data[i + 2] = edge; // Blue
+        }
+        ctx.putImageData(imageData, 0, 0);
+      } else if (stepIndex === 2 || stepIndex === 4) {
+        // Pooling layers - show reduced resolution
+        const scale = stepIndex === 2 ? 0.5 : 0.25;
+        const newSize = Math.floor(224 * scale);
+        ctx.drawImage(img, 0, 0, newSize, newSize);
+        ctx.drawImage(canvas, 0, 0, newSize, newSize, 0, 0, 224, 224);
+      } else if (stepIndex >= 5) {
+        // Fully connected layers - show feature maps
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, 224, 224);
+        
+        // Draw feature representation
+        for (let i = 0; i < 20; i++) {
+          const x = Math.random() * 224;
+          const y = Math.random() * 224;
+          const size = Math.random() * 20 + 5;
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 60%)`;
+          ctx.fillRect(x, y, size, size);
+        }
+      }
+      
+      setProcessedImageData(canvas.toDataURL());
+    };
+    img.src = imageSrc;
+  }, []);
+
   const generateProcessingSteps = useCallback(() => {
     const steps: ProcessingStep[] = [];
     
@@ -138,6 +197,12 @@ const CNNVisualizer = () => {
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, processingSteps.length, speed, uploadedImage]);
 
+  useEffect(() => {
+    if (uploadedImage && currentStep >= 0) {
+      processImageThroughCNN(uploadedImage, currentStep);
+    }
+  }, [uploadedImage, currentStep, processImageThroughCNN]);
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
@@ -154,6 +219,7 @@ const CNNVisualizer = () => {
   const resetProcessing = () => {
     setCurrentStep(-1);
     setIsPlaying(false);
+    setProcessedImageData(null);
   };
 
   const nextStep = () => {
@@ -485,6 +551,34 @@ const CNNVisualizer = () => {
                   </div>
                 ) : (
                   <div className="space-y-8">
+                    {/* Image Processing Display */}
+                    {processedImageData && (
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold text-drona-dark mb-4">Current Layer Output</h3>
+                        <div className="flex justify-center space-x-8">
+                          <div>
+                            <p className="text-sm font-semibold text-drona-gray mb-2">Original Image</p>
+                            <img 
+                              src={uploadedImage} 
+                              alt="Original" 
+                              className="w-48 h-48 object-cover border-2 border-drona-green/20 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-drona-gray mb-2">
+                              {currentStep >= 0 && currentStep < layers.length ? layers[currentStep].name : 'Processed Output'}
+                            </p>
+                            <img 
+                              src={processedImageData} 
+                              alt="Processed" 
+                              className="w-48 h-48 object-cover border-2 border-drona-green/20 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <canvas ref={canvasRef} className="hidden" />
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap justify-center items-center py-6 overflow-x-auto">
                       {layers.map(renderLayer)}
                     </div>
@@ -534,7 +628,7 @@ const CNNVisualizer = () => {
         
         {/* Copyright Notice */}
         <div className="mt-16 text-center text-sm text-drona-gray">
-          © 2024 Ikshvaku Innovations. All rights reserved.
+          © 2025 Ikshvaku Innovations. All rights reserved.
         </div>
       </div>
     </div>
