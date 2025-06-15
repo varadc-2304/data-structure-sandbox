@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Shuffle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -27,7 +26,16 @@ const HillClimbingVisualizer = () => {
   const [speed, setSpeed] = useState(1000);
   const [steps, setSteps] = useState<Step[]>([]);
   const [path, setPath] = useState<Position[]>([]);
+  const [startPosition, setStartPosition] = useState<Position>({ x: 1, y: 1, value: 0 });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateRandomStart = () => {
+    const newX = Math.floor(Math.random() * 9) + 1; // 1-9
+    const newY = Math.floor(Math.random() * 9) + 1; // 1-9
+    const newStart = { x: newX, y: newY, value: getHeight(newX, newY) };
+    setStartPosition(newStart);
+    resetVisualization();
+  };
 
   // Function to calculate height at any point (using a mathematical function)
   const getHeight = (x: number, y: number): number => {
@@ -68,7 +76,6 @@ const HillClimbingVisualizer = () => {
   };
 
   const generateHillClimbingSteps = useCallback(() => {
-    const startPosition: Position = { x: 1, y: 1, value: getHeight(1, 1) };
     const newSteps: Step[] = [];
     const newPath: Position[] = [startPosition];
     let currentPos = startPosition;
@@ -110,7 +117,7 @@ const HillClimbingVisualizer = () => {
 
     setSteps(newSteps);
     setPath(newPath);
-  }, []);
+  }, [startPosition]);
 
   useEffect(() => {
     generateHillClimbingSteps();
@@ -176,7 +183,6 @@ const HillClimbingVisualizer = () => {
   const resetVisualization = () => {
     setCurrentStep(-1);
     setIsPlaying(false);
-    generateHillClimbingSteps();
   };
 
   const getStepDescription = () => {
@@ -233,6 +239,25 @@ const HillClimbingVisualizer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Starting Position</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <Button 
+                  onClick={generateRandomStart}
+                  variant="outline"
+                  className="w-full font-semibold border-2 hover:border-drona-green/50"
+                >
+                  <Shuffle className="mr-2 h-4 w-4" />
+                  Random Start Position
+                </Button>
+                <div className="text-sm text-drona-gray">
+                  Current start: ({startPosition.x}, {startPosition.y}) → Height: {startPosition.value.toFixed(2)}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
                 <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>

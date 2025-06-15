@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Shuffle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -26,7 +25,7 @@ const LogisticRegressionVisualizer = () => {
   const [currentStep, setCurrentStep] = useState(-1);
   const [speed, setSpeed] = useState(1000);
   const [trainingSteps, setTrainingSteps] = useState<TrainingStep[]>([]);
-  const [dataPoints] = useState<DataPoint[]>([
+  const [dataPoints, setDataPoints] = useState<DataPoint[]>([
     { x: 2, y: 3, label: 0 },
     { x: 3, y: 3, label: 0 },
     { x: 1, y: 2, label: 0 },
@@ -41,6 +40,32 @@ const LogisticRegressionVisualizer = () => {
     { x: 7, y: 6, label: 1 },
   ]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateRandomData = () => {
+    const newDataPoints: DataPoint[] = [];
+    
+    // Generate class 0 points (bottom-left cluster)
+    for (let i = 0; i < 6; i++) {
+      newDataPoints.push({
+        x: Math.random() * 4 + 1, // 1-5 range
+        y: Math.random() * 4 + 1, // 1-5 range
+        label: 0
+      });
+    }
+    
+    // Generate class 1 points (top-right cluster)
+    for (let i = 0; i < 6; i++) {
+      newDataPoints.push({
+        x: Math.random() * 4 + 6, // 6-10 range
+        y: Math.random() * 4 + 6, // 6-10 range
+        label: 1
+      });
+    }
+    
+    setDataPoints(newDataPoints);
+    setCurrentStep(-1);
+    setIsPlaying(false);
+  };
 
   const sigmoid = (z: number): number => {
     return 1 / (1 + Math.exp(-z));
@@ -207,6 +232,25 @@ const LogisticRegressionVisualizer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Data Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <Button 
+                  onClick={generateRandomData}
+                  variant="outline"
+                  className="w-full font-semibold border-2 hover:border-drona-green/50"
+                >
+                  <Shuffle className="mr-2 h-4 w-4" />
+                  Generate Random Data
+                </Button>
+                <div className="text-sm text-drona-gray">
+                  Current dataset: {dataPoints.length} points ({dataPoints.filter(p => p.label === 0).length} class 0, {dataPoints.filter(p => p.label === 1).length} class 1)
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
                 <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>

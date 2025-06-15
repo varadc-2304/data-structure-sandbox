@@ -1,10 +1,11 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, Upload, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, Upload, ChevronsLeft, ChevronsRight, Shuffle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -32,10 +33,9 @@ const CNNVisualizer = () => {
   const [speed, setSpeed] = useState(1000);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [processedImageData, setProcessedImageData] = useState<string | null>(null);
+  const [processedImages, setProcessedImages] = useState<string[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const layers: CNNLayer[] = [
     { 
@@ -89,63 +89,144 @@ const CNNVisualizer = () => {
     },
   ];
 
-  // Process image through CNN simulation
-  const processImageThroughCNN = useCallback((imageSrc: string, stepIndex: number) => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
+  const generateSampleImage = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 224;
+    canvas.height = 224;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Generate a colorful pattern
+    const imageData = ctx.createImageData(224, 224);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const x = (i / 4) % 224;
+      const y = Math.floor((i / 4) / 224);
+      
+      // Create a pattern
+      const pattern = Math.sin(x / 20) * Math.cos(y / 20);
+      const noise = Math.random() * 0.3;
+      
+      data[i] = Math.floor((pattern + noise + 1) * 127);     // Red
+      data[i + 1] = Math.floor((Math.sin(x / 30) + noise + 1) * 127); // Green
+      data[i + 2] = Math.floor((Math.cos(y / 25) + noise + 1) * 127); // Blue
+      data[i + 3] = 255; // Alpha
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    setUploadedImage(canvas.toDataURL());
+    resetProcessing();
+  };
+
+  const processImageThroughCNN = useCallback((imageSrc: string) => {
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const img = new Image();
     img.onload = () => {
-      canvas.width = 224;
-      canvas.height = 224;
+      const images: string[] = [];
       
-      // Draw and process based on current step
-      if (stepIndex === 0) {
-        // Input layer - show original resized image
-        ctx.drawImage(img, 0, 0, 224, 224);
-      } else if (stepIndex === 1 || stepIndex === 3) {
-        // Convolution layers - apply edge detection effect
-        ctx.drawImage(img, 0, 0, 224, 224);
-        const imageData = ctx.getImageData(0, 0, 224, 224);
-        const data = imageData.data;
+      layers.forEach((layer, index) => {
+        canvas.width = 224;
+        canvas.height = 224;
         
-        // Simple edge detection simulation
-        for (let i = 0; i < data.length; i += 4) {
-          const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          const edge = Math.random() > 0.7 ? gray + 50 : gray;
-          data[i] = edge;     // Red
-          data[i + 1] = edge; // Green
-          data[i + 2] = edge; // Blue
+        if (index === 0) {
+          // Input layer - show original resized image
+          ctx.drawImage(img, 0, 0, 224, 224);
+        } else if (layer.type === 'conv') {
+          // Convolution layers - apply edge detection and feature maps
+          ctx.drawImage(img, 0, 0, 224, 224);
+          const imageData = ctx.getImageData(0, 0, 224, 224);
+          const data = imageData.data;
+          
+          // Apply convolution-like effect
+          for (let y = 1; y < 223; y++) {
+            for (let x = 1; x < 223; x++) {
+              const idx = (y * 224 + x) * 4;
+              
+              // Simple edge detection kernel
+              const pixel = data[idx];
+              const left = data[idx - 4];
+              const right = data[idx + 4];
+              const top = data[(y - 1) * 224 * 4 + x * 4];
+              const bottom = data[(y + 1) * 224 * 4 + x * 4];
+              
+              const edge = Math.abs(pixel - left) + Math.abs(pixel - right) + 
+                          Math.abs(pixel - top) + Math.abs(pixel - bottom);
+              
+              const intensity = Math.min(255, edge * 2);
+              data[idx] = intensity;
+              data[idx + 1] = intensity * 0.7;
+              data[idx + 2] = intensity * 0.5;
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+        } else if (layer.type === 'pool') {
+          // Pooling layers - show reduced resolution with pooling effect
+          const scale = index === 2 ? 0.5 : 0.25;
+          const newSize = Math.floor(224 * scale);
+          
+          // Clear canvas
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, 224, 224);
+          
+          // Draw pooled version
+          ctx.drawImage(img, 0, 0, newSize, newSize);
+          
+          // Add grid overlay to show pooling regions
+          ctx.strokeStyle = '#00ff00';
+          ctx.lineWidth = 1;
+          const poolSize = Math.floor(224 / newSize);
+          for (let i = 0; i <= newSize; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * poolSize, 0);
+            ctx.lineTo(i * poolSize, 224);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, i * poolSize);
+            ctx.lineTo(224, i * poolSize);
+            ctx.stroke();
+          }
+        } else if (layer.type === 'fc') {
+          // Fully connected layers - show neural network representation
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(0, 0, 224, 224);
+          
+          // Draw feature visualization
+          const neurons = layer.size.width;
+          const cols = Math.ceil(Math.sqrt(neurons));
+          const cellSize = 224 / cols;
+          
+          for (let i = 0; i < Math.min(neurons, cols * cols); i++) {
+            const x = (i % cols) * cellSize;
+            const y = Math.floor(i / cols) * cellSize;
+            
+            const activation = Math.random();
+            const hue = (i * 137.508) % 360; // Golden angle for color distribution
+            
+            ctx.fillStyle = `hsl(${hue}, 70%, ${30 + activation * 40}%)`;
+            ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+            
+            // Add activation value text
+            if (cellSize > 20) {
+              ctx.fillStyle = 'white';
+              ctx.font = '10px Arial';
+              ctx.textAlign = 'center';
+              ctx.fillText(activation.toFixed(2), x + cellSize/2, y + cellSize/2);
+            }
+          }
         }
-        ctx.putImageData(imageData, 0, 0);
-      } else if (stepIndex === 2 || stepIndex === 4) {
-        // Pooling layers - show reduced resolution
-        const scale = stepIndex === 2 ? 0.5 : 0.25;
-        const newSize = Math.floor(224 * scale);
-        ctx.drawImage(img, 0, 0, newSize, newSize);
-        ctx.drawImage(canvas, 0, 0, newSize, newSize, 0, 0, 224, 224);
-      } else if (stepIndex >= 5) {
-        // Fully connected layers - show feature maps
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, 224, 224);
         
-        // Draw feature representation
-        for (let i = 0; i < 20; i++) {
-          const x = Math.random() * 224;
-          const y = Math.random() * 224;
-          const size = Math.random() * 20 + 5;
-          ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 60%)`;
-          ctx.fillRect(x, y, size, size);
-        }
-      }
+        images.push(canvas.toDataURL());
+      });
       
-      setProcessedImageData(canvas.toDataURL());
+      setProcessedImages(images);
     };
     img.src = imageSrc;
-  }, []);
+  }, [layers]);
 
   const generateProcessingSteps = useCallback(() => {
     const steps: ProcessingStep[] = [];
@@ -176,11 +257,17 @@ const CNNVisualizer = () => {
     });
     
     setProcessingSteps(steps);
-  }, []);
+  }, [layers]);
 
   useEffect(() => {
     generateProcessingSteps();
   }, [generateProcessingSteps]);
+
+  useEffect(() => {
+    if (uploadedImage && processedImages.length === 0) {
+      processImageThroughCNN(uploadedImage);
+    }
+  }, [uploadedImage, processImageThroughCNN, processedImages.length]);
 
   useEffect(() => {
     if (!isPlaying || !uploadedImage) return;
@@ -196,12 +283,6 @@ const CNNVisualizer = () => {
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentStep, processingSteps.length, speed, uploadedImage]);
-
-  useEffect(() => {
-    if (uploadedImage && currentStep >= 0) {
-      processImageThroughCNN(uploadedImage, currentStep);
-    }
-  }, [uploadedImage, currentStep, processImageThroughCNN]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -219,7 +300,7 @@ const CNNVisualizer = () => {
   const resetProcessing = () => {
     setCurrentStep(-1);
     setIsPlaying(false);
-    setProcessedImageData(null);
+    setProcessedImages([]);
   };
 
   const nextStep = () => {
@@ -373,14 +454,25 @@ const CNNVisualizer = () => {
                     className="border-2 focus:border-drona-green"
                   />
                   
-                  <Button 
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full font-semibold border-2 hover:border-drona-green/50"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Choose Your Image
-                  </Button>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Button 
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      className="w-full font-semibold border-2 hover:border-drona-green/50"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Choose Your Image
+                    </Button>
+                    
+                    <Button 
+                      onClick={generateSampleImage}
+                      variant="outline"
+                      className="w-full font-semibold border-2 hover:border-drona-green/50"
+                    >
+                      <Shuffle className="mr-2 h-4 w-4" />
+                      Generate Sample
+                    </Button>
+                  </div>
                   
                   {uploadedImage && (
                     <div className="border-2 border-drona-green/20 rounded-lg overflow-hidden">
@@ -552,9 +644,9 @@ const CNNVisualizer = () => {
                 ) : (
                   <div className="space-y-8">
                     {/* Image Processing Display */}
-                    {processedImageData && (
+                    {processedImages.length > 0 && (
                       <div className="text-center">
-                        <h3 className="text-lg font-bold text-drona-dark mb-4">Current Layer Output</h3>
+                        <h3 className="text-lg font-bold text-drona-dark mb-4">Layer Processing Results</h3>
                         <div className="flex justify-center space-x-8">
                           <div>
                             <p className="text-sm font-semibold text-drona-gray mb-2">Original Image</p>
@@ -566,16 +658,19 @@ const CNNVisualizer = () => {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-drona-gray mb-2">
-                              {currentStep >= 0 && currentStep < layers.length ? layers[currentStep].name : 'Processed Output'}
+                              {currentStep >= 0 && currentStep < layers.length 
+                                ? `${layers[currentStep].name} Output` 
+                                : 'Select a layer to see output'}
                             </p>
                             <img 
-                              src={processedImageData} 
+                              src={currentStep >= 0 && processedImages[currentStep] 
+                                ? processedImages[currentStep] 
+                                : uploadedImage} 
                               alt="Processed" 
                               className="w-48 h-48 object-cover border-2 border-drona-green/20 rounded-lg"
                             />
                           </div>
                         </div>
-                        <canvas ref={canvasRef} className="hidden" />
                       </div>
                     )}
 
@@ -624,11 +719,6 @@ const CNNVisualizer = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
-        
-        {/* Copyright Notice */}
-        <div className="mt-16 text-center text-sm text-drona-gray">
-          © 2025 Ikshvaku Innovations. All rights reserved.
         </div>
       </div>
     </div>

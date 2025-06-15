@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Shuffle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -21,6 +20,12 @@ interface TreeNode {
   treeIndex: number;
 }
 
+interface DataPoint {
+  age: number;
+  income: number;
+  buys: 'Yes' | 'No';
+}
+
 interface ForestStep {
   type: 'tree_generation' | 'prediction' | 'voting';
   treeIndex?: number;
@@ -36,15 +41,26 @@ const RandomForestVisualizer = () => {
   const [forestSteps, setForestSteps] = useState<ForestStep[]>([]);
   const [predictions, setPredictions] = useState<string[]>([]);
   const [finalPrediction, setFinalPrediction] = useState<string>('');
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const sampleData = [
+  const [sampleData, setSampleData] = useState<DataPoint[]>([
     { age: 25, income: 50000, buys: 'No' },
     { age: 35, income: 80000, buys: 'Yes' },
     { age: 45, income: 60000, buys: 'Yes' },
     { age: 20, income: 30000, buys: 'No' },
     { age: 35, income: 120000, buys: 'Yes' },
-  ];
+  ]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const generateRandomData = () => {
+    const newData: DataPoint[] = [];
+    for (let i = 0; i < 8; i++) {
+      const age = Math.floor(Math.random() * 40) + 20; // 20-60 years
+      const income = Math.floor(Math.random() * 100000) + 30000; // 30k-130k
+      const buys = Math.random() > 0.5 ? 'Yes' : 'No';
+      newData.push({ age, income, buys });
+    }
+    setSampleData(newData);
+    resetVisualization();
+  };
 
   const generateRandomTree = (treeIndex: number): TreeNode => {
     const features = ['Income', 'Age'];
@@ -330,6 +346,25 @@ const RandomForestVisualizer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-6">
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Data Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <Button 
+                  onClick={generateRandomData}
+                  variant="outline"
+                  className="w-full font-semibold border-2 hover:border-drona-green/50"
+                >
+                  <Shuffle className="mr-2 h-4 w-4" />
+                  Generate Random Data
+                </Button>
+                <div className="text-sm text-drona-gray">
+                  Current dataset: {sampleData.length} samples
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
                 <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
