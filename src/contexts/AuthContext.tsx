@@ -23,12 +23,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [initialCheckComplete, setInitialCheckComplete] = useState(false);
 
+  console.log('AuthProvider rendering - user:', user, 'loading:', loading);
+
   useEffect(() => {
+    console.log('AuthProvider useEffect starting...');
+    
     // Check for existing session first
     const checkSession = async () => {
       try {
+        console.log('Checking initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('Initial session check:', session, error);
+        console.log('Initial session check result:', { session, error });
         
         if (session?.user) {
           setSession(session);
@@ -38,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select('id, email')
             .eq('id', session.user.id)
             .single();
+
+          console.log('Auth table lookup result:', { authUser, authError });
 
           if (authUser && !authError) {
             const userData = {
@@ -50,11 +57,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: userData.email,
               timestamp: new Date().getTime()
             }));
+            console.log('User set from auth table:', userData);
           } else {
-            console.log('User not found in auth table:', authError);
-            // Don't clear the user immediately, let the auth state change handle it
+            console.log('User not found in auth table, checking localStorage...');
+            // Check localStorage as fallback
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              try {
+                const parsedUser = JSON.parse(storedUser);
+                const isRecent = new Date().getTime() - parsedUser.timestamp < 24 * 60 * 60 * 1000;
+                if (isRecent && parsedUser.id && parsedUser.email) {
+                  setUserState({
+                    id: parsedUser.id,
+                    email: parsedUser.email
+                  });
+                  console.log('Restored user from localStorage:', parsedUser);
+                } else {
+                  localStorage.removeItem('user');
+                  console.log('Removed stale user from localStorage');
+                }
+              } catch (error) {
+                console.error('Error parsing stored user:', error);
+                localStorage.removeItem('user');
+              }
+            }
           }
         } else {
+          console.log('No session found, checking localStorage...');
           // Check localStorage as fallback
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
@@ -70,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.log('Restored user from localStorage:', parsedUser);
               } else {
                 localStorage.removeItem('user');
+                console.log('Removed stale user from localStorage');
               }
             } catch (error) {
               console.error('Error parsing stored user:', error);
@@ -80,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error checking session:', error);
       } finally {
+        console.log('Setting initial check complete and loading false');
         setInitialCheckComplete(true);
         setLoading(false);
       }
@@ -112,14 +143,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: userData.email,
               timestamp: new Date().getTime()
             }));
+            console.log('User set from auth state change:', userData);
           } else {
-            console.log('User not found in auth table:', error);
+            console.log('User not found in auth table during state change:', error);
             setUserState(null);
             localStorage.removeItem('user');
           }
         } else {
           setUserState(null);
           localStorage.removeItem('user');
+          console.log('User cleared from auth state change');
         }
         
         if (initialCheckComplete) {
@@ -132,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [initialCheckComplete]);
 
   const signOut = async () => {
+    console.log('Signing out user...');
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
@@ -142,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const setUser = (userData: AuthUser | null) => {
+    console.log('Setting user manually:', userData);
     if (userData) {
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,

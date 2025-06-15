@@ -7,18 +7,25 @@ export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
   const [redirectDelay, setRedirectDelay] = useState(false);
 
-  console.log('ProtectedRoute - user:', user, 'loading:', loading);
+  console.log('ProtectedRoute - user:', user, 'loading:', loading, 'redirectDelay:', redirectDelay);
 
   useEffect(() => {
     console.log('ProtectedRoute useEffect - user:', user, 'loading:', loading);
     // Give more time for authentication to load before redirecting
     if (!loading && !user) {
+      console.log('No user found, starting redirect timer...');
       const timer = setTimeout(() => {
         console.log('Setting redirect delay to true');
         setRedirectDelay(true);
       }, 2000); // Wait 2 seconds before redirecting
 
-      return () => clearTimeout(timer);
+      return () => {
+        console.log('Clearing redirect timer');
+        clearTimeout(timer);
+      };
+    } else if (user) {
+      console.log('User found, clearing redirect delay');
+      setRedirectDelay(false);
     }
   }, [user, loading]);
 
