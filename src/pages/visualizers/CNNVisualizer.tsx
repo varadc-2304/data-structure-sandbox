@@ -16,6 +16,8 @@ import {
   applySoftmax,
   featureMapToCanvas,
   createOriginalImageCanvas,
+  analyzeImageFeatures,
+  classifyBasedOnFeatures,
   EDGE_DETECTION_KERNELS,
   FEATURE_KERNELS,
   type FeatureMap 
@@ -162,6 +164,8 @@ const CNNVisualizer = () => {
       console.log('Image converted to array:', inputArray.length, 'x', inputArray[0].length, 'x', inputArray[0][0].length);
 
       let currentData: any = inputArray;
+      let edgeFeatures: FeatureMap | null = null;
+      let detailedFeatures: FeatureMap | null = null;
       
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i];
@@ -185,6 +189,13 @@ const CNNVisualizer = () => {
           const kernels = i === 1 ? EDGE_DETECTION_KERNELS : FEATURE_KERNELS;
           const featureMap = applyConvolution(currentData, kernels, 1, 0);
           console.log('Conv output size:', featureMap.width, 'x', featureMap.height, 'x', featureMap.depth);
+          
+          // Store feature maps for analysis
+          if (i === 1) {
+            edgeFeatures = featureMap;
+          } else if (i === 3) {
+            detailedFeatures = featureMap;
+          }
           
           newProcessedLayers[i] = {
             ...layer,
@@ -216,23 +227,49 @@ const CNNVisualizer = () => {
               fcData: fcOutput
             };
             currentData = fcOutput;
-          } else { // Output layer
-            const fcOutput = applyDenseLayer(currentData, 10);
-            const softmaxOutput = applySoftmax(fcOutput);
-            console.log('Final classification output for your image:', softmaxOutput);
+          } else { // Output layer - use feature-based classification
+            console.log('Analyzing image features for classification...');
             
-            newProcessedLayers[i] = {
-              ...layer,
-              fcData: softmaxOutput
-            };
-            
-            // Generate classification results
-            const results = softmaxOutput.map((confidence, index) => ({
-              class: CLASS_NAMES[index],
-              confidence: confidence * 100
-            })).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
-            
-            setClassificationResult(results);
+            if (edgeFeatures && detailedFeatures) {
+              // Analyze extracted features
+              const imageFeatures = analyzeImageFeatures(inputArray, edgeFeatures, detailedFeatures);
+              console.log('Extracted image features:', imageFeatures);
+              
+              // Classify based on actual features
+              const classificationScores = classifyBasedOnFeatures(imageFeatures);
+              const softmaxOutput = applySoftmax(classificationScores);
+              console.log('Feature-based classification output for your image:', softmaxOutput);
+              
+              newProcessedLayers[i] = {
+                ...layer,
+                fcData: softmaxOutput
+              };
+              
+              // Generate classification results
+              const results = softmaxOutput.map((confidence, index) => ({
+                class: CLASS_NAMES[index],
+                confidence: confidence * 100
+              })).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
+              
+              console.log('Top 3 predictions based on image analysis:', results);
+              setClassificationResult(results);
+            } else {
+              // Fallback to simple dense layer if features not available
+              const fcOutput = applyDenseLayer(currentData, 10);
+              const softmaxOutput = applySoftmax(fcOutput);
+              
+              newProcessedLayers[i] = {
+                ...layer,
+                fcData: softmaxOutput
+              };
+              
+              const results = softmaxOutput.map((confidence, index) => ({
+                class: CLASS_NAMES[index],
+                confidence: confidence * 100
+              })).sort((a, b) => b.confidence - a.confidence).slice(0, 3);
+              
+              setClassificationResult(results);
+            }
           }
         }
         
@@ -241,8 +278,8 @@ const CNNVisualizer = () => {
       }
       
       setProcessedLayers(newProcessedLayers);
-      setProcessingProgress('CNN processing complete on your image!');
-      console.log('CNN processing completed on uploaded image');
+      setProcessingProgress('CNN processing complete with feature-based classification!');
+      console.log('CNN processing completed on uploaded image with intelligent classification');
       
     } catch (error) {
       console.error('Error processing uploaded image:', error);
@@ -460,7 +497,7 @@ const CNNVisualizer = () => {
           </Link>
           <h1 className="text-4xl font-bold text-drona-dark mb-2">Real-Time CNN Image Processing</h1>
           <p className="text-lg text-drona-gray">
-            Upload any image and watch real CNN operations: convolution, pooling, and classification applied to your actual image
+            Upload any image and watch real CNN operations with intelligent feature-based classification
           </p>
         </div>
 
@@ -499,7 +536,7 @@ const CNNVisualizer = () => {
                         className="w-full h-32 object-cover"
                       />
                       <div className="p-2 bg-drona-green/5 text-xs text-drona-dark font-medium">
-                        CNN will process this image
+                        CNN will analyze this image intelligently
                       </div>
                     </div>
                   )}
@@ -651,11 +688,11 @@ const CNNVisualizer = () => {
             {classificationResult.length > 0 && (
               <Card className="shadow-lg border-2 border-drona-green/20">
                 <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
-                  <CardTitle className="text-xl font-bold text-drona-dark">Your Image Classification</CardTitle>
+                  <CardTitle className="text-xl font-bold text-drona-dark">Intelligent Classification</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-6">
                   <div className="text-sm text-drona-gray font-medium mb-2">
-                    CNN prediction for your uploaded image:
+                    CNN prediction based on extracted image features:
                   </div>
                   {classificationResult.map((result, index) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
@@ -663,6 +700,9 @@ const CNNVisualizer = () => {
                       <span className="text-drona-green font-bold">{result.confidence.toFixed(1)}%</span>
                     </div>
                   ))}
+                  <div className="text-xs text-drona-gray mt-2 p-2 bg-blue-50 rounded">
+                    ✨ This prediction analyzes actual image features: colors, edges, textures, and patterns
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -679,8 +719,8 @@ const CNNVisualizer = () => {
                   <div className="flex items-center justify-center h-64 text-drona-gray">
                     <div className="text-center">
                       <Upload className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Upload your image to see real CNN processing</p>
-                      <p className="text-sm mt-2">Watch how CNN algorithms analyze your actual image</p>
+                      <p className="text-xl font-semibold">Upload your image to see intelligent CNN processing</p>
+                      <p className="text-sm mt-2">Watch how CNN algorithms analyze your actual image features</p>
                     </div>
                   </div>
                 ) : (
@@ -741,16 +781,16 @@ const CNNVisualizer = () => {
                     
                     <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
                       <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">Real CNN Operations on Your Image</CardTitle>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Intelligent CNN Operations</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
                           <li><strong>Input Processing:</strong> Your uploaded image converted to 224×224×3 array</li>
-                          <li><strong>Convolution:</strong> Real edge detection and feature extraction applied to your image</li>
-                          <li><strong>Activation:</strong> ReLU activation removes negative values from feature maps</li>
-                          <li><strong>Pooling:</strong> Max pooling reduces spatial dimensions while preserving important features</li>
-                          <li><strong>Feature Maps:</strong> View actual computed feature maps from your image</li>
-                          <li><strong>Classification:</strong> Final prediction of what's in your uploaded image</li>
+                          <li><strong>Edge Detection:</strong> Real convolution kernels extract edges and boundaries</li>
+                          <li><strong>Feature Extraction:</strong> Advanced kernels detect textures and patterns</li>
+                          <li><strong>Pooling:</strong> Max pooling reduces dimensions while preserving features</li>
+                          <li><strong>Feature Analysis:</strong> Intelligent analysis of colors, brightness, and complexity</li>
+                          <li><strong>Smart Classification:</strong> Prediction based on actual extracted features</li>
                         </ol>
                       </CardContent>
                     </Card>

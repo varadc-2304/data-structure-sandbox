@@ -168,6 +168,139 @@ export function flattenToFC(input: FeatureMap): number[] {
   return flattened;
 }
 
+export function analyzeImageFeatures(
+  originalImage: number[][][], 
+  edgeFeatures: FeatureMap, 
+  detailedFeatures: FeatureMap
+): { [key: string]: number } {
+  // Analyze color composition
+  let totalR = 0, totalG = 0, totalB = 0;
+  let pixelCount = 0;
+  
+  for (let y = 0; y < originalImage.length; y++) {
+    for (let x = 0; x < originalImage[0].length; x++) {
+      totalR += originalImage[y][x][0];
+      totalG += originalImage[y][x][1];
+      totalB += originalImage[y][x][2];
+      pixelCount++;
+    }
+  }
+  
+  const avgR = totalR / pixelCount;
+  const avgG = totalG / pixelCount;
+  const avgB = totalB / pixelCount;
+  
+  // Analyze edge density from first convolution layer
+  let edgeIntensity = 0;
+  for (let d = 0; d < edgeFeatures.depth; d++) {
+    for (let y = 0; y < edgeFeatures.height; y++) {
+      for (let x = 0; x < edgeFeatures.width; x++) {
+        edgeIntensity += edgeFeatures.data[y][x][d];
+      }
+    }
+  }
+  edgeIntensity /= (edgeFeatures.width * edgeFeatures.height * edgeFeatures.depth);
+  
+  // Analyze texture complexity from second convolution layer
+  let textureComplexity = 0;
+  for (let d = 0; d < detailedFeatures.depth; d++) {
+    for (let y = 0; y < detailedFeatures.height; y++) {
+      for (let x = 0; x < detailedFeatures.width; x++) {
+        textureComplexity += Math.abs(detailedFeatures.data[y][x][d]);
+      }
+    }
+  }
+  textureComplexity /= (detailedFeatures.width * detailedFeatures.height * detailedFeatures.depth);
+  
+  // Calculate brightness
+  const brightness = (avgR + avgG + avgB) / 3;
+  
+  // Calculate color dominance
+  const colorDominance = {
+    red: avgR / (avgR + avgG + avgB + 0.001),
+    green: avgG / (avgR + avgG + avgB + 0.001),
+    blue: avgB / (avgR + avgG + avgB + 0.001)
+  };
+  
+  return {
+    brightness,
+    edgeIntensity,
+    textureComplexity,
+    redDominance: colorDominance.red,
+    greenDominance: colorDominance.green,
+    blueDominance: colorDominance.blue,
+    avgR,
+    avgG,
+    avgB
+  };
+}
+
+export function classifyBasedOnFeatures(features: { [key: string]: number }): number[] {
+  const scores = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]; // Base scores for 10 classes
+  
+  // Airplane (index 0) - high edge intensity, moderate brightness, blue sky hints
+  scores[0] += features.edgeIntensity * 0.3;
+  scores[0] += features.blueDominance * 0.4;
+  scores[0] += (1 - features.textureComplexity) * 0.2; // Smooth surfaces
+  scores[0] += features.brightness * 0.1;
+  
+  // Automobile (index 1) - high edge intensity, metallic colors, structured
+  scores[1] += features.edgeIntensity * 0.4;
+  scores[1] += features.textureComplexity * 0.2;
+  scores[1] += (features.avgR + features.avgG + features.avgB > 1.5 ? 0.3 : 0); // Metallic/bright colors
+  scores[1] += (features.brightness > 0.4 ? 0.1 : 0);
+  
+  // Bird (index 2) - moderate edges, varied colors, organic shapes
+  scores[2] += features.textureComplexity * 0.3;
+  scores[2] += (features.edgeIntensity > 0.1 && features.edgeIntensity < 0.3 ? 0.2 : 0);
+  scores[2] += (features.brightness > 0.3 ? 0.2 : 0);
+  scores[2] += Math.max(features.redDominance, features.greenDominance, features.blueDominance) * 0.2;
+  
+  // Cat (index 3) - soft edges, fur texture, warm colors
+  scores[3] += features.textureComplexity * 0.4;
+  scores[3] += (1 - features.edgeIntensity) * 0.2; // Soft edges
+  scores[3] += (features.redDominance + features.greenDominance) * 0.2; // Warm colors
+  scores[3] += (features.brightness > 0.2 && features.brightness < 0.7 ? 0.2 : 0);
+  
+  // Deer (index 4) - natural colors, moderate texture, brown/green hints
+  scores[4] += (features.redDominance + features.greenDominance) * 0.3;
+  scores[4] += features.textureComplexity * 0.2;
+  scores[4] += (features.brightness > 0.3 && features.brightness < 0.6 ? 0.3 : 0);
+  scores[4] += (features.edgeIntensity > 0.1 ? 0.2 : 0);
+  
+  // Dog (index 5) - similar to cat but potentially more varied
+  scores[5] += features.textureComplexity * 0.3;
+  scores[5] += features.edgeIntensity * 0.2;
+  scores[5] += (features.brightness > 0.2 ? 0.3 : 0);
+  scores[5] += Math.max(features.redDominance, features.greenDominance) * 0.2;
+  
+  // Frog (index 6) - green dominance, smooth texture, moderate brightness
+  scores[6] += features.greenDominance * 0.5;
+  scores[6] += (1 - features.textureComplexity) * 0.2;
+  scores[6] += (features.brightness > 0.3 && features.brightness < 0.6 ? 0.2 : 0);
+  scores[6] += features.edgeIntensity * 0.1;
+  
+  // Horse (index 7) - natural colors, defined edges, large shapes
+  scores[7] += features.edgeIntensity * 0.3;
+  scores[7] += (features.redDominance + features.greenDominance) * 0.2;
+  scores[7] += features.textureComplexity * 0.2;
+  scores[7] += (features.brightness > 0.2 ? 0.3 : 0);
+  
+  // Ship (index 8) - blue water, structured edges, metallic elements
+  scores[8] += features.blueDominance * 0.4;
+  scores[8] += features.edgeIntensity * 0.3;
+  scores[8] += (features.brightness > 0.4 ? 0.2 : 0);
+  scores[8] += (1 - features.textureComplexity) * 0.1; // Smooth water/metal
+  
+  // Truck (index 9) - similar to automobile but potentially larger/blockier
+  scores[9] += features.edgeIntensity * 0.4;
+  scores[9] += features.textureComplexity * 0.1;
+  scores[9] += (features.brightness > 0.3 ? 0.3 : 0);
+  scores[9] += (features.avgR + features.avgG + features.avgB > 1.2 ? 0.2 : 0);
+  
+  return scores;
+}
+
 export function applyDenseLayer(input: number[], outputSize: number): number[] {
   // Simple random weights for demonstration
   const weights = Array(outputSize).fill(0).map(() => 
