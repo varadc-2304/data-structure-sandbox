@@ -7,9 +7,6 @@ import Navbar from '@/components/Navbar';
 
 const Index = () => {
   console.log('Index component is rendering successfully');
-  console.log('Hero component:', Hero);
-  console.log('CategoryCard component:', CategoryCard);
-  console.log('Navbar component:', Navbar);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
