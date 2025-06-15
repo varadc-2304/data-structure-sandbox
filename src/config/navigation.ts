@@ -50,5 +50,11 @@ export const navigationItems: NavigationItem[] = [
     to: "/ece-algorithms",
     icon: Zap,
     pathMatch: "/ece-algorithms"
+  },
+  {
+    title: "AI Algorithms",
+    to: "/ai-algorithms",
+    icon: Brain,
+    pathMatch: "/ai-algorithms"
   }
 ];

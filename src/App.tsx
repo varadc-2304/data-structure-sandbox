@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -60,6 +61,12 @@ import LDPCVisualizer from "./pages/visualizers/LDPCVisualizer";
 import TurboVisualizer from "./pages/visualizers/TurboVisualizer";
 import ModulationVisualizer from "./pages/visualizers/ModulationVisualizer";
 
+// AI Algorithm Visualizers
+import AIAlgorithms from "./pages/AIAlgorithms";
+import CNNVisualizer from "./pages/visualizers/CNNVisualizer";
+import DecisionTreeVisualizer from "./pages/visualizers/DecisionTreeVisualizer";
+import RandomForestVisualizer from "./pages/visualizers/RandomForestVisualizer";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -105,6 +112,12 @@ const App = () => (
           <Route path="/ece-algorithms/ldpc" element={<LDPCVisualizer />} />
           <Route path="/ece-algorithms/turbo" element={<TurboVisualizer />} />
           <Route path="/ece-algorithms/modulation" element={<ModulationVisualizer />} />
+          
+          {/* AI Algorithms */}
+          <Route path="/ai-algorithms" element={<AIAlgorithms />} />
+          <Route path="/ai-algorithms/cnn" element={<CNNVisualizer />} />
+          <Route path="/ai-algorithms/decision-tree" element={<DecisionTreeVisualizer />} />
+          <Route path="/ai-algorithms/random-forest" element={<RandomForestVisualizer />} />
           
           {/* CPU Scheduling */}
           <Route path="/cpu-scheduling" element={<CPUScheduling />} />

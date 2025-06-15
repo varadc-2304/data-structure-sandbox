@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { List, Cpu, HardDrive, Folder, Code, Sparkles, Zap } from 'lucide-react';
+import { List, Cpu, HardDrive, Folder, Code, Sparkles, Zap, Brain } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -68,6 +68,13 @@ const Index = () => {
             icon={<Zap size={28} />}
             to="/ece-algorithms"
             delay={600}
+          />
+          <CategoryCard
+            title="AI Algorithms"
+            description="Visualize machine learning and artificial intelligence algorithms including Neural Networks and Decision Trees."
+            icon={<Brain size={28} />}
+            to="/ai-algorithms"
+            delay={700}
           />
         </div>
       </div>
