@@ -6,6 +6,8 @@ import { Database, Cpu, MemoryStick, HardDrive, Calculator, Brain, Zap } from 'l
 import Navbar from '@/components/Navbar';
 
 const Index = () => {
+  console.log('Index component is rendering');
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
       <Navbar />
