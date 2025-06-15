@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ interface TrainingStep {
   epoch: number;
   weights: { w0: number; w1: number; w2: number };
   cost: number;
+  accuracy: number;
   description: string;
 }
 
@@ -45,7 +47,7 @@ const LogisticRegressionVisualizer = () => {
     const newDataPoints: DataPoint[] = [];
     
     // Generate class 0 points (bottom-left cluster)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       newDataPoints.push({
         x: Math.random() * 4 + 1, // 1-5 range
         y: Math.random() * 4 + 1, // 1-5 range
@@ -54,11 +56,20 @@ const LogisticRegressionVisualizer = () => {
     }
     
     // Generate class 1 points (top-right cluster)
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       newDataPoints.push({
-        x: Math.random() * 4 + 6, // 6-10 range
-        y: Math.random() * 4 + 6, // 6-10 range
+        x: Math.random() * 4 + 5, // 5-9 range
+        y: Math.random() * 4 + 5, // 5-9 range
         label: 1
+      });
+    }
+    
+    // Add some overlapping points to make it more interesting
+    for (let i = 0; i < 4; i++) {
+      newDataPoints.push({
+        x: Math.random() * 2 + 4, // 4-6 range (overlap area)
+        y: Math.random() * 2 + 4, // 4-6 range (overlap area)
+        label: Math.random() > 0.5 ? 1 : 0
       });
     }
     
@@ -68,14 +79,36 @@ const LogisticRegressionVisualizer = () => {
   };
 
   const sigmoid = (z: number): number => {
-    return 1 / (1 + Math.exp(-z));
+    // Clamp z to prevent overflow
+    const clampedZ = Math.max(-500, Math.min(500, z));
+    return 1 / (1 + Math.exp(-clampedZ));
+  };
+
+  const calculateAccuracy = (weights: { w0: number; w1: number; w2: number }): number => {
+    let correct = 0;
+    dataPoints.forEach(point => {
+      const z = weights.w0 + weights.w1 * point.x + weights.w2 * point.y;
+      const prediction = sigmoid(z);
+      const predictedClass = prediction >= 0.5 ? 1 : 0;
+      if (predictedClass === point.label) correct++;
+    });
+    return (correct / dataPoints.length) * 100;
   };
 
   const generateTrainingSteps = useCallback(() => {
     const steps: TrainingStep[] = [];
-    let weights = { w0: 0.1, w1: 0.1, w2: 0.1 }; // bias, weight for x, weight for y
-    const learningRate = 0.1;
-    const epochs = 10;
+    let weights = { w0: 0, w1: 0, w2: 0 }; // Start with zero weights
+    const learningRate = 0.3;
+    const epochs = 20;
+
+    // Initial step
+    steps.push({
+      epoch: 0,
+      weights: { ...weights },
+      cost: 0,
+      accuracy: calculateAccuracy(weights),
+      description: `Initial state: All weights set to 0. Starting gradient descent optimization.`
+    });
 
     for (let epoch = 0; epoch < epochs; epoch++) {
       // Calculate predictions and cost
@@ -87,8 +120,12 @@ const LogisticRegressionVisualizer = () => {
         const prediction = sigmoid(z);
         const error = prediction - point.label;
         
-        totalCost += -point.label * Math.log(prediction + 1e-15) - (1 - point.label) * Math.log(1 - prediction + 1e-15);
+        // Cross-entropy loss
+        const epsilon = 1e-15; // To prevent log(0)
+        const clampedPrediction = Math.max(epsilon, Math.min(1 - epsilon, prediction));
+        totalCost += -point.label * Math.log(clampedPrediction) - (1 - point.label) * Math.log(1 - clampedPrediction);
         
+        // Gradients
         gradients.w0 += error;
         gradients.w1 += error * point.x;
         gradients.w2 += error * point.y;
@@ -96,16 +133,19 @@ const LogisticRegressionVisualizer = () => {
 
       totalCost /= dataPoints.length;
 
-      // Update weights
+      // Update weights using gradient descent
       weights.w0 -= learningRate * gradients.w0 / dataPoints.length;
       weights.w1 -= learningRate * gradients.w1 / dataPoints.length;
       weights.w2 -= learningRate * gradients.w2 / dataPoints.length;
+
+      const accuracy = calculateAccuracy(weights);
 
       steps.push({
         epoch: epoch + 1,
         weights: { ...weights },
         cost: totalCost,
-        description: `Epoch ${epoch + 1}: Updating weights based on gradient descent. Cost: ${totalCost.toFixed(4)}`
+        accuracy: accuracy,
+        description: `Epoch ${epoch + 1}: Updated weights using gradient descent. Cost: ${totalCost.toFixed(4)}, Accuracy: ${accuracy.toFixed(1)}%`
       });
     }
 
@@ -182,7 +222,7 @@ const LogisticRegressionVisualizer = () => {
     if (currentStep >= 0 && currentStep < trainingSteps.length) {
       return trainingSteps[currentStep].weights;
     }
-    return { w0: 0.1, w1: 0.1, w2: 0.1 };
+    return { w0: 0, w1: 0, w2: 0 };
   };
 
   const getDecisionBoundary = () => {
@@ -190,8 +230,9 @@ const LogisticRegressionVisualizer = () => {
     // Decision boundary: w0 + w1*x + w2*y = 0
     // Solve for y: y = -(w0 + w1*x) / w2
     const points = [];
-    for (let x = 0; x <= 10; x += 0.5) {
-      if (weights.w2 !== 0) {
+    
+    if (Math.abs(weights.w2) > 1e-10) { // Avoid division by zero
+      for (let x = 0; x <= 10; x += 0.5) {
         const y = -(weights.w0 + weights.w1 * x) / weights.w2;
         if (y >= 0 && y <= 10) {
           points.push({ x, y });
@@ -208,9 +249,15 @@ const LogisticRegressionVisualizer = () => {
   };
 
   const getStepDescription = () => {
-    if (currentStep === -1) return 'Ready to train logistic regression model';
+    if (currentStep === -1) return 'Ready to train logistic regression model. Click play to start!';
     const step = trainingSteps[currentStep];
     return step ? step.description : 'Training complete!';
+  };
+
+  const getPredictionConfidence = (point: DataPoint) => {
+    const prediction = getPrediction(point);
+    // Convert to confidence: how far from 0.5 (uncertainty)
+    return Math.abs(prediction - 0.5) * 2;
   };
 
   return (
@@ -241,6 +288,7 @@ const LogisticRegressionVisualizer = () => {
                   onClick={generateRandomData}
                   variant="outline"
                   className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  disabled={isPlaying}
                 >
                   <Shuffle className="mr-2 h-4 w-4" />
                   Generate Random Data
@@ -315,7 +363,7 @@ const LogisticRegressionVisualizer = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-drona-dark">
-                    Epoch: {currentStep + 1} of {trainingSteps.length}
+                    Epoch: {currentStep} of {trainingSteps.length - 1}
                   </label>
                   <Slider
                     value={[currentStep + 1]}
@@ -349,7 +397,7 @@ const LogisticRegressionVisualizer = () => {
 
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Model Parameters</CardTitle>
+                <CardTitle className="text-xl font-bold text-drona-dark">Model Performance</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 {currentStep >= 0 && currentStep < trainingSteps.length && (
@@ -357,6 +405,10 @@ const LogisticRegressionVisualizer = () => {
                     <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
                       <p className="text-sm font-semibold text-drona-gray">Epoch</p>
                       <p className="text-2xl font-bold text-drona-dark">{trainingSteps[currentStep].epoch}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
+                      <p className="text-sm font-semibold text-drona-gray">Accuracy</p>
+                      <p className="text-lg font-bold text-drona-dark">{trainingSteps[currentStep].accuracy.toFixed(1)}%</p>
                     </div>
                     <div className="bg-gradient-to-r from-drona-light to-white p-3 rounded-lg border-2 border-drona-green/10">
                       <p className="text-sm font-semibold text-drona-gray">Cost</p>
@@ -394,31 +446,60 @@ const LogisticRegressionVisualizer = () => {
                     ))}
                     
                     {/* Decision boundary */}
-                    {currentStep >= 0 && (
+                    {currentStep >= 0 && getDecisionBoundary().length > 1 && (
                       <polyline
                         points={getDecisionBoundary().map(p => `${p.x * 50},${(10 - p.y) * 40}`).join(' ')}
                         fill="none"
                         stroke="#22c55e"
                         strokeWidth="3"
+                        strokeDasharray="5,5"
                       />
                     )}
                     
                     {/* Data points */}
                     {dataPoints.map((point, index) => {
+                      const confidence = currentStep >= 0 ? getPredictionConfidence(point) : 0.5;
                       const prediction = currentStep >= 0 ? getPrediction(point) : 0.5;
-                      const opacity = currentStep >= 0 ? (point.label === 1 ? prediction : 1 - prediction) + 0.3 : 1;
+                      const isCorrect = currentStep >= 0 ? 
+                        (prediction >= 0.5 ? 1 : 0) === point.label : true;
                       
                       return (
-                        <circle
-                          key={index}
-                          cx={point.x * 50}
-                          cy={(10 - point.y) * 40}
-                          r="8"
-                          fill={point.label === 1 ? '#3b82f6' : '#ef4444'}
-                          opacity={Math.max(0.3, Math.min(1, opacity))}
-                          stroke={point.label === 1 ? '#1d4ed8' : '#dc2626'}
-                          strokeWidth="2"
-                        />
+                        <g key={index}>
+                          {/* Confidence ring */}
+                          {currentStep >= 0 && (
+                            <circle
+                              cx={point.x * 50}
+                              cy={(10 - point.y) * 40}
+                              r={8 + confidence * 6}
+                              fill="none"
+                              stroke={isCorrect ? '#22c55e' : '#ef4444'}
+                              strokeWidth="2"
+                              opacity="0.3"
+                            />
+                          )}
+                          
+                          {/* Data point */}
+                          <circle
+                            cx={point.x * 50}
+                            cy={(10 - point.y) * 40}
+                            r="8"
+                            fill={point.label === 1 ? '#3b82f6' : '#ef4444'}
+                            stroke={point.label === 1 ? '#1d4ed8' : '#dc2626'}
+                            strokeWidth="2"
+                            opacity={currentStep >= 0 ? (isCorrect ? 1 : 0.6) : 1}
+                          />
+                          
+                          {/* Prediction indicator */}
+                          {currentStep >= 0 && (
+                            <circle
+                              cx={point.x * 50}
+                              cy={(10 - point.y) * 40}
+                              r="4"
+                              fill={prediction >= 0.5 ? '#3b82f6' : '#ef4444'}
+                              opacity="0.8"
+                            />
+                          )}
+                        </g>
                       );
                     })}
                     
@@ -429,7 +510,7 @@ const LogisticRegressionVisualizer = () => {
                 </div>
 
                 <div className="mt-6 p-4 bg-drona-light/30 rounded-lg">
-                  <h3 className="font-bold text-drona-dark mb-2">Training Process:</h3>
+                  <h3 className="font-bold text-drona-dark mb-2">Training Progress:</h3>
                   <p className="text-sm text-drona-gray">
                     {getStepDescription()}
                   </p>
@@ -444,6 +525,11 @@ const LogisticRegressionVisualizer = () => {
                       <p className="text-sm text-drona-gray">
                         {dataPoints.filter(p => p.label === 0).length} data points
                       </p>
+                      {currentStep >= 0 && (
+                        <p className="text-xs text-drona-gray mt-1">
+                          Outer ring shows prediction confidence
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                   
@@ -455,6 +541,11 @@ const LogisticRegressionVisualizer = () => {
                       <p className="text-sm text-drona-gray">
                         {dataPoints.filter(p => p.label === 1).length} data points
                       </p>
+                      {currentStep >= 0 && (
+                        <p className="text-xs text-drona-gray mt-1">
+                          Inner dot shows model prediction
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -467,6 +558,9 @@ const LogisticRegressionVisualizer = () => {
                     <div className="text-center space-y-2">
                       <p className="text-lg font-mono">p(y=1|x) = σ(w₀ + w₁x₁ + w₂x₂)</p>
                       <p className="text-sm text-drona-gray">where σ(z) = 1 / (1 + e^(-z))</p>
+                      <p className="text-xs text-drona-gray mt-2">
+                        The green dashed line shows the decision boundary where p(y=1) = 0.5
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

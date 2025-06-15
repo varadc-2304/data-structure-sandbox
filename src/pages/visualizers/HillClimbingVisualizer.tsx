@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Shuffle } from 'lucide-react';
+import { ArrowLeft, SkipBack, Play, Pause, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 
@@ -27,28 +27,66 @@ const HillClimbingVisualizer = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [path, setPath] = useState<Position[]>([]);
   const [startPosition, setStartPosition] = useState<Position>({ x: 1, y: 1, value: 0 });
+  const [currentMap, setCurrentMap] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const generateRandomStart = () => {
-    const newX = Math.floor(Math.random() * 9) + 1; // 1-9
-    const newY = Math.floor(Math.random() * 9) + 1; // 1-9
-    const newStart = { x: newX, y: newY, value: getHeight(newX, newY) };
-    setStartPosition(newStart);
+  // Different landscape functions
+  const landscapes = [
+    // Multi-modal function with several peaks
+    (x: number, y: number): number => {
+      const peak1 = 100 * Math.exp(-((x - 3) ** 2 + (y - 3) ** 2) / 2);
+      const peak2 = 80 * Math.exp(-((x - 7) ** 2 + (y - 7) ** 2) / 1.5);
+      const peak3 = 60 * Math.exp(-((x - 2) ** 2 + (y - 8) ** 2) / 1.2);
+      const peak4 = 90 * Math.exp(-((x - 8) ** 2 + (y - 2) ** 2) / 1.8);
+      const noise = 5 * Math.sin(x) * Math.cos(y);
+      return peak1 + peak2 + peak3 + peak4 + noise;
+    },
+    // Single central peak with plateau
+    (x: number, y: number): number => {
+      const centralPeak = 150 * Math.exp(-((x - 5) ** 2 + (y - 5) ** 2) / 3);
+      const plateau = 40 * Math.exp(-((x - 2) ** 2 + (y - 2) ** 2) / 8);
+      const ridge = 30 * Math.exp(-((x - 8) ** 2) / 2) * Math.exp(-((y - 8) ** 2) / 2);
+      return centralPeak + plateau + ridge;
+    },
+    // Valley with multiple local maxima
+    (x: number, y: number): number => {
+      const peak1 = 120 * Math.exp(-((x - 1) ** 2 + (y - 9) ** 2) / 1.5);
+      const peak2 = 100 * Math.exp(-((x - 9) ** 2 + (y - 1) ** 2) / 1.8);
+      const peak3 = 80 * Math.exp(-((x - 5) ** 2 + (y - 8) ** 2) / 2);
+      const peak4 = 70 * Math.exp(-((x - 2) ** 2 + (y - 2) ** 2) / 1.2);
+      const valley = -20 * Math.exp(-((x - 5) ** 2 + (y - 5) ** 2) / 4);
+      return peak1 + peak2 + peak3 + peak4 + valley + 20;
+    }
+  ];
+
+  const mapNames = ["Multi-Peak Landscape", "Central Peak with Plateau", "Valley with Local Maxima"];
+
+  const changeMap = () => {
+    const newMapIndex = (currentMap + 1) % landscapes.length;
+    setCurrentMap(newMapIndex);
+    const newHeight = getHeight(startPosition.x, startPosition.y, newMapIndex);
+    setStartPosition({ ...startPosition, value: newHeight });
     resetVisualization();
   };
 
-  // Function to calculate height at any point (using a mathematical function)
-  const getHeight = (x: number, y: number): number => {
-    // Multi-modal function with several peaks
-    const peak1 = 100 * Math.exp(-((x - 3) ** 2 + (y - 3) ** 2) / 2);
-    const peak2 = 80 * Math.exp(-((x - 7) ** 2 + (y - 7) ** 2) / 1.5);
-    const peak3 = 60 * Math.exp(-((x - 2) ** 2 + (y - 8) ** 2) / 1.2);
-    const peak4 = 90 * Math.exp(-((x - 8) ** 2 + (y - 2) ** 2) / 1.8);
+  // Function to calculate height at any point using current landscape
+  const getHeight = (x: number, y: number, mapIndex?: number): number => {
+    const landscapeIndex = mapIndex !== undefined ? mapIndex : currentMap;
+    return landscapes[landscapeIndex](x, y);
+  };
+
+  const handleMapClick = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (isPlaying) return;
     
-    // Add some noise
-    const noise = 5 * Math.sin(x) * Math.cos(y);
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) / 50);
+    const y = Math.floor((event.clientY - rect.top) / 40);
     
-    return peak1 + peak2 + peak3 + peak4 + noise;
+    if (x >= 0 && x <= 10 && y >= 0 && y <= 10) {
+      const newStart = { x, y, value: getHeight(x, y) };
+      setStartPosition(newStart);
+      resetVisualization();
+    }
   };
 
   const getNeighbors = (pos: Position): Position[] => {
@@ -117,7 +155,12 @@ const HillClimbingVisualizer = () => {
 
     setSteps(newSteps);
     setPath(newPath);
-  }, [startPosition]);
+  }, [startPosition, currentMap]);
+
+  useEffect(() => {
+    const newHeight = getHeight(startPosition.x, startPosition.y);
+    setStartPosition(prev => ({ ...prev, value: newHeight }));
+  }, [currentMap]);
 
   useEffect(() => {
     generateHillClimbingSteps();
@@ -241,17 +284,32 @@ const HillClimbingVisualizer = () => {
           <div className="lg:col-span-1 space-y-6">
             <Card className="shadow-lg border-2 border-drona-green/20">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Starting Position</CardTitle>
+                <CardTitle className="text-xl font-bold text-drona-dark">Map Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <Button 
-                  onClick={generateRandomStart}
+                  onClick={changeMap}
                   variant="outline"
                   className="w-full font-semibold border-2 hover:border-drona-green/50"
+                  disabled={isPlaying}
                 >
-                  <Shuffle className="mr-2 h-4 w-4" />
-                  Random Start Position
+                  <Map className="mr-2 h-4 w-4" />
+                  Change Map
                 </Button>
+                <div className="text-sm text-drona-gray">
+                  Current map: {mapNames[currentMap]}
+                </div>
+                <div className="text-xs text-drona-gray mt-2 p-3 bg-drona-light/30 rounded-lg">
+                  Click on any square in the map to set the starting position
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-2 border-drona-green/20">
+              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
+                <CardTitle className="text-xl font-bold text-drona-dark">Starting Position</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
                 <div className="text-sm text-drona-gray">
                   Current start: ({startPosition.x}, {startPosition.y}) → Height: {startPosition.value.toFixed(2)}
                 </div>
@@ -401,7 +459,13 @@ const HillClimbingVisualizer = () => {
               </CardHeader>
               <CardContent className="p-8">
                 <div className="mb-6">
-                  <svg width="550" height="450" viewBox="0 0 550 450" className="border rounded-lg bg-white mx-auto">
+                  <svg 
+                    width="550" 
+                    height="450" 
+                    viewBox="0 0 550 450" 
+                    className="border rounded-lg bg-white mx-auto cursor-pointer"
+                    onClick={handleMapClick}
+                  >
                     {/* Grid and height map */}
                     {Array.from({ length: 11 }, (_, x) =>
                       Array.from({ length: 11 }, (_, y) => {
@@ -417,10 +481,22 @@ const HillClimbingVisualizer = () => {
                             opacity="0.7"
                             stroke="#ddd"
                             strokeWidth="1"
+                            className="hover:opacity-90 transition-opacity cursor-pointer"
                           />
                         );
                       })
                     )}
+                    
+                    {/* Start position marker */}
+                    <circle
+                      cx={startPosition.x * 50 + 25}
+                      cy={startPosition.y * 40 + 20}
+                      r="8"
+                      fill="#8b5cf6"
+                      stroke="#7c3aed"
+                      strokeWidth="2"
+                      opacity="0.8"
+                    />
                     
                     {/* Path */}
                     {path.length > 1 && currentStep >= 0 && (
@@ -498,7 +574,14 @@ const HillClimbingVisualizer = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-4 mt-6">
+                <div className="grid grid-cols-4 gap-4 mt-6">
+                  <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200">
+                    <CardContent className="text-center p-4">
+                      <div className="w-4 h-4 bg-purple-600 rounded-full mx-auto mb-2"></div>
+                      <p className="text-sm font-bold text-drona-dark">Start Position</p>
+                    </CardContent>
+                  </Card>
+                  
                   <Card className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200">
                     <CardContent className="text-center p-4">
                       <div className="w-4 h-4 bg-red-600 rounded-full mx-auto mb-2"></div>
@@ -527,7 +610,7 @@ const HillClimbingVisualizer = () => {
                   </CardHeader>
                   <CardContent>
                     <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                      <li>Start at an initial position</li>
+                      <li>Start at an initial position (click on the map to set)</li>
                       <li>Evaluate all neighboring positions</li>
                       <li>Move to the neighbor with the highest value</li>
                       <li>Repeat until no neighbor is better (local maximum)</li>
