@@ -7,10 +7,14 @@ export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
   const [redirectDelay, setRedirectDelay] = useState(false);
 
+  console.log('ProtectedRoute - user:', user, 'loading:', loading);
+
   useEffect(() => {
+    console.log('ProtectedRoute useEffect - user:', user, 'loading:', loading);
     // Give more time for authentication to load before redirecting
     if (!loading && !user) {
       const timer = setTimeout(() => {
+        console.log('Setting redirect delay to true');
         setRedirectDelay(true);
       }, 2000); // Wait 2 seconds before redirecting
 
@@ -27,6 +31,7 @@ export const ProtectedRoute = () => {
   }, [redirectDelay, user, loading]);
 
   if (loading) {
+    console.log('ProtectedRoute - showing loading spinner');
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-drona-green"></div>
@@ -36,6 +41,7 @@ export const ProtectedRoute = () => {
 
   // If not authenticated and delay hasn't passed, show loading
   if (!user && !redirectDelay) {
+    console.log('ProtectedRoute - showing authentication check');
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
@@ -48,10 +54,12 @@ export const ProtectedRoute = () => {
 
   // If authenticated, render the child routes
   if (user) {
+    console.log('ProtectedRoute - user authenticated, rendering Outlet');
     return <Outlet />;
   }
 
   // Show loading while redirect is happening
+  console.log('ProtectedRoute - showing redirect loading');
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="text-center">
