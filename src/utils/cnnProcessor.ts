@@ -57,14 +57,22 @@ export function imageToArray(imageElement: HTMLImageElement, targetSize: number 
 }
 
 export function applyConvolution(
-  input: number[][][], 
+  input: number[][][] | FeatureMap, 
   kernels: ConvolutionKernel[], 
   stride: number = 1,
   padding: number = 0
 ): FeatureMap {
-  const inputHeight = input.length;
-  const inputWidth = input[0].length;
-  const inputChannels = input[0][0].length;
+  // Handle both direct array input and FeatureMap input
+  let inputData: number[][][];
+  if ('data' in input) {
+    inputData = input.data;
+  } else {
+    inputData = input;
+  }
+
+  const inputHeight = inputData.length;
+  const inputWidth = inputData[0].length;
+  const inputChannels = inputData[0][0].length;
   const kernelSize = kernels[0].weights.length;
   
   const outputHeight = Math.floor((inputHeight + 2 * padding - kernelSize) / stride) + 1;
@@ -89,7 +97,7 @@ export function applyConvolution(
             
             if (inputY >= 0 && inputY < inputHeight && inputX >= 0 && inputX < inputWidth) {
               // Average across input channels for simplicity
-              const pixelValue = (input[inputY][inputX][0] + input[inputY][inputX][1] + input[inputY][inputX][2]) / 3;
+              const pixelValue = (inputData[inputY][inputX][0] + inputData[inputY][inputX][1] + inputData[inputY][inputX][2]) / 3;
               sum += pixelValue * kernel.weights[ky][kx];
             }
           }
@@ -224,5 +232,17 @@ export function featureMapToCanvas(featureMap: FeatureMap, channelIndex: number 
   }
 
   ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+export function createOriginalImageCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get canvas context');
+
+  canvas.width = 224;
+  canvas.height = 224;
+  ctx.drawImage(imageElement, 0, 0, 224, 224);
+  
   return canvas;
 }

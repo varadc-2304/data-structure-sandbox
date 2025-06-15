@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,7 @@ import {
   applyDenseLayer, 
   applySoftmax,
   featureMapToCanvas,
+  createOriginalImageCanvas,
   EDGE_DETECTION_KERNELS,
   FEATURE_KERNELS,
   type FeatureMap 
@@ -53,6 +53,7 @@ const CNNVisualizer = () => {
   const [currentFeatureMap, setCurrentFeatureMap] = useState<HTMLCanvasElement | null>(null);
   const [processingProgress, setProcessingProgress] = useState<string>('');
   const [classificationResult, setClassificationResult] = useState<{ class: string; confidence: number }[]>([]);
+  const [originalImageCanvas, setOriginalImageCanvas] = useState<HTMLCanvasElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,12 +148,16 @@ const CNNVisualizer = () => {
   const processImageThroughCNN = useCallback(async (imgElement: HTMLImageElement) => {
     if (!imgElement) return;
 
-    console.log('Starting CNN processing...');
+    console.log('Starting CNN processing on uploaded image...');
     const newProcessedLayers: CNNLayer[] = [...layers];
+    
+    // Create original image canvas
+    const originalCanvas = createOriginalImageCanvas(imgElement);
+    setOriginalImageCanvas(originalCanvas);
     
     try {
       // Convert image to array
-      setProcessingProgress('Converting image to array...');
+      setProcessingProgress('Converting uploaded image to array...');
       const inputArray = imageToArray(imgElement, 224);
       console.log('Image converted to array:', inputArray.length, 'x', inputArray[0].length, 'x', inputArray[0][0].length);
 
@@ -160,11 +165,11 @@ const CNNVisualizer = () => {
       
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i];
-        console.log(`Processing layer ${i}: ${layer.name}`);
-        setProcessingProgress(`Processing ${layer.name}...`);
+        console.log(`Processing layer ${i}: ${layer.name} on actual image`);
+        setProcessingProgress(`Applying ${layer.name} to your image...`);
         
         if (layer.type === 'input') {
-          // Input layer - just store the original data
+          // Input layer - store original image data
           newProcessedLayers[i] = {
             ...layer,
             featureMap: {
@@ -172,10 +177,11 @@ const CNNVisualizer = () => {
               width: 224,
               height: 224,
               depth: 3
-            }
+            },
+            canvas: originalCanvas
           };
         } else if (layer.type === 'conv') {
-          // Convolutional layer
+          // Convolutional layer - apply real convolution on the image
           const kernels = i === 1 ? EDGE_DETECTION_KERNELS : FEATURE_KERNELS;
           const featureMap = applyConvolution(currentData, kernels, 1, 0);
           console.log('Conv output size:', featureMap.width, 'x', featureMap.height, 'x', featureMap.depth);
@@ -187,7 +193,7 @@ const CNNVisualizer = () => {
           };
           currentData = featureMap;
         } else if (layer.type === 'pool') {
-          // Pooling layer
+          // Pooling layer - apply max pooling
           const pooledMap = applyMaxPooling(currentData, 2, 2);
           console.log('Pool output size:', pooledMap.width, 'x', pooledMap.height, 'x', pooledMap.depth);
           
@@ -213,7 +219,7 @@ const CNNVisualizer = () => {
           } else { // Output layer
             const fcOutput = applyDenseLayer(currentData, 10);
             const softmaxOutput = applySoftmax(fcOutput);
-            console.log('Final output:', softmaxOutput);
+            console.log('Final classification output for your image:', softmaxOutput);
             
             newProcessedLayers[i] = {
               ...layer,
@@ -235,12 +241,12 @@ const CNNVisualizer = () => {
       }
       
       setProcessedLayers(newProcessedLayers);
-      setProcessingProgress('Processing complete!');
-      console.log('CNN processing completed');
+      setProcessingProgress('CNN processing complete on your image!');
+      console.log('CNN processing completed on uploaded image');
       
     } catch (error) {
-      console.error('Error processing image:', error);
-      setProcessingProgress('Error during processing');
+      console.error('Error processing uploaded image:', error);
+      setProcessingProgress('Error during image processing');
     }
   }, []);
 
@@ -452,9 +458,9 @@ const CNNVisualizer = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to AI Algorithms
           </Link>
-          <h1 className="text-4xl font-bold text-drona-dark mb-2">Real-Time CNN Processing</h1>
+          <h1 className="text-4xl font-bold text-drona-dark mb-2">Real-Time CNN Image Processing</h1>
           <p className="text-lg text-drona-gray">
-            Upload an image and watch real CNN operations: convolution, pooling, and classification with live feature maps
+            Upload any image and watch real CNN operations: convolution, pooling, and classification applied to your actual image
           </p>
         </div>
 
@@ -467,7 +473,7 @@ const CNNVisualizer = () => {
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
-                  <Label className="text-sm font-semibold text-drona-dark">Upload Image</Label>
+                  <Label className="text-sm font-semibold text-drona-dark">Upload Your Image</Label>
                   <Input
                     ref={fileInputRef}
                     type="file"
@@ -482,21 +488,24 @@ const CNNVisualizer = () => {
                     className="w-full font-semibold border-2 hover:border-drona-green/50"
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    Choose Image
+                    Choose Your Image
                   </Button>
                   
                   {uploadedImage && (
                     <div className="border-2 border-drona-green/20 rounded-lg overflow-hidden">
                       <img 
                         src={uploadedImage} 
-                        alt="Uploaded" 
+                        alt="Your uploaded image" 
                         className="w-full h-32 object-cover"
                       />
+                      <div className="p-2 bg-drona-green/5 text-xs text-drona-dark font-medium">
+                        CNN will process this image
+                      </div>
                     </div>
                   )}
 
                   {processingProgress && (
-                    <div className="text-sm text-drona-green font-medium">
+                    <div className="text-sm text-drona-green font-medium bg-green-50 p-2 rounded">
                       {processingProgress}
                     </div>
                   )}
@@ -642,9 +651,12 @@ const CNNVisualizer = () => {
             {classificationResult.length > 0 && (
               <Card className="shadow-lg border-2 border-drona-green/20">
                 <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
-                  <CardTitle className="text-xl font-bold text-drona-dark">Classification Results</CardTitle>
+                  <CardTitle className="text-xl font-bold text-drona-dark">Your Image Classification</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 pt-6">
+                  <div className="text-sm text-drona-gray font-medium mb-2">
+                    CNN prediction for your uploaded image:
+                  </div>
                   {classificationResult.map((result, index) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
                       <span className="font-medium text-drona-dark">{result.class}</span>
@@ -660,14 +672,15 @@ const CNNVisualizer = () => {
           <div className="xl:col-span-3">
             <Card className="shadow-lg border-2 border-drona-green/20 h-full">
               <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">Real-Time CNN Processing</CardTitle>
+                <CardTitle className="text-2xl font-bold text-drona-dark">CNN Processing Your Image</CardTitle>
               </CardHeader>
               <CardContent className="p-8">
                 {!uploadedImage ? (
                   <div className="flex items-center justify-center h-64 text-drona-gray">
                     <div className="text-center">
                       <Upload className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Upload an image to start real CNN processing</p>
+                      <p className="text-xl font-semibold">Upload your image to see real CNN processing</p>
+                      <p className="text-sm mt-2">Watch how CNN algorithms analyze your actual image</p>
                     </div>
                   </div>
                 ) : (
@@ -678,15 +691,18 @@ const CNNVisualizer = () => {
 
                     {currentFeatureMap && (
                       <div className="text-center">
-                        <h3 className="text-lg font-bold text-drona-dark mb-4">Current Feature Map</h3>
-                        <div className="inline-block border-2 border-drona-green/20 rounded-lg overflow-hidden">
+                        <h3 className="text-lg font-bold text-drona-dark mb-4">
+                          {currentStep >= 0 ? `${layers[currentStep].name} Output` : 'Feature Map'}
+                        </h3>
+                        <div className="inline-block border-2 border-drona-green/20 rounded-lg overflow-hidden bg-white">
                           <canvas 
                             ref={(canvas) => {
                               if (canvas && currentFeatureMap) {
                                 const ctx = canvas.getContext('2d');
                                 if (ctx) {
-                                  canvas.width = currentFeatureMap.width * 2;
-                                  canvas.height = currentFeatureMap.height * 2;
+                                  const scale = Math.min(300 / currentFeatureMap.width, 300 / currentFeatureMap.height);
+                                  canvas.width = currentFeatureMap.width * scale;
+                                  canvas.height = currentFeatureMap.height * scale;
                                   ctx.imageSmoothingEnabled = false;
                                   ctx.drawImage(currentFeatureMap, 0, 0, canvas.width, canvas.height);
                                 }
@@ -694,6 +710,9 @@ const CNNVisualizer = () => {
                             }}
                             className="max-w-xs max-h-64"
                           />
+                          <div className="p-2 bg-drona-green/5 text-xs font-medium">
+                            {currentStep >= 0 ? `Processing result from ${layers[currentStep].name}` : 'CNN Feature Map'}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -722,16 +741,16 @@ const CNNVisualizer = () => {
                     
                     <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
                       <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">Real CNN Operations</CardTitle>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Real CNN Operations on Your Image</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li><strong>Input Processing:</strong> Convert uploaded image to normalized 224×224×3 array</li>
-                          <li><strong>Convolution:</strong> Apply real edge detection and feature extraction kernels</li>
-                          <li><strong>Activation:</strong> ReLU activation function removes negative values</li>
-                          <li><strong>Pooling:</strong> Max pooling reduces spatial dimensions while preserving features</li>
-                          <li><strong>Feature Maps:</strong> View actual computed feature maps at each layer</li>
-                          <li><strong>Classification:</strong> Softmax outputs probabilities for 10 classes</li>
+                          <li><strong>Input Processing:</strong> Your uploaded image converted to 224×224×3 array</li>
+                          <li><strong>Convolution:</strong> Real edge detection and feature extraction applied to your image</li>
+                          <li><strong>Activation:</strong> ReLU activation removes negative values from feature maps</li>
+                          <li><strong>Pooling:</strong> Max pooling reduces spatial dimensions while preserving important features</li>
+                          <li><strong>Feature Maps:</strong> View actual computed feature maps from your image</li>
+                          <li><strong>Classification:</strong> Final prediction of what's in your uploaded image</li>
                         </ol>
                       </CardContent>
                     </Card>
