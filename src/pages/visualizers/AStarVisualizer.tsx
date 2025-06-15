@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,7 @@ const AStarVisualizer = () => {
   const [path, setPath] = useState<Node[]>([]);
   const [visitedNodes, setVisitedNodes] = useState<Node[]>([]);
   const [currentStep, setCurrentStep] = useState(-1);
-  const [speed, setSpeed] = useState(500);
+  const [speed, setSpeed] = useState(1000);
   const [allowDiagonal, setAllowDiagonal] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -360,19 +361,19 @@ const AStarVisualizer = () => {
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-drona-dark">
-                        Speed: {(2000 / speed).toFixed(1)}x
+                        Speed: {(3000 / speed).toFixed(1)}x
                       </label>
                       <Slider
                         value={[speed]}
                         onValueChange={([value]) => setSpeed(value)}
-                        max={2000}
-                        min={100}
-                        step={100}
+                        max={6000}
+                        min={1000}
+                        step={500}
                         className="w-full"
                       />
                       <div className="flex justify-between text-xs text-drona-gray">
-                        <span>Slower</span>
-                        <span>Faster</span>
+                        <span>0.5x</span>
+                        <span>3.0x</span>
                       </div>
                     </div>
                   </CardContent>
@@ -464,17 +465,17 @@ const AStarVisualizer = () => {
                           <li>Add the start node to the open set.</li>
                           <li>
                             While the open set is not empty:
-                            <ol className="list-[lower-alpha] list-inside space-y-2">
+                            <ol className="list-[lower-alpha] list-inside space-y-2 ml-4">
                               <li>Get the node with the lowest f(n) value from the open set.</li>
                               <li>If this node is the goal, then return the path.</li>
                               <li>Remove the current node from the open set and add it to the closed set.</li>
                               <li>
                                 For each neighbor of the current node:
-                                <ol className="list-[lower-roman] list-inside space-y-2">
+                                <ol className="list-[lower-roman] list-inside space-y-2 ml-4">
                                   <li>If the neighbor is in the closed set or is unwalkable, ignore it.</li>
                                   <li>
                                     If the new path to the neighbor is shorter OR the neighbor is not in the open set:
-                                    <ul className="list-disc list-inside space-y-2">
+                                    <ul className="list-disc list-inside space-y-2 ml-4">
                                       <li>Set the neighbor's parent to the current node.</li>
                                       <li>Set the neighbor's g(n) value (cost from start to neighbor).</li>
                                       <li>Set the neighbor's h(n) value (heuristic estimate from neighbor to goal).</li>
@@ -541,7 +542,7 @@ const AStarVisualizer = () => {
                     
                     <Card className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200">
                       <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">Applications</CardHeader>
+                        <CardTitle className="text-lg font-bold text-drona-dark">Applications</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ul className="text-sm text-drona-gray space-y-1">
