@@ -66,6 +66,7 @@ import AIAlgorithms from "./pages/AIAlgorithms";
 import CNNVisualizer from "./pages/visualizers/CNNVisualizer";
 import DecisionTreeVisualizer from "./pages/visualizers/DecisionTreeVisualizer";
 import RandomForestVisualizer from "./pages/visualizers/RandomForestVisualizer";
+import KMeansVisualizer from "./pages/visualizers/KMeansVisualizer";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,7 @@ const App = () => (
           <Route path="/ai-algorithms/cnn" element={<CNNVisualizer />} />
           <Route path="/ai-algorithms/decision-tree" element={<DecisionTreeVisualizer />} />
           <Route path="/ai-algorithms/random-forest" element={<RandomForestVisualizer />} />
+          <Route path="/ai-algorithms/kmeans" element={<KMeansVisualizer />} />
           
           {/* CPU Scheduling */}
           <Route path="/cpu-scheduling" element={<CPUScheduling />} />

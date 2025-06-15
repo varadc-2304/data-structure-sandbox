@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import CategoryCard from '@/components/CategoryCard';
-import { ArrowLeft, Network, TreePine, Trees } from 'lucide-react';
+import { ArrowLeft, Network, TreePine, Trees, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AIAlgorithms = () => {
@@ -43,6 +43,13 @@ const AIAlgorithms = () => {
             icon={<Trees size={28} />}
             to="/ai-algorithms/random-forest"
             delay={300}
+          />
+          <CategoryCard
+            title="K-means Clustering"
+            description="Watch K-means algorithm find clusters in data through iterative centroid updates and point assignments."
+            icon={<Target size={28} />}
+            to="/ai-algorithms/kmeans"
+            delay={400}
           />
         </div>
       </div>
