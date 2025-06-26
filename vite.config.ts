@@ -4,17 +4,12 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-<<<<<<< HEAD
-  base: './', // ✅ This is needed for static hosting like Hostinger
-=======
->>>>>>> 0235d863782fec9669b955c7da32a84ab33c3ec7
+  base: "./",          // relative URLs – OK for Azure SWA; change to "/" if you prefer
   server: {
     host: "::",
     port: 8080,
   },
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
