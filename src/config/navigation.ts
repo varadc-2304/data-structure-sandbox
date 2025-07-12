@@ -45,12 +45,12 @@ export const navigationItems: NavigationItem[] = [
     icon: Code,
     pathMatch: "/algorithms"
   },
-  {
-    title: "ECE Algorithms",
-    to: "/ece-algorithms",
-    icon: Zap,
-    pathMatch: "/ece-algorithms"
-  },
+  // {
+  //   title: "ECE Algorithms",
+  //   to: "/ece-algorithms",
+  //   icon: Zap,
+  //   pathMatch: "/ece-algorithms"
+  // },
   {
     title: "AI Algorithms",
     to: "/ai-algorithms",
