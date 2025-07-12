@@ -17,15 +17,29 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const jwtSecret = Deno.env.get('JWT_SECRET') || 'your-jwt-secret'
+    const jwtSecret = Deno.env.get('JWT_SECRET')!
+    
+    console.log('JWT Secret configured:', !!jwtSecret)
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const { token, user_id } = await req.json()
 
+    console.log('Received request with user_id:', user_id, 'and token present:', !!token)
+
     if (!token) {
       return new Response(
         JSON.stringify({ error: 'JWT token is required' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    if (!user_id) {
+      return new Response(
+        JSON.stringify({ error: 'user_id is required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -44,6 +58,7 @@ serve(async (req) => {
         ["verify"]
       )
       payload = await verify(token, cryptoKey)
+      console.log('JWT verification successful for payload:', payload)
     } catch (error) {
       console.log('JWT verification failed:', error)
       return new Response(
@@ -55,70 +70,63 @@ serve(async (req) => {
       )
     }
 
-    // Validate user exists in auth table if user_id is provided
-    if (user_id) {
-      const { data: userData, error: userError } = await supabase
-        .from('auth')
-        .select('id, email')
-        .eq('id', user_id)
-        .single()
+    // Validate user exists in auth table
+    const { data: userData, error: userError } = await supabase
+      .from('auth')
+      .select('id, email')
+      .eq('id', user_id)
+      .single()
 
-      if (userError || !userData) {
-        console.log('User validation failed:', userError)
-        return new Response(
-          JSON.stringify({ error: 'Invalid user_id' }),
-          { 
-            status: 404, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
-      // Generate iframe token
-      const iframeToken = crypto.randomUUID()
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
-
-      // Store iframe token in auto_login_tokens table for validation
-      const { error: tokenError } = await supabase
-        .from('auto_login_tokens')
-        .insert({
-          user_id: user_id,
-          token: iframeToken,
-          expires_at: expiresAt.toISOString(),
-          used: false
-        })
-
-      if (tokenError) {
-        console.log('Token creation failed:', tokenError)
-        return new Response(
-          JSON.stringify({ error: 'Failed to create iframe token' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        )
-      }
-
+    if (userError || !userData) {
+      console.log('User validation failed:', userError)
       return new Response(
-        JSON.stringify({ 
-          success: true,
-          iframe_token: iframeToken,
-          expires_at: expiresAt.toISOString(),
-          iframe_url: `${req.headers.get('origin') || 'https://your-app-domain.com'}/iframe?token=${iframeToken}`
-        }),
+        JSON.stringify({ error: 'Invalid user_id - user not found' }),
         { 
-          status: 200, 
+          status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
-    // If no user_id provided, just validate the JWT
+    console.log('User validated:', userData.email)
+
+    // Generate iframe token
+    const iframeToken = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+    // Store iframe token in auto_login_tokens table for validation
+    const { error: tokenError } = await supabase
+      .from('auto_login_tokens')
+      .insert({
+        user_id: user_id,
+        token: iframeToken,
+        expires_at: expiresAt.toISOString(),
+        used: false
+      })
+
+    if (tokenError) {
+      console.log('Token creation failed:', tokenError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create iframe token' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    console.log('Iframe token created successfully')
+
+    const origin = req.headers.get('origin') || req.headers.get('referer') || 'https://gray-plant-048f51a10.4.azurestaticapps.net'
+    const iframeUrl = `${origin}/iframe?token=${iframeToken}`
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        payload: payload,
-        message: 'JWT token is valid'
+        iframe_token: iframeToken,
+        expires_at: expiresAt.toISOString(),
+        iframe_url: iframeUrl,
+        user_email: userData.email
       }),
       { 
         status: 200, 
@@ -129,7 +137,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Iframe auth error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
