@@ -1,4 +1,5 @@
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,171 +7,174 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 8%;
-
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
-
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
-
-    --primary: 150 60% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 120 5% 97%;
-    --secondary-foreground: 0 0% 8%;
-
-    --muted: 120 5% 96%;
-    --muted-foreground: 0 0% 40%;
-
-    --accent: 120 5% 94%;
-    --accent-foreground: 0 0% 8%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 85%;
-    --input: 0 0% 88%;
-    --ring: 150 60% 45%;
-
-    --radius: 0.875rem;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    
+    --drona-green: 142 71% 45%;
+    --drona-dark: 142 71% 25%;
+    --drona-light: 142 71% 85%;
+    --drona-gray: 0 0% 45%;
   }
 
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
-}
-
-@layer components {
-  .glass-card {
-    @apply bg-white/90 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl transition-all duration-500 hover:shadow-3xl hover:bg-white/95;
+    @apply bg-background text-foreground;
+    font-family: "Inter", sans-serif;
   }
   
-  .drona-button {
-    @apply px-8 py-4 bg-gradient-to-r from-drona-green to-drona-green/90 text-white rounded-2xl font-semibold shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 backdrop-blur-sm border border-drona-green/20;
+  /* Iframe-specific styles */
+  body.iframe-mode {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: auto !important;
   }
   
-  .drona-card {
-    @apply p-8 bg-white/95 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100/50 hover:border-drona-green/30 backdrop-blur-sm;
+  body.iframe-mode .navbar,
+  body.iframe-mode .footer {
+    display: none;
   }
   
-  .page-container {
-    @apply max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 min-h-screen;
+  body.iframe-mode .page-container {
+    padding: 1rem;
+    max-width: none;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
   }
   
-  .section-title {
-    @apply text-4xl font-black mb-8 text-drona-dark bg-gradient-to-r from-drona-dark to-drona-green bg-clip-text text-transparent;
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
   }
   
-  .drona-chip {
-    @apply inline-block px-4 py-2 text-sm font-bold rounded-full bg-gradient-to-r from-drona-green/20 to-drona-green/10 text-drona-green border border-drona-green/30 backdrop-blur-sm;
-  }
-
-  .modern-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto;
-  }
-
-  .category-card {
-    @apply relative overflow-hidden bg-gradient-to-br from-white to-gray-50/80 rounded-3xl p-8 shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 backdrop-blur-sm;
-  }
-
-  .category-card::before {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-br from-drona-green/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none;
-  }
-
-  .category-card:hover::before {
-    @apply opacity-100;
-  }
-
-  .hero-gradient {
-    @apply bg-gradient-to-br from-white via-gray-50/50 to-drona-green/5;
-  }
-
-  .text-gradient {
-    @apply bg-gradient-to-r from-drona-dark to-drona-green bg-clip-text text-transparent;
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
 
-/* Enhanced animations */
-.page-enter {
-  opacity: 0;
-  transform: translateY(30px) scale(0.95);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transition: opacity 600ms ease-out, transform 600ms ease-out;
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.page-exit {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+.page-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
 
-.page-exit-active {
-  opacity: 0;
-  transform: translateY(-30px) scale(0.95);
-  transition: opacity 400ms ease-in, transform 400ms ease-in;
+.drona-green {
+  color: hsl(var(--drona-green));
 }
 
-/* Array element animations */
-@keyframes element-add {
-  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
-  50% { transform: scale(1.3) rotate(-90deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+.drona-dark {
+  color: hsl(var(--drona-dark));
 }
 
-@keyframes element-remove {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(0) rotate(180deg); opacity: 0; }
+.drona-light {
+  color: hsl(var(--drona-light));
 }
 
-@keyframes element-highlight {
-  0% { background-color: rgba(46, 139, 87, 0.1); transform: scale(1); }
-  50% { background-color: rgba(46, 139, 87, 0.5); transform: scale(1.1); }
-  100% { background-color: rgba(46, 139, 87, 0.1); transform: scale(1); }
+.drona-gray {
+  color: hsl(var(--drona-gray));
 }
 
-.array-element-add {
-  animation: element-add 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+.bg-drona-green {
+  background-color: hsl(var(--drona-green));
 }
 
-.array-element-remove {
-  animation: element-remove 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+.bg-drona-dark {
+  background-color: hsl(var(--drona-dark));
 }
 
-.array-element-highlight {
-  animation: element-highlight 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+.bg-drona-light {
+  background-color: hsl(var(--drona-light));
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+.border-drona-green {
+  border-color: hsl(var(--drona-green));
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-gray-100 rounded-full;
+.text-drona-green {
+  color: hsl(var(--drona-green));
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-drona-green/30 rounded-full hover:bg-drona-green/50;
+.text-drona-dark {
+  color: hsl(var(--drona-dark));
 }
 
-/* Focus styles */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  @apply ring-2 ring-drona-green/50 ring-offset-2 outline-none;
+.text-drona-light {
+  color: hsl(var(--drona-light));
 }
 
-/* Smooth transitions for all interactive elements */
-button, input, select, a {
-  @apply transition-all duration-300;
+.text-drona-gray {
+  color: hsl(var(--drona-gray));
 }

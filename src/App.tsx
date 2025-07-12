@@ -9,7 +9,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AutoLogin from "./pages/AutoLogin";
+import IframeAuth from "./pages/IframeAuth";
 import NotFound from "./pages/NotFound";
+import { useIframe } from "./hooks/useIframe";
+import { useEffect } from "react";
 
 // Main category pages
 import DataStructures from "./pages/DataStructures";
@@ -83,95 +86,117 @@ import AStarVisualizer from "./pages/visualizers/AStarVisualizer";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const { isInIframe } = useIframe();
+
+  useEffect(() => {
+    // Set iframe-specific styles and configurations
+    if (isInIframe) {
+      // Remove body margins and padding for seamless iframe integration
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.body.style.overflow = 'auto';
+      
+      // Add iframe-specific class for conditional styling
+      document.body.classList.add('iframe-mode');
+    }
+  }, [isInIframe]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/auto-login" element={<AutoLogin />} />
+        <Route path="/iframe" element={<IframeAuth />} />
+        
+        {/* Protected routes */}
+        <Route path="/" element={<ProtectedRoute />}>
+          <Route index element={<Index />} />
+          
+          {/* Main category pages */}
+          <Route path="data-structures" element={<DataStructures />} />
+          <Route path="algorithms" element={<Algorithms />} />
+          <Route path="cpu-scheduling" element={<CPUScheduling />} />
+          <Route path="page-replacement" element={<PageReplacement />} />
+          <Route path="disk-scheduling" element={<DiskScheduling />} />
+          <Route path="ece-algorithms" element={<ECEAlgorithms />} />
+          <Route path="ai-algorithms" element={<AIAlgorithms />} />
+
+          {/* Data Structure Visualizers */}
+          <Route path="data-structures/array" element={<ArrayVisualizer />} />
+          <Route path="data-structures/linked-list" element={<LinkedListVisualizer />} />
+          <Route path="data-structures/stack" element={<StackVisualizer />} />
+          <Route path="data-structures/queue" element={<QueueVisualizer />} />
+          <Route path="data-structures/deque" element={<DequeVisualizer />} />
+          <Route path="data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
+          <Route path="data-structures/bst" element={<BSTVisualizer />} />
+          <Route path="data-structures/graph" element={<GraphVisualizer />} />
+
+          {/* Algorithm Visualizers */}
+          <Route path="algorithms/linear-search" element={<LinearSearchVisualizer />} />
+          <Route path="algorithms/binary-search" element={<BinarySearchVisualizer />} />
+          <Route path="algorithms/bubble-sort" element={<BubbleSortVisualizer />} />
+          <Route path="algorithms/selection-sort" element={<SelectionSortVisualizer />} />
+          <Route path="algorithms/insertion-sort" element={<InsertionSortVisualizer />} />
+          <Route path="algorithms/merge-sort" element={<MergeSortVisualizer />} />
+          <Route path="algorithms/quick-sort" element={<QuickSortVisualizer />} />
+          <Route path="algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
+          <Route path="algorithms/n-queens" element={<NQueensVisualizer />} />
+          <Route path="algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
+          <Route path="algorithms/01-knapsack" element={<ZeroOneKnapsackVisualizer />} />
+          <Route path="algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
+
+          {/* CPU Scheduling Visualizers */}
+          <Route path="cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
+          <Route path="cpu-scheduling/sjf" element={<SJFVisualizer />} />
+          <Route path="cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
+          <Route path="cpu-scheduling/priority" element={<PriorityVisualizer />} />
+
+          {/* Page Replacement Visualizers */}
+          <Route path="page-replacement/fifo" element={<FIFOVisualizer />} />
+          <Route path="page-replacement/lru" element={<LRUVisualizer />} />
+          <Route path="page-replacement/optimal" element={<OptimalVisualizer />} />
+          <Route path="page-replacement/mru" element={<MRUVisualizer />} />
+
+          {/* Disk Scheduling Visualizers */}
+          <Route path="disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
+          <Route path="disk-scheduling/sstf" element={<SSTFVisualizer />} />
+          <Route path="disk-scheduling/scan" element={<SCANVisualizer />} />
+          <Route path="disk-scheduling/c-scan" element={<CSCANVisualizer />} />
+          <Route path="disk-scheduling/look" element={<LOOKVisualizer />} />
+          <Route path="disk-scheduling/c-look" element={<CLOOKVisualizer />} />
+
+          {/* ECE Algorithm Visualizers */}
+          <Route path="ece-algorithms/fft" element={<FFTVisualizer />} />
+          <Route path="ece-algorithms/viterbi" element={<ViterbiVisualizer />} />
+          <Route path="ece-algorithms/kalman" element={<KalmanVisualizer />} />
+          <Route path="ece-algorithms/turbo" element={<TurboVisualizer />} />
+          <Route path="ece-algorithms/ldpc" element={<LDPCVisualizer />} />
+          <Route path="ece-algorithms/modulation" element={<ModulationVisualizer />} />
+
+          {/* AI Algorithm Visualizers */}
+          <Route path="ai-algorithms/cnn" element={<CNNVisualizer />} />
+          <Route path="ai-algorithms/random-forest" element={<RandomForestVisualizer />} />
+          <Route path="ai-algorithms/decision-tree" element={<DecisionTreeVisualizer />} />
+          <Route path="ai-algorithms/kmeans" element={<KMeansVisualizer />} />
+          <Route path="ai-algorithms/logistic-regression" element={<LogisticRegressionVisualizer />} />
+          <Route path="ai-algorithms/hill-climbing" element={<HillClimbingVisualizer />} />
+          <Route path="ai-algorithms/a-star" element={<AStarVisualizer />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auto-login" element={<AutoLogin />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={<ProtectedRoute />}>
-              <Route index element={<Index />} />
-              
-              {/* Main category pages */}
-              <Route path="data-structures" element={<DataStructures />} />
-              <Route path="algorithms" element={<Algorithms />} />
-              <Route path="cpu-scheduling" element={<CPUScheduling />} />
-              <Route path="page-replacement" element={<PageReplacement />} />
-              <Route path="disk-scheduling" element={<DiskScheduling />} />
-              <Route path="ece-algorithms" element={<ECEAlgorithms />} />
-              <Route path="ai-algorithms" element={<AIAlgorithms />} />
-
-              {/* Data Structure Visualizers */}
-              <Route path="data-structures/array" element={<ArrayVisualizer />} />
-              <Route path="data-structures/linked-list" element={<LinkedListVisualizer />} />
-              <Route path="data-structures/stack" element={<StackVisualizer />} />
-              <Route path="data-structures/queue" element={<QueueVisualizer />} />
-              <Route path="data-structures/deque" element={<DequeVisualizer />} />
-              <Route path="data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
-              <Route path="data-structures/bst" element={<BSTVisualizer />} />
-              <Route path="data-structures/graph" element={<GraphVisualizer />} />
-
-              {/* Algorithm Visualizers */}
-              <Route path="algorithms/linear-search" element={<LinearSearchVisualizer />} />
-              <Route path="algorithms/binary-search" element={<BinarySearchVisualizer />} />
-              <Route path="algorithms/bubble-sort" element={<BubbleSortVisualizer />} />
-              <Route path="algorithms/selection-sort" element={<SelectionSortVisualizer />} />
-              <Route path="algorithms/insertion-sort" element={<InsertionSortVisualizer />} />
-              <Route path="algorithms/merge-sort" element={<MergeSortVisualizer />} />
-              <Route path="algorithms/quick-sort" element={<QuickSortVisualizer />} />
-              <Route path="algorithms/tower-of-hanoi" element={<TowerOfHanoiVisualizer />} />
-              <Route path="algorithms/n-queens" element={<NQueensVisualizer />} />
-              <Route path="algorithms/fractional-knapsack" element={<FractionalKnapsackVisualizer />} />
-              <Route path="algorithms/01-knapsack" element={<ZeroOneKnapsackVisualizer />} />
-              <Route path="algorithms/job-sequencing" element={<JobSequencingVisualizer />} />
-
-              {/* CPU Scheduling Visualizers */}
-              <Route path="cpu-scheduling/fcfs" element={<FCFSVisualizer />} />
-              <Route path="cpu-scheduling/sjf" element={<SJFVisualizer />} />
-              <Route path="cpu-scheduling/round-robin" element={<RoundRobinVisualizer />} />
-              <Route path="cpu-scheduling/priority" element={<PriorityVisualizer />} />
-
-              {/* Page Replacement Visualizers */}
-              <Route path="page-replacement/fifo" element={<FIFOVisualizer />} />
-              <Route path="page-replacement/lru" element={<LRUVisualizer />} />
-              <Route path="page-replacement/optimal" element={<OptimalVisualizer />} />
-              <Route path="page-replacement/mru" element={<MRUVisualizer />} />
-
-              {/* Disk Scheduling Visualizers */}
-              <Route path="disk-scheduling/fcfs" element={<FCFSDiskVisualizer />} />
-              <Route path="disk-scheduling/sstf" element={<SSTFVisualizer />} />
-              <Route path="disk-scheduling/scan" element={<SCANVisualizer />} />
-              <Route path="disk-scheduling/c-scan" element={<CSCANVisualizer />} />
-              <Route path="disk-scheduling/look" element={<LOOKVisualizer />} />
-              <Route path="disk-scheduling/c-look" element={<CLOOKVisualizer />} />
-
-              {/* ECE Algorithm Visualizers */}
-              <Route path="ece-algorithms/fft" element={<FFTVisualizer />} />
-              <Route path="ece-algorithms/viterbi" element={<ViterbiVisualizer />} />
-              <Route path="ece-algorithms/kalman" element={<KalmanVisualizer />} />
-              <Route path="ece-algorithms/turbo" element={<TurboVisualizer />} />
-              <Route path="ece-algorithms/ldpc" element={<LDPCVisualizer />} />
-              <Route path="ece-algorithms/modulation" element={<ModulationVisualizer />} />
-
-              {/* AI Algorithm Visualizers */}
-              <Route path="ai-algorithms/cnn" element={<CNNVisualizer />} />
-              <Route path="ai-algorithms/random-forest" element={<RandomForestVisualizer />} />
-              <Route path="ai-algorithms/decision-tree" element={<DecisionTreeVisualizer />} />
-              <Route path="ai-algorithms/kmeans" element={<KMeansVisualizer />} />
-              <Route path="ai-algorithms/logistic-regression" element={<LogisticRegressionVisualizer />} />
-              <Route path="ai-algorithms/hill-climbing" element={<HillClimbingVisualizer />} />
-              <Route path="ai-algorithms/a-star" element={<AStarVisualizer />} />
-            </Route>
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AppContent />
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
