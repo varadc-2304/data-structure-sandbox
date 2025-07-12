@@ -60,13 +60,13 @@ const Index = () => {
             to="/disk-scheduling"
             delay={500}
           />
-          <CategoryCard
+{/*           <CategoryCard
             title="ECE Algorithms"
             description="Explore electrical engineering algorithms including signal processing and communication systems."
             icon={<Zap size={32} />}
             to="/ece-algorithms"
             delay={600}
-          />
+          /> */}
           <CategoryCard
             title="AI Algorithms"
             description="Discover machine learning and artificial intelligence algorithms with interactive demonstrations."
