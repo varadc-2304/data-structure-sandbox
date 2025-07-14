@@ -11,7 +11,7 @@ const DiskScheduling = () => {
       
       <div className="page-container mt-20">
         <div className="mb-12">
-          <Link to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+          <Link to="/dashboard" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Link>
@@ -50,37 +50,37 @@ const DiskScheduling = () => {
             title="FCFS (First Come First Serve)"
             description="Processes disk requests in the order they arrive. Simple but may result in inefficient seek patterns."
             icon={<Clock size={28} />}
-            to="/disk-scheduling/fcfs"
+            to="/dashboard/disk-scheduling/fcfs"
           />
           <CategoryCard
             title="SSTF (Shortest Seek Time First)"
             description="Selects the request with minimum seek time from current head position. Reduces average seek time."
             icon={<Search size={28} />}
-            to="/disk-scheduling/sstf"
+            to="/dashboard/disk-scheduling/sstf"
           />
           <CategoryCard
             title="SCAN (Elevator Algorithm)"
             description="Head moves in one direction serving requests until end, then reverses direction. Provides uniform wait times."
             icon={<Zap size={28} />}
-            to="/disk-scheduling/scan"
+            to="/dashboard/disk-scheduling/scan"
           />
           <CategoryCard
             title="C-SCAN (Circular SCAN)"
             description="Like SCAN but returns to beginning after reaching end. Provides more uniform wait times than SCAN."
             icon={<RotateCcw size={28} />}
-            to="/disk-scheduling/c-scan"
+            to="/dashboard/disk-scheduling/c-scan"
           />
           <CategoryCard
             title="LOOK"
             description="Improved SCAN that only goes as far as the last request in each direction. Reduces unnecessary movement."
             icon={<Eye size={28} />}
-            to="/disk-scheduling/look"
+            to="/dashboard/disk-scheduling/look"
           />
           <CategoryCard
             title="C-LOOK (Circular LOOK)"
             description="Circular version of LOOK algorithm. Combines benefits of C-SCAN and LOOK for optimal performance."
             icon={<HardDrive size={28} />}
-            to="/disk-scheduling/c-look"
+            to="/dashboard/disk-scheduling/c-look"
           />
         </div>
         
