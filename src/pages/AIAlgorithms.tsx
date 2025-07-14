@@ -12,7 +12,7 @@ const AIAlgorithms = () => {
       
       <div className="page-container mt-20">
         <div className="mb-8">
-          <Link to="/" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+          <Link to="/dashboard" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Link>
@@ -27,19 +27,19 @@ const AIAlgorithms = () => {
             title="K-means Clustering"
             description="Watch K-means algorithm find clusters in data through iterative centroid updates and point assignments."
             icon={<Target size={28} />}
-            to="/ai-algorithms/kmeans"
+            to="/dashboard/ai-algorithms/kmeans"
           />
           <CategoryCard
             title="Hill Climbing Algorithm"
             description="See how hill climbing searches for optimal solutions by moving to better neighboring states."
             icon={<Mountain size={28} />}
-            to="/ai-algorithms/hill-climbing"
+            to="/dashboard/ai-algorithms/hill-climbing"
           />
           <CategoryCard
             title="A* Pathfinding Algorithm"
             description="Watch A* algorithm find the optimal path using heuristics and cost evaluation functions."
             icon={<Route size={28} />}
-            to="/ai-algorithms/a-star"
+            to="/dashboard/ai-algorithms/a-star"
           />
         </div>
       </div>
