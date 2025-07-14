@@ -11,7 +11,7 @@ const DataStructures = () => {
       
       <div className="page-container mt-20">
         <div className="mb-12">
-          <RouterLink to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+          <RouterLink to="/dashboard" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </RouterLink>
@@ -51,49 +51,49 @@ const DataStructures = () => {
             title="Arrays"
             description="Learn about contiguous memory allocation, indexing, and dynamic resizing with interactive array operations."
             icon={<Database size={28} />}
-            to="/data-structures/array"
+            to="/dashboard/data-structures/array"
           />
           <CategoryCard
             title="Linked Lists"
             description="Understand pointer-based structures, memory allocation, and traversal through singly and doubly linked lists."
             icon={<Link size={28} />}
-            to="/data-structures/linked-list"
+            to="/dashboard/data-structures/linked-list"
           />
           <CategoryCard
             title="Stacks"
             description="Explore LIFO (Last In, First Out) operations with push, pop, and peek through visual stack manipulations."
             icon={<Layers size={28} />}
-            to="/data-structures/stack"
+            to="/dashboard/data-structures/stack"
           />
           <CategoryCard
             title="Queues"
             description="Master FIFO (First In, First Out) operations with enqueue, dequeue, and front/rear pointer management."
             icon={<ArrowRightLeft size={28} />}
-            to="/data-structures/queue"
+            to="/dashboard/data-structures/queue"
           />
           <CategoryCard
             title="Double-ended Queues"
             description="Learn about deques that allow insertion and deletion at both ends with efficient operations."
             icon={<Shuffle size={28} />}
-            to="/data-structures/deque"
+            to="/dashboard/data-structures/deque"
           />
           <CategoryCard
             title="Binary Trees"
             description="Visualize hierarchical data structures, tree traversals (in-order, pre-order, post-order), and node relationships."
             icon={<ListTree size={28} />}
-            to="/data-structures/binary-tree"
+            to="/dashboard/data-structures/binary-tree"
           />
           <CategoryCard
             title="Binary Search Trees"
             description="Understand self-organizing trees with search, insertion, and deletion operations maintaining sorted order."
             icon={<Search size={28} />}
-            to="/data-structures/bst"
+            to="/dashboard/data-structures/bst"
           />
           <CategoryCard
             title="Graphs"
             description="Explore vertices, edges, adjacency representations, and graph traversal algorithms (BFS, DFS)."
             icon={<Share2 size={28} />}
-            to="/data-structures/graph"
+            to="/dashboard/data-structures/graph"
           />
         </div>
         
