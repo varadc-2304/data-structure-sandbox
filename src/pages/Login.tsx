@@ -50,7 +50,7 @@ const Login = () => {
         description: "Welcome back!",
       });
 
-      navigate('/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       toast({
