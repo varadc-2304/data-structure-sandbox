@@ -17,44 +17,44 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     title: "Data Structures",
-    to: "/data-structures",
+    to: "/dashboard/data-structures",
     icon: List,
-    pathMatch: "/data-structures"
+    pathMatch: "/dashboard/data-structures"
   },
   {
     title: "CPU Scheduling",
-    to: "/cpu-scheduling",
+    to: "/dashboard/cpu-scheduling",
     icon: Cpu,
-    pathMatch: "/cpu-scheduling"
+    pathMatch: "/dashboard/cpu-scheduling"
   },
   {
     title: "Page Replacement",
-    to: "/page-replacement",
+    to: "/dashboard/page-replacement",
     icon: Folder,
-    pathMatch: "/page-replacement"
+    pathMatch: "/dashboard/page-replacement"
   },
   {
     title: "Disk Scheduling",
-    to: "/disk-scheduling",
+    to: "/dashboard/disk-scheduling",
     icon: HardDrive,
-    pathMatch: "/disk-scheduling"
+    pathMatch: "/dashboard/disk-scheduling"
   },
   {
     title: "Algorithms",
-    to: "/algorithms",
+    to: "/dashboard/algorithms",
     icon: Code,
-    pathMatch: "/algorithms"
+    pathMatch: "/dashboard/algorithms"
   },
   // {
   //   title: "ECE Algorithms",
-  //   to: "/ece-algorithms",
+  //   to: "/dashboard/ece-algorithms",
   //   icon: Zap,
-  //   pathMatch: "/ece-algorithms"
+  //   pathMatch: "/dashboard/ece-algorithms"
   // },
   {
     title: "AI Algorithms",
-    to: "/ai-algorithms",
+    to: "/dashboard/ai-algorithms",
     icon: Brain,
-    pathMatch: "/ai-algorithms"
+    pathMatch: "/dashboard/ai-algorithms"
   }
 ];

@@ -29,49 +29,49 @@ const Index = () => {
             title="Data Structures"
             description="Visualize arrays, linked lists, trees, graphs and understand how data is organized and accessed."
             icon={<Database size={32} />}
-            to="/data-structures"
+            to="/dashboard/data-structures"
             delay={100}
           />
           <CategoryCard
             title="Algorithms"
             description="Explore sorting, searching, and optimization algorithms with step-by-step animations."
             icon={<Calculator size={32} />}
-            to="/algorithms"
+            to="/dashboard/algorithms"
             delay={200}
           />
           <CategoryCard
             title="CPU Scheduling"
             description="Learn process scheduling algorithms like FCFS, SJF, Round Robin with interactive Gantt charts."
             icon={<Cpu size={32} />}
-            to="/cpu-scheduling"
+            to="/dashboard/cpu-scheduling"
             delay={300}
           />
           <CategoryCard
             title="Memory Management"
             description="Understand page replacement algorithms including FIFO, LRU, and Optimal with visual simulations."
             icon={<MemoryStick size={32} />}
-            to="/page-replacement"
+            to="/dashboard/page-replacement"
             delay={400}
           />
           <CategoryCard
             title="Disk Scheduling"
             description="Visualize disk scheduling algorithms like SCAN, C-SCAN, LOOK with seek time calculations."
             icon={<HardDrive size={32} />}
-            to="/disk-scheduling"
+            to="/dashboard/disk-scheduling"
             delay={500}
           />
 {/*           <CategoryCard
             title="ECE Algorithms"
             description="Explore electrical engineering algorithms including signal processing and communication systems."
             icon={<Zap size={32} />}
-            to="/ece-algorithms"
+            to="/dashboard/ece-algorithms"
             delay={600}
           /> */}
           <CategoryCard
             title="AI Algorithms"
             description="Discover machine learning and artificial intelligence algorithms with interactive demonstrations."
             icon={<Brain size={32} />}
-            to="/ai-algorithms"
+            to="/dashboard/ai-algorithms"
             delay={700}
           />
         </div>
