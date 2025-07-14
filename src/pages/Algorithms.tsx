@@ -12,7 +12,7 @@ const Algorithms = () => {
       
       <div className="page-container mt-20">
         <div className="mb-12">
-          <Link to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+          <Link to="/dashboard" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Link>
@@ -59,14 +59,14 @@ const Algorithms = () => {
                 title="Linear Search"
                 description="Sequential search through elements one by one. Simple approach with O(n) time complexity suitable for unsorted data."
                 icon={<Search size={24} />}
-                to="/algorithms/linear-search"
+                to="/dashboard/algorithms/linear-search"
                 delay={100}
               />
               <CategoryCard
                 title="Binary Search"
                 description="Efficient divide-and-conquer search for sorted arrays. O(log n) time complexity by eliminating half the search space."
                 icon={<Search size={24} />}
-                to="/algorithms/binary-search"
+                to="/dashboard/algorithms/binary-search"
                 delay={200}
               />
             </div>
@@ -83,35 +83,35 @@ const Algorithms = () => {
                 title="Bubble Sort"
                 description="Simple comparison-based sort that repeatedly swaps adjacent elements. O(n²) complexity but easy to understand."
                 icon={<ArrowUpDown size={24} />}
-                to="/algorithms/bubble-sort"
+                to="/dashboard/algorithms/bubble-sort"
                 delay={100}
               />
               <CategoryCard
                 title="Selection Sort"
                 description="Finds minimum element and places it at beginning. O(n²) time but only O(n) swaps, useful for memory-constrained systems."
                 icon={<ArrowUpDown size={24} />}
-                to="/algorithms/selection-sort"
+                to="/dashboard/algorithms/selection-sort"
                 delay={200}
               />
               <CategoryCard
                 title="Insertion Sort"
                 description="Builds sorted array one element at a time. Efficient for small datasets and nearly sorted arrays. O(n²) worst case."
                 icon={<ArrowUpDown size={24} />}
-                to="/algorithms/insertion-sort"
+                to="/dashboard/algorithms/insertion-sort"
                 delay={300}
               />
               <CategoryCard
                 title="Merge Sort"
                 description="Divide-and-conquer algorithm with guaranteed O(n log n) performance. Stable sort excellent for large datasets."
                 icon={<ArrowUpDown size={24} />}
-                to="/algorithms/merge-sort"
+                to="/dashboard/algorithms/merge-sort"
                 delay={400}
               />
               <CategoryCard
                 title="Quick Sort"
                 description="Fast average-case O(n log n) sort using partitioning. Most commonly used sorting algorithm in practice."
                 icon={<ArrowUpDown size={24} />}
-                to="/algorithms/quick-sort"
+                to="/dashboard/algorithms/quick-sort"
                 delay={500}
               />
             </div>
@@ -128,21 +128,21 @@ const Algorithms = () => {
                 title="0/1 Knapsack Problem"
                 description="Classic optimization problem: maximize value while staying within weight constraint. Cannot break items."
                 icon={<Package size={24} />}
-                to="/algorithms/0-1-knapsack"
+                to="/dashboard/algorithms/0-1-knapsack"
                 delay={100}
               />
               <CategoryCard
                 title="Fractional Knapsack"
                 description="Greedy approach where items can be broken. Always gives optimal solution by taking highest value-to-weight ratio."
                 icon={<Package size={24} />}
-                to="/algorithms/fractional-knapsack"
+                to="/dashboard/algorithms/fractional-knapsack"
                 delay={200}
               />
               <CategoryCard
                 title="Job Sequencing"
                 description="Schedule jobs with deadlines to maximize profit. Greedy algorithm that prioritizes high-profit jobs."
                 icon={<Briefcase size={24} />}
-                to="/algorithms/job-sequencing"
+                to="/dashboard/algorithms/job-sequencing"
                 delay={300}
               />
             </div>
@@ -159,14 +159,14 @@ const Algorithms = () => {
                 title="Tower of Hanoi"
                 description="Classic recursive puzzle: move disks between pegs following size constraints. Demonstrates divide-and-conquer thinking."
                 icon={<Gamepad2 size={24} />}
-                to="/algorithms/tower-of-hanoi"
+                to="/dashboard/algorithms/tower-of-hanoi"
                 delay={100}
               />
               <CategoryCard
                 title="N-Queens Problem"
                 description="Place N queens on N×N chessboard so none attack each other. Classic constraint satisfaction problem."
                 icon={<Crown size={24} />}
-                to="/algorithms/n-queens"
+                to="/dashboard/algorithms/n-queens"
                 delay={200}
               />
             </div>
