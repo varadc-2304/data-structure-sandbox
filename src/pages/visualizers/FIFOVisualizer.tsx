@@ -282,7 +282,7 @@ const FIFOVisualizer = () => {
       
       <div className="page-container pt-20">
         <div className="mb-4">
-          <Link to="/page-replacement" className="flex items-center text-drona-green hover:underline mb-4">
+          <Link to="/dashboard/page-replacement" className="flex items-center text-drona-green hover:underline mb-4">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Page Replacement
           </Link>
