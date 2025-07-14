@@ -11,7 +11,7 @@ const CPUScheduling = () => {
       
       <div className="page-container mt-20">
         <div className="mb-12">
-          <Link to="/" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+          <Link to="/dashboard" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Link>
@@ -51,25 +51,25 @@ const CPUScheduling = () => {
             title="First Come First Serve"
             description="Simplest scheduling algorithm where processes are executed in arrival order. Non-preemptive with potential convoy effect."
             icon={<Clock size={28} />}
-            to="/cpu-scheduling/fcfs"
+            to="/dashboard/cpu-scheduling/fcfs"
           />
           <CategoryCard
             title="Shortest Job First"
             description="Optimal algorithm that minimizes average waiting time by executing shortest jobs first. Can be preemptive or non-preemptive."
             icon={<Timer size={28} />}
-            to="/cpu-scheduling/sjf"
+            to="/dashboard/cpu-scheduling/sjf"
           />
           <CategoryCard
             title="Round Robin"
             description="Time-sharing algorithm with fixed time quantum. Ensures fairness by giving each process equal CPU time slices."
             icon={<RotateCcw size={28} />}
-            to="/cpu-scheduling/round-robin"
+            to="/dashboard/cpu-scheduling/round-robin"
           />
           <CategoryCard
             title="Priority Scheduling"
             description="Processes are scheduled based on priority levels. Higher priority processes get CPU first, with aging to prevent starvation."
             icon={<TrendingUp size={28} />}
-            to="/cpu-scheduling/priority"
+            to="/dashboard/cpu-scheduling/priority"
           />
         </div>
         
