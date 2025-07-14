@@ -128,7 +128,7 @@ const Algorithms = () => {
                 title="0/1 Knapsack Problem"
                 description="Classic optimization problem: maximize value while staying within weight constraint. Cannot break items."
                 icon={<Package size={24} />}
-                to="/dashboard/algorithms/0-1-knapsack"
+                to="/dashboard/algorithms/01-knapsack"
                 delay={100}
               />
               <CategoryCard
