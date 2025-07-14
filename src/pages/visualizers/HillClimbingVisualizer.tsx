@@ -269,7 +269,7 @@ const HillClimbingVisualizer = () => {
       
       <div className="page-container mt-20">
         <div className="mb-8">
-          <Link to="/ai-algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+          <Link to="/dashboard/ai-algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to AI Algorithms
           </Link>
