@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Login from "./pages/Login";
 import AutoLogin from "./pages/AutoLogin";
 import IframeAuth from "./pages/IframeAuth";
 import NotFound from "./pages/NotFound";
@@ -106,6 +106,7 @@ const AppContent = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/auth" element={<Auth />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/auto-login" element={<AutoLogin />} />
         <Route path="/iframe" element={<IframeAuth />} />
         
