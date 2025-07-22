@@ -132,7 +132,7 @@ const IframeAuth = () => {
         
         // Small delay to show success message
         setTimeout(() => {
-          navigate('/', { replace: true });
+          navigate('/dashboard', { replace: true });
         }, 1000);
 
       } catch (error) {

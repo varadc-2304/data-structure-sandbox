@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import AutoLogin from "./pages/AutoLogin";
 import IframeAuth from "./pages/IframeAuth";
+import ExternalAuth from "./pages/ExternalAuth";
 import NotFound from "./pages/NotFound";
 import { useIframe } from "./hooks/useIframe";
 import { useEffect } from "react";
@@ -114,6 +115,7 @@ const AppContent = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/auto-login" element={<AutoLogin />} />
         <Route path="/iframe" element={<IframeAuth />} />
+        <Route path="/external-auth" element={<ExternalAuth />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={<ProtectedRoute />}>
