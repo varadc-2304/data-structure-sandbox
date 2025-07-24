@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { externalAuthSchema } from '@/lib/validation';
 
 const ExternalAuth = () => {
   const [searchParams] = useSearchParams();
@@ -16,8 +17,8 @@ const ExternalAuth = () => {
     const processExternalAuth = async () => {
       const accessToken = searchParams.get('access_token');
       
-      console.log('External auth processing with access_token:', accessToken);
-      setStatus('Decrypting token...');
+      console.log('External auth processing started');
+      setStatus('Validating token...');
       
       if (!accessToken) {
         console.log('No access token provided');
@@ -31,19 +32,59 @@ const ExternalAuth = () => {
         return;
       }
 
+      // Validate token format
+      const tokenValidation = externalAuthSchema.safeParse({ encrypted_token: accessToken });
+      if (!tokenValidation.success) {
+        console.log('Invalid token format:', tokenValidation.error);
+        setStatus('Error: Invalid token format');
+        toast({
+          variant: "destructive",
+          title: "Invalid Token",
+          description: "The provided token has an invalid format",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Additional security checks
+      if (accessToken.length > 2048) {
+        console.log('Token too long');
+        setStatus('Error: Invalid token');
+        toast({
+          variant: "destructive",
+          title: "Invalid Token",
+          description: "The provided token is invalid",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       try {
         console.log('Calling external auth edge function...');
+        setStatus('Verifying authentication...');
         
-        // Call edge function to decrypt and validate the token
+        // Call edge function to verify and validate the token
         const { data: authResult, error: authError } = await supabase.functions
           .invoke('external-auth', {
             body: { encrypted_token: accessToken }
           });
 
-        console.log('External auth result:', { authResult, authError });
+        console.log('External auth completed');
 
-        if (authError || !authResult?.success) {
+        if (authError) {
           console.log('External auth failed:', authError);
+          setStatus('Error: Authentication failed');
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: "The authentication service is currently unavailable",
+          });
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!authResult?.success) {
+          console.log('Authentication rejected:', authResult?.error);
           setStatus('Error: Invalid or expired token');
           toast({
             variant: "destructive",
@@ -56,6 +97,19 @@ const ExternalAuth = () => {
 
         const { user_data, is_new_user } = authResult;
         
+        // Validate user data
+        if (!user_data?.id || !user_data?.email) {
+          console.log('Invalid user data received');
+          setStatus('Error: Invalid user data');
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: "Invalid user data received from authentication service",
+          });
+          setIsProcessing(false);
+          return;
+        }
+
         if (is_new_user) {
           setStatus('Setting up new user account...');
           toast({
@@ -86,7 +140,7 @@ const ExternalAuth = () => {
         toast({
           variant: "destructive",
           title: "Authentication Failed",
-          description: "An error occurred during external authentication",
+          description: "An unexpected error occurred during authentication",
         });
         setIsProcessing(false);
       }
