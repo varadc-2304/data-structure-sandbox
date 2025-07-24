@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { loginSchema, changePasswordSchema, type LoginFormData, type ChangePasswordFormData } from '@/lib/validation';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -15,6 +16,7 @@ const Login = () => {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isChangePassword, setIsChangePassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { setUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,13 +24,32 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
 
     try {
-      // Query the auth table using username (mapped to email field) and password
+      // Validate input data
+      const formData: LoginFormData = { username, password };
+      const validationResult = loginSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const fieldErrors: Record<string, string> = {};
+        validationResult.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            fieldErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+
+      // Sanitize email input
+      const sanitizedEmail = username.trim().toLowerCase();
+
+      // Query the auth table using email and password
       const { data: authUser, error } = await supabase
         .from('auth')
         .select('id, email, name, role')
-        .eq('email', username)
+        .eq('email', sanitizedEmail)
         .eq('password', password)
         .single();
 
@@ -36,7 +57,7 @@ const Login = () => {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Invalid username or password",
+          description: "Invalid email or password",
         });
         return;
       }
@@ -68,13 +89,36 @@ const Login = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
 
     try {
+      // Validate input data
+      const formData: ChangePasswordFormData = { 
+        username, 
+        currentPassword: password, 
+        newPassword 
+      };
+      const validationResult = changePasswordSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const fieldErrors: Record<string, string> = {};
+        validationResult.error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            fieldErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+
+      // Sanitize email input
+      const sanitizedEmail = username.trim().toLowerCase();
+
       // First validate current credentials
       const { data: authUser, error: validateError } = await supabase
         .from('auth')
         .select('id')
-        .eq('email', username)
+        .eq('email', sanitizedEmail)
         .eq('password', password)
         .single();
 
@@ -82,7 +126,7 @@ const Login = () => {
         toast({
           variant: "destructive",
           title: "Validation Failed",
-          description: "Invalid username or current password",
+          description: "Invalid email or current password",
         });
         return;
       }
@@ -111,6 +155,7 @@ const Login = () => {
       setUsername('');
       setPassword('');
       setNewPassword('');
+      setErrors({});
       setIsChangePassword(false);
     } catch (error) {
       console.error('Change password error:', error);
@@ -142,15 +187,19 @@ const Login = () => {
         <CardContent>
           <form onSubmit={isChangePassword ? handleChangePassword : handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">Email</Label>
               <Input
                 id="username"
-                type="text"
+                type="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter your email address"
                 required
+                className={errors.username ? 'border-red-500' : ''}
               />
+              {errors.username && (
+                <p className="text-sm text-red-500">{errors.username}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">
@@ -163,7 +212,11 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={isChangePassword ? "Enter your current password" : "Enter your password"}
                 required
+                className={errors.password || errors.currentPassword ? 'border-red-500' : ''}
               />
+              {(errors.password || errors.currentPassword) && (
+                <p className="text-sm text-red-500">{errors.password || errors.currentPassword}</p>
+              )}
             </div>
             {isChangePassword && (
               <div className="space-y-2">
@@ -173,9 +226,13 @@ const Login = () => {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter your new password"
+                  placeholder="Enter your new password (min 8 chars, mixed case, number)"
                   required
+                  className={errors.newPassword ? 'border-red-500' : ''}
                 />
+                {errors.newPassword && (
+                  <p className="text-sm text-red-500">{errors.newPassword}</p>
+                )}
               </div>
             )}
             <Button 
@@ -198,6 +255,7 @@ const Login = () => {
                 setUsername('');
                 setPassword('');
                 setNewPassword('');
+                setErrors({});
               }}
               className="text-sm"
             >

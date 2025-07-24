@@ -6,27 +6,94 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// JWT secret for decryption - in production this should be from environment
-const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'your-secret-key'
+// Validation schemas
+const externalAuthSchema = {
+  encrypted_token: (value: any) => typeof value === 'string' && value.length > 0 && value.length < 2048
+}
 
-async function decryptJWT(token: string): Promise<any> {
+const userDataSchema = {
+  id: (value: any) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
+  email: (value: any) => typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 255,
+  exp: (value: any) => typeof value === 'number' && value > 0,
+  iat: (value: any) => typeof value === 'number' && value > 0
+}
+
+async function verifyJWTSignature(token: string, secret: string): Promise<boolean> {
   try {
-    // Remove 'ey' prefix if present and decode JWT
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return false
+    }
+
+    const [header, payload, signature] = parts
+    const data = `${header}.${payload}`
+    
+    // Create HMAC-SHA256 signature
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+    
+    const expectedSignature = await crypto.subtle.sign('HMAC', key, encoder.encode(data))
+    const expectedSignatureBase64 = btoa(String.fromCharCode(...new Uint8Array(expectedSignature)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
+    
+    return signature === expectedSignatureBase64
+  } catch (error) {
+    console.error('JWT signature verification failed:', error)
+    return false
+  }
+}
+
+async function verifyAndDecodeJWT(token: string): Promise<any> {
+  try {
+    // Remove 'ey' prefix if present
     const cleanToken = token.startsWith('ey') ? token.substring(2) : token
     
-    // For demonstration, we'll use a simple base64 decode
-    // In production, use proper JWT library with verification
+    // Validate JWT format
     const parts = cleanToken.split('.')
     if (parts.length !== 3) {
       throw new Error('Invalid JWT format')
     }
     
+    // Get JWT secret from environment (REQUIRED - no fallback)
+    const jwtSecret = Deno.env.get('JWT_SECRET')
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is required')
+    }
+    
+    // Verify signature
+    const isSignatureValid = await verifyJWTSignature(cleanToken, jwtSecret)
+    if (!isSignatureValid) {
+      throw new Error('Invalid JWT signature')
+    }
+    
+    // Decode payload
     const payload = parts[1]
     const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(decoded)
+    const userData = JSON.parse(decoded)
+    
+    // Validate token expiration
+    const now = Math.floor(Date.now() / 1000)
+    if (userData.exp && userData.exp < now) {
+      throw new Error('Token has expired')
+    }
+    
+    // Validate required fields
+    if (!userDataSchema.id(userData.id) || !userDataSchema.email(userData.email)) {
+      throw new Error('Invalid user data in token')
+    }
+    
+    return userData
   } catch (error) {
-    console.error('JWT decryption failed:', error)
-    throw new Error('Failed to decrypt token')
+    console.error('JWT verification failed:', error)
+    throw error
   }
 }
 
@@ -42,13 +109,12 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const { encrypted_token } = await req.json()
-
-    console.log('Received encrypted token:', encrypted_token)
-
-    if (!encrypted_token) {
+    const requestBody = await req.json()
+    
+    // Validate request body
+    if (!requestBody || typeof requestBody !== 'object') {
       return new Response(
-        JSON.stringify({ error: 'encrypted_token is required' }),
+        JSON.stringify({ error: 'Invalid request body' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -56,30 +122,37 @@ serve(async (req) => {
       )
     }
 
-    console.log('Decrypting token...')
+    const { encrypted_token } = requestBody
 
-    // Decrypt the JWT token
+    console.log('Received external auth request')
+
+    // Validate encrypted_token
+    if (!externalAuthSchema.encrypted_token(encrypted_token)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing encrypted_token' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    console.log('Verifying and decoding JWT token...')
+
+    // Verify and decode the JWT token
     let userData
     try {
-      userData = await decryptJWT(encrypted_token)
-      console.log('Decrypted user data:', userData)
+      userData = await verifyAndDecodeJWT(encrypted_token)
+      console.log('Token verified successfully for user:', userData.email)
     } catch (error) {
-      console.log('Token decryption failed:', error)
+      console.log('Token verification failed:', error.message)
       return new Response(
-        JSON.stringify({ error: 'Invalid or corrupted token' }),
+        JSON.stringify({ 
+          error: 'Authentication failed', 
+          details: error.message 
+        }),
         { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
-    // Validate required user data fields
-    if (!userData.email || !userData.id) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid user data in token' }),
-        { 
-          status: 400, 
+          status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )

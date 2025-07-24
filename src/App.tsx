@@ -9,7 +9,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
-import AutoLogin from "./pages/AutoLogin";
 import ExternalAuth from "./pages/ExternalAuth";
 import NotFound from "./pages/NotFound";
 import { useIframe } from "./hooks/useIframe";
@@ -112,7 +111,7 @@ const AppContent = () => {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/auto-login" element={<AutoLogin />} />
+        
         <Route path="/external-auth" element={<ExternalAuth />} />
         
         {/* Protected routes */}
