@@ -9,12 +9,12 @@ export interface NavigationItem {
 }
 
 export const navigationItems: NavigationItem[] = [
-  {
-    title: "Quiz Me",
-    to: "",
-    icon: Brain,
-    pathMatch: ""
-  },
+//  {
+  //  title: "Quiz Me",
+    //to: "",
+    //icon: Brain,
+    //pathMatch: ""
+  //},
   {
     title: "Data Structures",
     to: "/dashboard/data-structures",
