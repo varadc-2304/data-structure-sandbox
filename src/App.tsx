@@ -9,7 +9,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
-import { ExternalAuthHandler } from "./components/ExternalAuthHandler";
+import ExternalAuth from "./pages/ExternalAuth";
 import NotFound from "./pages/NotFound";
 import { useIframe } from "./hooks/useIframe";
 import { useEffect } from "react";
@@ -104,7 +104,6 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      <ExternalAuthHandler />
       <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -112,6 +111,8 @@ const AppContent = () => {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/auth" element={<Auth />} />
+        
+        <Route path="/external-auth" element={<ExternalAuth />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={<ProtectedRoute />}>
