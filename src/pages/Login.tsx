@@ -42,30 +42,28 @@ const Login = () => {
         return;
       }
 
-      // Sanitize email input
-      const sanitizedEmail = username.trim().toLowerCase();
+      // Call the authentication edge function
+      const { data: authResult, error } = await supabase.functions.invoke('authenticate', {
+        body: {
+          email: username.trim().toLowerCase(),
+          password: password,
+          action: 'login'
+        }
+      });
 
-      // Query the auth table using email and password
-      const { data: authUser, error } = await supabase
-        .from('auth')
-        .select('id, email, name, role')
-        .eq('email', sanitizedEmail)
-        .eq('password', password)
-        .single();
-
-      if (error || !authUser) {
+      if (error || !authResult?.success) {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Invalid email or password",
+          description: authResult?.error || "Invalid email or password",
         });
         return;
       }
 
       // Set user in context
       setUser({
-        id: authUser.id,
-        email: authUser.email
+        id: authResult.user.id,
+        email: authResult.user.email
       });
 
       toast({
@@ -111,37 +109,21 @@ const Login = () => {
         return;
       }
 
-      // Sanitize email input
-      const sanitizedEmail = username.trim().toLowerCase();
+      // Call the authentication edge function for password change
+      const { data: changeResult, error } = await supabase.functions.invoke('authenticate', {
+        body: {
+          email: username.trim().toLowerCase(),
+          password: password,
+          newPassword: newPassword,
+          action: 'changePassword'
+        }
+      });
 
-      // First validate current credentials
-      const { data: authUser, error: validateError } = await supabase
-        .from('auth')
-        .select('id')
-        .eq('email', sanitizedEmail)
-        .eq('password', password)
-        .single();
-
-      if (validateError || !authUser) {
-        toast({
-          variant: "destructive",
-          title: "Validation Failed",
-          description: "Invalid email or current password",
-        });
-        return;
-      }
-
-      // Update password
-      const { error: updateError } = await supabase
-        .from('auth')
-        .update({ password: newPassword })
-        .eq('id', authUser.id);
-
-      if (updateError) {
+      if (error || !changeResult?.success) {
         toast({
           variant: "destructive",
           title: "Update Failed",
-          description: "Failed to update password",
+          description: changeResult?.error || "Failed to update password",
         });
         return;
       }

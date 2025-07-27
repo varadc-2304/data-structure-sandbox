@@ -86,19 +86,20 @@ const LinkedListVisualizer = () => {
 
     const pos = Number(position);
     
-    if (pos < 0 || pos >= nodes.length) {
+    if (pos < 1 || pos > nodes.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 0 and ${nodes.length - 1}`,
+        description: `Position must be between 1 and ${nodes.length}`,
         variant: "destructive",
       });
       return;
     }
 
-    const removedValue = nodes[pos].value;
+    const actualIndex = pos - 1; // Convert 1-based to 0-based index
+    const removedValue = nodes[actualIndex].value;
     const newNodes = [...nodes];
     
-    if (pos === 0) {
+    if (actualIndex === 0) {
       // Remove head
       newNodes.shift();
       // Update IDs to maintain sequential order
@@ -108,7 +109,7 @@ const LinkedListVisualizer = () => {
       }
     } else {
       // Remove from middle or end
-      newNodes.splice(pos, 1);
+      newNodes.splice(actualIndex, 1);
       // Update IDs and next pointers
       for (let i = 0; i < newNodes.length; i++) {
         newNodes[i].id = i;
@@ -118,7 +119,7 @@ const LinkedListVisualizer = () => {
     
     setNodes(newNodes);
     setLastOperation('remove');
-    setOperationTarget(pos);
+    setOperationTarget(actualIndex);
     setPosition('');
     
     const message = `Removed "${removedValue}" from position ${pos}`;
@@ -142,18 +143,19 @@ const LinkedListVisualizer = () => {
 
     const pos = Number(position);
     
-    if (pos < 0 || pos >= nodes.length) {
+    if (pos < 1 || pos > nodes.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 0 and ${nodes.length - 1}`,
+        description: `Position must be between 1 and ${nodes.length}`,
         variant: "destructive",
       });
       return;
     }
 
-    // Create traversal path
+    // Create traversal path (convert 1-based to 0-based)
+    const actualIndex = pos - 1;
     const path = [];
-    for (let i = 0; i <= pos; i++) {
+    for (let i = 0; i <= actualIndex; i++) {
       path.push(nodes[i].id);
     }
     
@@ -163,7 +165,7 @@ const LinkedListVisualizer = () => {
     setIsViewing(true);
     setPosition('');
     
-    const message = `Viewing element at position ${pos}: ${nodes[pos].value}`;
+    const message = `Viewing element at position ${pos}: ${nodes[actualIndex].value}`;
     addToLog(message);
   };
 
@@ -279,45 +281,57 @@ const LinkedListVisualizer = () => {
                   <span>Linked list is empty. Add elements using the controls below.</span>
                 </div>
               ) : (
-                nodes.map((node, index) => (
-                  <div key={node.id} className="flex items-center">
-                    <div
-                      className={cn(
-                        "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
-                        {
-                          "border-arena-green bg-arena-green/10 shadow-md": 
-                            (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
-                            (operationTarget === node.id && !isViewing),
-                          "border-arena-green bg-arena-green/10 shadow-md transform": 
-                            isViewing && operationTarget === node.id,
-                        }
-                      )}
-                      style={{
-                        animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
-                      }}
-                    >
-                      <div className="text-lg font-medium">{node.value}</div>
-                      <div className="text-xs text-arena-gray">Node {index}</div>
-                    </div>
-                    
-                    {/* Arrow between nodes */}
-                    {node.next !== null && (
-                      <div className="flex items-center mx-2">
-                        <div className="w-3 h-3 bg-arena-green rounded-full"></div>
-                        <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
-                        <div className="w-3 h-3 bg-arena-green rounded-full"></div>
-                      </div>
-                    )}
-                    
-                    {/* NULL indicator for last node */}
-                    {node.next === null && index === nodes.length - 1 && (
-                      <div className="flex items-center mx-2">
-                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        <div className="text-sm text-gray-400 ml-2">NULL</div>
-                      </div>
-                    )}
+                <div className="flex items-center">
+                  {/* HEAD indicator */}
+                  <div className="flex flex-col items-center mr-4">
+                    <div className="text-sm font-medium text-arena-green mb-1">HEAD</div>
+                    <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                    <ArrowRight className="h-4 w-4 text-arena-green rotate-90 my-1" />
                   </div>
-                ))
+                  
+                  {nodes.map((node, index) => (
+                    <div key={node.id} className="flex items-center">
+                      <div
+                        className={cn(
+                          "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
+                          {
+                            "border-arena-green bg-arena-green/10 shadow-md": 
+                              (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
+                              (operationTarget === node.id && !isViewing),
+                            "border-arena-green bg-arena-green/10 shadow-md transform": 
+                              isViewing && operationTarget === node.id,
+                          }
+                        )}
+                        style={{
+                          animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
+                        }}
+                      >
+                        <div className="text-lg font-medium">{node.value}</div>
+                        <div className="text-xs text-arena-gray">Node {index + 1}</div>
+                      </div>
+                      
+                      {/* Arrow between nodes */}
+                      {node.next !== null && (
+                        <div className="flex items-center mx-2">
+                          <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                          <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
+                          <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                        </div>
+                      )}
+                      
+                      {/* TAIL and NULL indicator for last node */}
+                      {node.next === null && index === nodes.length - 1 && (
+                        <div className="flex items-center mx-2">
+                          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                          <div className="flex flex-col items-center ml-2">
+                            <div className="text-sm text-gray-400">NULL</div>
+                            <div className="text-sm font-medium text-arena-green mt-1">TAIL</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
