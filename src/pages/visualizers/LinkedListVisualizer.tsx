@@ -322,7 +322,7 @@ const LinkedListVisualizer = () => {
                         style={{
                           animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
                         }}
-                      >
+                      
                         <div className="flex items-center text-sm font-medium text-arena-green">
                       <span className="mr-2">Head</span>
                         <div className="text-lg font-medium">{node.value}</div>
@@ -347,9 +347,9 @@ const LinkedListVisualizer = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                  ))
                 </div>
-              )}
+              ))
             </div>
           </div>
           
