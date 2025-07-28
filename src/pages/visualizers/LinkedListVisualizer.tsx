@@ -282,18 +282,15 @@ const LinkedListVisualizer = () => {
                 </div>
               ) : (
                 <div className="flex items-center">
-                  {/* HEAD indicator */}
-                  <div className="flex items-center mr-4">
-                    
-                      <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
-                      <div className="w-3 h-3 bg-arena-green rounded-full"></div>
-                    </div>
-                  </div>
-                  
                   {nodes.map((node, index) => (
                     <div key={node.id} className="flex items-center">
-                      <div className="flex flex-col items-center"
-
+                      <div className="flex flex-col items-center">
+                        {/* HEAD indicator above first node */}
+                        {index === 0 && (
+                          <div className="text-sm font-medium text-arena-green mb-2">
+                            Head
+                          </div>
+                        )}
                         
                         {/* TAIL indicator above last node */}
                         {index === nodes.length - 1 && (
@@ -320,16 +317,6 @@ const LinkedListVisualizer = () => {
                           <div className="text-lg font-medium">{node.value}</div>
                           <div className="text-xs text-arena-gray">Node {index + 1}</div>
                         </div>
-
-                        style={{
-                          animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
-                        }}
-                      >
-                        <div className="flex items-center text-sm font-medium text-arena-green">
-                      <span className="mr-2">Head</span>
-                        <div className="text-lg font-medium">{node.value}</div>
-                        <div className="text-xs text-arena-gray">Node {index + 1}</div>
-
                       </div>
                       
                       {/* Arrow between nodes */}
