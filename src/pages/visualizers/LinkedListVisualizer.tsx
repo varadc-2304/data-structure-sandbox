@@ -291,16 +291,14 @@ const LinkedListVisualizer = () => {
                   </div>
                   
                   {nodes.map((node, index) => (
-                    <div key={node.id} className="flex items-center">
-                      <div className="flex flex-col items-center"
-
-                        
-                        {/* TAIL indicator above last node */}
-                        {index === nodes.length - 1 && (
-                          <div className="text-sm font-medium text-arena-green mb-2">
-                            Tail
-                          </div>
-                        )}
+  <div key={node.id} className="flex items-center">
+    <div className="flex flex-col items-center">
+      {/* TAIL indicator above last node */}
+      {index === nodes.length - 1 && (
+        <div className="text-sm font-medium text-arena-green mb-2">
+          Tail
+        </div>
+      )}
                         
                         <div
                           className={cn(
