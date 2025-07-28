@@ -292,17 +292,41 @@ const LinkedListVisualizer = () => {
                   
                   {nodes.map((node, index) => (
                     <div key={node.id} className="flex items-center">
-                      <div
-                        className={cn(
-                          "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
-                          {
-                            "border-arena-green bg-arena-green/10 shadow-md": 
-                              (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
-                              (operationTarget === node.id && !isViewing),
-                            "border-arena-green bg-arena-green/10 shadow-md transform": 
-                              isViewing && operationTarget === node.id,
-                          }
+                      <div className="flex flex-col items-center">
+                        {/* HEAD indicator above first node */}
+                        {index === 0 && (
+                          <div className="text-sm font-medium text-arena-green mb-2">
+                            Head
+                          </div>
                         )}
+
+                        
+                        {/* TAIL indicator above last node */}
+                        {index === nodes.length - 1 && (
+                          <div className="text-sm font-medium text-arena-green mb-2">
+                            Tail
+                          </div>
+                        )}
+                        
+                        <div
+                          className={cn(
+                            "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
+                            {
+                              "border-arena-green bg-arena-green/10 shadow-md": 
+                                (traversalPath.includes(node.id) && currentTraversal >= traversalPath.indexOf(node.id)) ||
+                                (operationTarget === node.id && !isViewing),
+                              "border-arena-green bg-arena-green/10 shadow-md transform": 
+                                isViewing && operationTarget === node.id,
+                            }
+                          )}
+                          style={{
+                            animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
+                          }}
+                        >
+                          <div className="text-lg font-medium">{node.value}</div>
+                          <div className="text-xs text-arena-gray">Node {index + 1}</div>
+                        </div>
+
                         style={{
                           animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
                         }}
@@ -311,6 +335,7 @@ const LinkedListVisualizer = () => {
                       <span className="mr-2">Head</span>
                         <div className="text-lg font-medium">{node.value}</div>
                         <div className="text-xs text-arena-gray">Node {index + 1}</div>
+
                       </div>
                       
                       {/* Arrow between nodes */}
@@ -322,14 +347,11 @@ const LinkedListVisualizer = () => {
                         </div>
                       )}
                       
-                      {/* TAIL and NULL indicator for last node */}
+                      {/* NULL indicator for last node */}
                       {node.next === null && index === nodes.length - 1 && (
                         <div className="flex items-center mx-2">
                           <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                          <div className="flex flex-col items-center ml-2">
-                            <div className="text-sm text-gray-400">NULL</div>
-                            <div className="text-sm font-medium text-arena-green mt-1">TAIL</div>
-                          </div>
+                          <div className="text-sm text-gray-400 ml-2">NULL</div>
                         </div>
                       )}
                     </div>
