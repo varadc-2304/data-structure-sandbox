@@ -283,10 +283,12 @@ const LinkedListVisualizer = () => {
               ) : (
                 <div className="flex items-center">
                   {/* HEAD indicator */}
-                  <div className="flex flex-col items-center mr-4">
-                    <div className="text-sm font-medium text-arena-green mb-1">HEAD</div>
-                    <div className="w-3 h-3 bg-arena-green rounded-full"></div>
-                    <ArrowRight className="h-4 w-4 text-arena-green rotate-90 my-1" />
+                  <div className="flex items-center mr-4">
+                    <div className="flex items-center text-sm font-medium text-arena-green">
+                      <span className="mr-2">Head</span>
+                      <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
+                      <div className="w-3 h-3 bg-arena-green rounded-full"></div>
+                    </div>
                   </div>
                   
                   {nodes.map((node, index) => (
