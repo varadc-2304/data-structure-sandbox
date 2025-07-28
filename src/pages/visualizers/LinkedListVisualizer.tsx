@@ -285,11 +285,9 @@ const LinkedListVisualizer = () => {
                   {/* HEAD indicator */}
                   <div className="flex items-center mr-4">
                     <div className="flex items-center text-sm font-medium text-arena-green">
-                      <div className="w-8 h-0.5 bg-arena-green"></div>
-                      <div className="w-2 h-2 bg-arena-green rounded-full mx-1"></div>
-                      <span className="mx-2">Head</span>
-                      <div className="w-2 h-2 bg-arena-green rounded-full mx-1"></div>
-                      <ArrowRight className="h-4 w-4 text-arena-green" />
+                      <span className="mr-2">Head</span>
+                      <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
+                      <div className="w-2 h-2 bg-arena-green rounded-full ml-1"></div>
                     </div>
                   </div>
                   
