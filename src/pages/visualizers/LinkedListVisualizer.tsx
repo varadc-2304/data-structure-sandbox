@@ -287,7 +287,7 @@ const LinkedListVisualizer = () => {
                     <div className="flex items-center text-sm font-medium text-arena-green">
                       <span className="mr-2">Head</span>
                       <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
-                      <div className="w-2 h-2 bg-arena-green rounded-full ml-1"></div>
+                      <div className="w-3 h-3 bg-arena-green rounded-full"></div>
                     </div>
                   </div>
                   
