@@ -284,8 +284,7 @@ const LinkedListVisualizer = () => {
                 <div className="flex items-center">
                   {/* HEAD indicator */}
                   <div className="flex items-center mr-4">
-                    <div className="flex items-center text-sm font-medium text-arena-green">
-                      <span className="mr-2">Head</span>
+                    
                       <ArrowRight className="h-4 w-4 text-arena-green mx-1" />
                       <div className="w-3 h-3 bg-arena-green rounded-full"></div>
                     </div>
@@ -308,6 +307,8 @@ const LinkedListVisualizer = () => {
                           animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
                         }}
                       >
+                        <div className="flex items-center text-sm font-medium text-arena-green">
+                      <span className="mr-2">Head</span>
                         <div className="text-lg font-medium">{node.value}</div>
                         <div className="text-xs text-arena-gray">Node {index + 1}</div>
                       </div>
