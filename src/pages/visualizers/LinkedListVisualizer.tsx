@@ -311,9 +311,9 @@ const LinkedListVisualizer = () => {
                                 isViewing && operationTarget === node.id,
                             }
                           )}
-                          style={{
-                            animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
-                          }}
+  style={{
+    animation: isViewing && operationTarget === node.id ? 'bounceInPlace 0.6s ease-in-out 3' : 'none',
+  }}
                         >
                           <div className="text-lg font-medium">{node.value}</div>
                           <div className="text-xs text-arena-gray">Node {index + 1}</div>
