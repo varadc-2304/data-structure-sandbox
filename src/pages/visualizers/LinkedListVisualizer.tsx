@@ -289,7 +289,7 @@ const LinkedListVisualizer = () => {
                       <div className="w-3 h-3 bg-arena-green rounded-full"></div>
                     </div>
                   </div>
-              }
+              )}
                   {nodes.map((node, index) => (
   <div key={node.id} className="flex items-center">
     <div className="flex flex-col items-center">
