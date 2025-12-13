@@ -431,6 +431,20 @@ const LinkedListVisualizer = () => {
                           )}
                         </div>
 
+                        {/* HEAD indicator above first node */}
+                        {index === 0 && (
+                          <div className="text-sm font-medium text-arena-green mb-2">
+                            Head
+                          </div>
+                        )}
+                        
+                        {/* TAIL indicator above last node */}
+                        {index === nodes.length - 1 && (
+                          <div className="text-sm font-medium text-arena-green mb-2">
+                            Tail
+                          </div>
+                        )}
+                        
                         <div
                           className={cn(
                             "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
