@@ -1,0 +1,25 @@
+/* TEAM */
+Developer: Ikshvaku Innovations
+Contact: support@drona.com
+Location: India
+
+/* THANKS */
+Open Source Community
+React Team
+Supabase Team
+Tailwind CSS Team
+Radix UI Team
+
+/* SITE */
+Last update: 2025/01/27
+Standards: HTML5, CSS3, JavaScript ES6+, TypeScript
+Components: React 18, Vite, Tailwind CSS
+Software: Visual Studio Code, Git
+
+/* PROJECT */
+Name: Drona
+Description: Interactive Computer Science Visualization Platform
+Version: 1.0
+License: Open Source
+Language: English
+

@@ -1,0 +1,55 @@
+# robots.txt for Drona
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://drona.ikshvaku-innovations.in/sitemap.xml
+
+# Allow all search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Sogou
+Allow: /
+
+User-agent: Exabot
+Allow: /
+
+User-agent: facebot
+Allow: /
+
+User-agent: ia_archiver
+Allow: /
+
+# Disallow admin and auth pages from indexing
+Disallow: /login
+Disallow: /auth
+Disallow: /external-auth
+
+# Allow all visualizations and educational content
+Allow: /dashboard
+Allow: /dashboard/data-structures
+Allow: /dashboard/algorithms
+Allow: /dashboard/cpu-scheduling
+Allow: /dashboard/page-replacement
+Allow: /dashboard/disk-scheduling
+Allow: /dashboard/ai-algorithms
+
+# Crawl-delay
+Crawl-delay: 1
+

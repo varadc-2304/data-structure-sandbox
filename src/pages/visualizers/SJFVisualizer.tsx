@@ -1,250 +1,98 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Navbar from '@/components/Navbar';
-import { Process, GanttChartItem, runSJFNonPreemptive, runSJFPreemptive } from '@/utils/cpuSchedulingUtils';
-import ProcessInput from '@/components/ProcessInput';
-import GanttChart from '@/components/GanttChart';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from "@/components/ui/use-toast";
-import { Play, Pause, SkipBack, SkipForward, Timer } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import React from "react";
+import Navbar from "@/components/Navbar";
+import ProcessInput from "@/components/ProcessInput";
+import GanttChart from "@/components/GanttChart";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSJFVisualizer } from "./sjf/useSJFVisualizer";
 
 const SJFVisualizer = () => {
-  const [processes, setProcesses] = useState<Process[]>([]);
-  const [ganttChart, setGanttChart] = useState<GanttChartItem[]>([]);
-  const [scheduledProcesses, setScheduledProcesses] = useState<Process[]>([]);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [totalTime, setTotalTime] = useState(0);
-  const [isPreemptive, setIsPreemptive] = useState(false);
-  const [avgWaitingTime, setAvgWaitingTime] = useState(0);
-  const [avgTurnaroundTime, setAvgTurnaroundTime] = useState(0);
-  
-  const { toast } = useToast();
-  const timerRef = useRef<number | null>(null);
-  
-  const runSimulation = () => {
-    if (processes.length === 0) {
-      toast({
-        title: "No processes",
-        description: "Add at least one process to run the simulation",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Run SJF algorithm
-    const { ganttChart: newGanttChart, scheduledProcesses: newScheduledProcesses } = isPreemptive
-      ? runSJFPreemptive(processes)
-      : runSJFNonPreemptive(processes);
-    
-    setGanttChart(newGanttChart);
-    setScheduledProcesses(newScheduledProcesses);
-    
-    if (newGanttChart.length > 0) {
-      setTotalTime(newGanttChart[newGanttChart.length - 1].endTime);
-      setCurrentTime(0);
-      setIsSimulating(true);
-      
-      // Calculate average waiting and turnaround times
-      if (newScheduledProcesses.length > 0) {
-        const totalWaiting = newScheduledProcesses.reduce((sum, p) => sum + (p.waitingTime || 0), 0);
-        const totalTurnaround = newScheduledProcesses.reduce((sum, p) => sum + (p.turnaroundTime || 0), 0);
-        
-        setAvgWaitingTime(totalWaiting / newScheduledProcesses.length);
-        setAvgTurnaroundTime(totalTurnaround / newScheduledProcesses.length);
-      }
-    }
-    
-    toast({
-      title: "Simulation started",
-      description: `Shortest Job First (${isPreemptive ? 'Preemptive' : 'Non-preemptive'}) scheduling algorithm is running`,
-    });
-  };
-  
-  const pauseSimulation = () => {
-    setIsSimulating(false);
-    
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  const {
+    state: { processes, ganttChart, scheduledProcesses, currentTime, isSimulating, totalTime, isPreemptive, avgWaitingTime, avgTurnaroundTime },
+    actions: { setProcesses, setIsPreemptive, runSimulation, pauseSimulation, resumeSimulation, resetSimulation, stepBackward, stepForward },
+  } = useSJFVisualizer();
 
-  const resumeSimulation = () => {
-    if (currentTime < totalTime) {
-      setIsSimulating(true);
-    }
-  };
-  
-  const resetSimulation = () => {
-    pauseSimulation();
-    setCurrentTime(0);
-  };
-  
-  const stepBackward = () => {
-    pauseSimulation();
-    setCurrentTime(prev => Math.max(0, prev - 1));
-  };
-  
-  const stepForward = () => {
-    pauseSimulation();
-    setCurrentTime(prev => Math.min(totalTime, prev + 1));
-  };
-  
-  // Timer effect
-  useEffect(() => {
-    if (isSimulating) {
-      if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
-      }
-      
-      timerRef.current = window.setInterval(() => {
-        setCurrentTime(prev => {
-          const next = prev + 1;
-          if (next > totalTime) {
-            pauseSimulation();
-            return totalTime;
-          }
-          return next;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
-      }
-    };
-  }, [isSimulating, totalTime]);
-  
-  useEffect(() => {
-    // Reset simulation when algorithm type changes
-    resetSimulation();
-    setGanttChart([]);
-    setScheduledProcesses([]);
-  }, [isPreemptive]);
-  
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
           <div className="arena-chip mb-2">CPU Scheduling Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Shortest Job First (SJF)</h1>
-          <p className="text-arena-gray text-sm">
-            Visualize the Shortest Job First scheduling algorithm. The process with the shortest burst time is executed first.
-          </p>
+          <p className="text-arena-gray text-sm">Visualize the Shortest Job First scheduling algorithm. The process with the shortest burst time is executed first.</p>
         </div>
-        
+
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-4 w-full justify-start bg-arena-light p-1">
-            <TabsTrigger value="visualizer" className="data-[state=active]:bg-white data-[state=active]:text-arena-dark px-6">
+          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+            <TabsTrigger 
+              value="visualizer" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
               Visualizer
             </TabsTrigger>
-            <TabsTrigger value="algorithm" className="data-[state=active]:bg-white data-[state=active]:text-arena-dark px-6">
+            <TabsTrigger 
+              value="algorithm" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
               Algorithm
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="visualizer" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Process Input Section - Takes 1/3 of the screen */}
               <div className="md:col-span-1">
                 <ProcessInput processes={processes} setProcesses={setProcesses} />
               </div>
-              
-              {/* Visualization Controls and Gantt Chart - Takes 2/3 of the screen */}
+
               <div className="md:col-span-2">
                 <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
                   <div className="mb-3 flex items-center space-x-2">
-                    <Switch
-                      id="isPreemptive"
-                      checked={isPreemptive}
-                      onCheckedChange={setIsPreemptive}
-                    />
-                    <Label
-                      htmlFor="isPreemptive"
-                      className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
+                    <Switch id="isPreemptive" checked={isPreemptive} onCheckedChange={setIsPreemptive} />
+                    <Label htmlFor="isPreemptive" className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       Enable Preemption (Shortest Remaining Time First)
                     </Label>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-3 mb-4">
-                    <Button 
-                      onClick={runSimulation} 
-                      variant="default"
-                      size="sm"
-                    >
+                    <Button onClick={runSimulation} variant="default" size="sm" disabled={isSimulating}>
                       <Play className="mr-2 h-3 w-3" />
                       Run
                     </Button>
-                    
-                    <Button 
-                      onClick={pauseSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || !isSimulating}
-                      size="sm"
-                    >
+                    <Button onClick={pauseSimulation} variant="outline" disabled={!ganttChart.length || !isSimulating} size="sm">
                       <Pause className="mr-2 h-3 w-3" />
                       Pause
                     </Button>
-
-                    <Button 
-                      onClick={resumeSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
-                      size="sm"
-                    >
+                    <Button onClick={resumeSimulation} variant="outline" disabled={!ganttChart.length || isSimulating || currentTime >= totalTime} size="sm">
                       <Play className="mr-2 h-3 w-3" />
                       Resume
                     </Button>
-                    
-                    <Button 
-                      onClick={resetSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length}
-                      size="sm"
-                    >
+                    <Button onClick={resetSimulation} variant="outline" disabled={!ganttChart.length} size="sm">
                       <SkipBack className="mr-2 h-3 w-3" />
                       Reset
                     </Button>
-                    
-                    <Button 
-                      onClick={stepBackward} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || currentTime <= 0}
-                      size="sm"
-                    >
+                    <Button onClick={stepBackward} variant="outline" disabled={!ganttChart.length || currentTime <= 0} size="sm">
                       <SkipBack className="h-3 w-3" />
                     </Button>
-                    
-                    <Button 
-                      onClick={stepForward} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || currentTime >= totalTime}
-                      size="sm"
-                    >
+                    <Button onClick={stepForward} variant="outline" disabled={!ganttChart.length || currentTime >= totalTime} size="sm">
                       <SkipForward className="h-3 w-3" />
                     </Button>
-                    
                     <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
                       <Timer className="mr-2 h-3 w-3 text-arena-red" />
-                      <span className="text-arena-dark font-medium text-sm">Time: {currentTime} / {totalTime}</span>
+                      <span className="text-arena-dark font-medium text-sm">
+                        Time: {currentTime} / {totalTime}
+                      </span>
                     </div>
                   </div>
-                  
-                  {/* Gantt Chart */}
+
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
                     <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
                   </div>
-                  
-                  {/* Performance Metrics */}
+
                   {scheduledProcesses.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-arena-light">
@@ -261,8 +109,7 @@ const SJFVisualizer = () => {
                       </Card>
                     </div>
                   )}
-                  
-                  {/* Scheduled Processes */}
+
                   {scheduledProcesses.length > 0 && (
                     <div>
                       <h3 className="text-sm font-medium mb-2">Scheduled Processes</h3>
@@ -303,14 +150,11 @@ const SJFVisualizer = () => {
                   )}
                 </div>
               </div>
-              
-              {/* Algorithm Info - Takes full width at the bottom but smaller */}
+
               <div className="md:col-span-3">
                 <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
                   <h2 className="text-lg font-semibold mb-2">About Shortest Job First</h2>
-                  <p className="text-arena-gray mb-3 text-sm">
-                    Shortest Job First (SJF) is a scheduling algorithm that selects the process with the smallest execution time to execute next. It can be both preemptive and non-preemptive.
-                  </p>
+                  <p className="text-arena-gray mb-3 text-sm">Shortest Job First (SJF) is a scheduling algorithm that selects the process with the smallest execution time to execute next. It can be both preemptive and non-preemptive.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <Card className="bg-arena-light">
                       <CardHeader className="py-2 px-3">
@@ -343,171 +187,322 @@ const SJFVisualizer = () => {
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="algorithm" className="mt-0">
-            <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in">
-              <h2 className="text-xl font-semibold mb-4">Shortest Job First Algorithm</h2>
-              
-              <div className="prose max-w-none text-arena-gray">
-                <h3 className="text-lg font-medium text-arena-dark">How SJF Works</h3>
-                <p>
-                  Shortest Job First (SJF) is a scheduling algorithm that selects the process with the smallest execution time.
-                  It comes in two variants:
-                </p>
-                <ul>
-                  <li><strong>Non-preemptive SJF</strong>: Once a process starts executing, it continues until completion.</li>
-                  <li><strong>Preemptive SJF</strong>: Also known as Shortest Remaining Time First (SRTF), where a running process can be preempted if a new process arrives with a shorter burst time.</li>
-                </ul>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Algorithm Implementation</h3>
-                <div className="bg-arena-light rounded-lg p-4 my-4">
-                  <h4 className="font-medium mb-2">Non-preemptive SJF Pseudocode</h4>
-                  <pre className="bg-black text-white p-3 rounded overflow-x-auto"><code>{`function runSJFNonPreemptive(processes) {
-  let processQueue = copy(processes)
-  let currentTime = 0
-  let scheduledProcesses = []
-  let ganttChart = []
-  
-  while (processQueue.length > 0) {
-    // Find all processes that have arrived by current time
-    let availableProcesses = processQueue.filter(p => p.arrivalTime <= currentTime)
-    
-    if (availableProcesses.length === 0) {
-      // No process has arrived yet, jump to next arrival
-      currentTime = nextArrivalTime(processQueue)
-      continue
-    }
-    
-    // Find the process with shortest burst time
-    let shortestJob = findShortestJob(availableProcesses)
-    
-    // Remove from queue
-    processQueue.remove(shortestJob)
-    
-    // Set start time and calculate finish time
-    shortestJob.startTime = currentTime
-    shortestJob.finishTime = currentTime + shortestJob.burstTime
-    
-    // Calculate waiting and turnaround times
-    shortestJob.waitingTime = shortestJob.startTime - shortestJob.arrivalTime
-    shortestJob.turnaroundTime = shortestJob.finishTime - shortestJob.arrivalTime
-    
-    // Add to Gantt chart
-    ganttChart.push({
-      process: shortestJob.id,
-      startTime: shortestJob.startTime,
-      endTime: shortestJob.finishTime
-    })
-    
-    // Update current time
-    currentTime = shortestJob.finishTime
-    
-    scheduledProcesses.push(shortestJob)
-  }
-  
-  return { ganttChart, scheduledProcesses }
-}`}</code></pre>
+            <div className="bg-card rounded-lg border border-border shadow-lg p-6 md:p-8">
+              <div className="space-y-8">
+                {/* Header */}
+                <div className="border-b border-border pb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                    SJF (Shortest Job First) CPU Scheduling – Algorithm
+                  </h1>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-4xl">
+                    SJF is a CPU scheduling algorithm where the process with the smallest burst time is executed first.
+                  </p>
                 </div>
-                
-                <div className="bg-arena-light rounded-lg p-4 my-4">
-                  <h4 className="font-medium mb-2">Preemptive SJF (SRTF) Pseudocode</h4>
-                  <pre className="bg-black text-white p-3 rounded overflow-x-auto"><code>{`function runSJFPreemptive(processes) {
-  let processQueue = copy(processes)
-  let currentTime = 0
-  let scheduledProcesses = []
-  let ganttChart = []
-  
-  // While there are processes to execute
-  while (some processes have remaining time) {
-    // Find next process to execute
-    let nextProcess = null
-    let shortestRemainingTime = Infinity
-    
-    // Find available processes at current time
-    for each process in processQueue {
-      if (process.arrivalTime <= currentTime && process.remainingTime > 0) {
-        if (process.remainingTime < shortestRemainingTime) {
-          nextProcess = process
-          shortestRemainingTime = process.remainingTime
-        }
-      }
-    }
-    
-    // If no process available, jump to next arrival
-    if (nextProcess === null) {
-      currentTime = nextArrivalTime(processQueue)
-      continue
-    }
-    
-    // Process switch detected - update Gantt chart
-    if (currentProcess changed) {
-      update previous Gantt chart entry
-      create new Gantt chart entry
-    }
-    
-    // Execute process until next process arrives or current process finishes
-    let runUntil = calculate_next_event_time()
-    let executionTime = runUntil - currentTime
-    
-    nextProcess.remainingTime -= executionTime
-    currentTime = runUntil
-    
-    // If process completed
-    if (nextProcess.remainingTime === 0) {
-      update process metrics (finishTime, turnaroundTime, waitingTime)
-      update Gantt chart
-      add to completed processes
-    }
-  }
-  
-  return { ganttChart, scheduledProcesses }
-}`}</code></pre>
-                </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Performance Metrics</h3>
-                <p>
-                  SJF is known to be optimal in terms of average waiting time.
-                </p>
-                <div className="bg-arena-light rounded-lg p-4 my-4">
-                  <h4 className="font-medium mb-2">Key Metrics</h4>
-                  <ul className="list-disc pl-5">
-                    <li><strong>Waiting Time</strong>: Process start time - Process arrival time</li>
-                    <li><strong>Turnaround Time</strong>: Process completion time - Process arrival time</li>
-                    <li><strong>Response Time</strong>: First time a process gets CPU - Process arrival time</li>
-                  </ul>
-                </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Advantages and Disadvantages</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  <div className="bg-arena-light p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Advantages</h4>
-                    <ul className="list-disc pl-5">
-                      <li>Optimal for minimizing average waiting time</li>
-                      <li>Reduces the average turnaround time</li>
-                      <li>Preemptive version (SRTF) gives even better performance</li>
+
+                {/* Key Idea */}
+                <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary rounded-full"></span>
+                      Key Idea
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm text-foreground">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">CPU is allocated to the shortest process first</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Can be Non-Preemptive or Preemptive (SRTF)</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Minimizes average waiting time</span>
+                      </li>
                     </ul>
-                  </div>
-                  <div className="bg-arena-light p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Disadvantages</h4>
-                    <ul className="list-disc pl-5">
-                      <li>Process starvation for longer processes</li>
-                      <li>Requires knowledge of burst time in advance</li>
-                      <li>Preemptive version has higher context switching overhead</li>
-                      <li>Difficult to implement in practice due to burst time prediction</li>
-                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Types of SJF */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Types of SJF
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-secondary/30 border-border shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Non-Preemptive SJF</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">Once a process starts, it runs till completion</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary/30 border-border shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Preemptive SJF (SRTF)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">Running process can be preempted if a shorter job arrives</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Real-world Applications</h3>
-                <p>
-                  SJF is primarily a theoretical algorithm but its concepts influence modern scheduling:
-                </p>
-                <ul className="list-disc pl-5 mt-2">
-                  <li>Used with predicted burst times in some batch processing systems</li>
-                  <li>Elements of SJF exist in multi-level feedback queue schedulers</li>
-                  <li>Task schedulers in distributed computing sometimes employ SJF principles</li>
-                  <li>Web servers may use SJF-like approaches for serving small files first</li>
-                </ul>
+
+                {/* Algorithm Non-Preemptive */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Non-Preemptive SJF)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">Initialize current time = 0</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Add all arrived processes to the ready queue</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">Select the process with the minimum burst time</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                          <span className="flex-1 pt-1">Execute it completely</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">5</span>
+                          <span className="flex-1 pt-1">Update time and repeat until all processes are completed</span>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Pseudocode Non-Preemptive */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode (Non-Preemptive SJF)
+                  </h2>
+                  <Card className="bg-muted/50 border-border shadow-sm">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`SJF_NonPreemptive(processes):
+    currentTime = 0
+    completed = 0
+    n = number of processes
+
+    while completed < n:
+        readyQueue = all processes with ArrivalTime ≤ currentTime
+                      and not completed
+
+        if readyQueue is empty:
+            currentTime++
+            continue
+
+        shortest = process with minimum BurstTime in readyQueue
+
+        shortest.StartTime = currentTime
+        shortest.CompletionTime = currentTime + shortest.BurstTime
+        shortest.TurnaroundTime = CompletionTime - ArrivalTime
+        shortest.WaitingTime = TurnaroundTime - BurstTime
+
+        currentTime = shortest.CompletionTime
+        mark shortest as completed
+        completed++`}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Algorithm Preemptive */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Preemptive SJF / SRTF)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">At each time unit, check for newly arrived processes</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Choose the process with smallest remaining time</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">Preempt the current process if needed</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                          <span className="flex-1 pt-1">Repeat until all processes finish</span>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Pseudocode Preemptive */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode (Preemptive SJF / SRTF)
+                  </h2>
+                  <Card className="bg-muted/50 border-border shadow-sm">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`SJF_Preemptive(processes):
+    currentTime = 0
+    completed = 0
+
+    while completed < n:
+        readyQueue = all processes with ArrivalTime ≤ currentTime
+                      and RemainingTime > 0
+
+        if readyQueue is empty:
+            currentTime++
+            continue
+
+        shortest = process with minimum RemainingTime
+
+        execute shortest for 1 unit
+        shortest.RemainingTime--
+
+        if shortest.RemainingTime == 0:
+            shortest.CompletionTime = currentTime + 1
+            completed++
+
+        currentTime++`}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Time Calculations */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Time Calculations
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Completion Time (CT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">CT = Time when process finishes</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Turnaround Time (TAT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">TAT = CT − Arrival Time</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Waiting Time (WT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">WT = TAT − Burst Time</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Advantages and Disadvantages */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Advantages & Disadvantages
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                          <span className="text-green-600 dark:text-green-400">✓</span>
+                          Advantages
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2.5 text-sm text-foreground">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Minimum average waiting time</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Efficient for batch systems</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-800 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                          <span className="text-red-600 dark:text-red-400">✗</span>
+                          Disadvantages
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2.5 text-sm text-foreground">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Starvation of long processes</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Burst time must be known in advance</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Not practical in real systems</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Where SJF is Used */}
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800 shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
+                      Where SJF is Used
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2.5 text-sm text-foreground">
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Batch systems</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Job scheduling simulations</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Academic & exam problems</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </TabsContent>

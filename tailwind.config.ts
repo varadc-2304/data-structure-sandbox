@@ -53,19 +53,14 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				success: 'hsl(var(--success))',
+				warning: 'hsl(var(--warning))',
 				drona: {
-					green: '#2E8B57',
+					green: 'hsl(var(--drona-green))',
 					white: '#FFFFFF',
-					light: '#F8FAF9',
-					dark: '#0F172A',
-					gray: '#64748B'
-				},
-				arena: {
-					green: '#2E8B57',
-					blue: '#3B82F6',
-					light: '#F8FAF9',
-					dark: '#0F172A',
-					gray: '#64748B'
+					light: 'hsl(var(--drona-light))',
+					dark: 'hsl(var(--drona-dark))',
+					gray: 'hsl(var(--drona-gray))'
 				}
 			},
 			borderRadius: {

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, Shuffle, ArrowRight } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, Shuffle, ArrowRight, Search, ArrowLeftRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +23,8 @@ const LinkedListVisualizer = () => {
   const [isViewing, setIsViewing] = useState(false);
   const [traversalPath, setTraversalPath] = useState<number[]>([]);
   const [currentTraversal, setCurrentTraversal] = useState<number>(-1);
+  const [searchValue, setSearchValue] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   
   const { toast } = useToast();
 
@@ -39,37 +41,84 @@ const LinkedListVisualizer = () => {
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
-  const appendElement = () => {
+  const renumberNodes = (list: ListNode[]) => {
+    return list.map((node, idx) => ({
+      ...node,
+      id: idx,
+      next: idx < list.length - 1 ? idx + 1 : null,
+    }));
+  };
+
+  const insertAtTail = () => {
     if (newElement.trim() === '') {
       toast({
         title: "Input required",
-        description: "Please enter a value to append",
+        description: "Please enter a value to insert",
         variant: "destructive",
       });
       return;
     }
 
     const newValue = Number(newElement);
-    const newId = nodes.length > 0 ? Math.max(...nodes.map(n => n.id)) + 1 : 0;
-    
-    if (nodes.length === 0) {
-      setNodes([{ id: newId, value: newValue, next: null }]);
-    } else {
-      const updatedNodes = [...nodes];
-      updatedNodes[updatedNodes.length - 1].next = newId;
-      updatedNodes.push({ id: newId, value: newValue, next: null });
-      setNodes(updatedNodes);
+    if (isNaN(newValue)) {
+      toast({
+        title: "Invalid value",
+        description: "Please enter a numeric value",
+        variant: "destructive",
+      });
+      return;
     }
     
-    setLastOperation('append');
-    setOperationTarget(newId);
+    const newList = [...nodes, { id: nodes.length, value: newValue, next: null }];
+    const updated = renumberNodes(newList);
+    setNodes(updated);
+    
+    setLastOperation('insert_tail');
+    setOperationTarget(updated.length - 1);
     setNewElement('');
     
-    const message = `Appended "${newValue}" to the end of the list`;
+    const message = `Inserted "${newValue}" at the tail`;
     addToLog(message);
     
     toast({
-      title: "Element appended",
+      title: "Element inserted",
+      description: message,
+    });
+  };
+
+  const insertAtHead = () => {
+    if (newElement.trim() === '') {
+      toast({
+        title: "Input required",
+        description: "Please enter a value to insert",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newValue = Number(newElement);
+    if (isNaN(newValue)) {
+      toast({
+        title: "Invalid value",
+        description: "Please enter a numeric value",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newList = [{ id: 0, value: newValue, next: nodes.length ? 1 : null }, ...nodes];
+    const updated = renumberNodes(newList);
+    setNodes(updated);
+
+    setLastOperation('insert_head');
+    setOperationTarget(0);
+    setNewElement('');
+
+    const message = `Inserted "${newValue}" at the head`;
+    addToLog(message);
+
+    toast({
+      title: "Element inserted at head",
       description: message,
     });
   };
@@ -86,40 +135,23 @@ const LinkedListVisualizer = () => {
 
     const pos = Number(position);
     
-    if (pos < 1 || pos > nodes.length) {
+    if (pos < 0 || pos >= nodes.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 1 and ${nodes.length}`,
+        description: `Position must be between 0 and ${nodes.length - 1}`,
         variant: "destructive",
       });
       return;
     }
 
-    const actualIndex = pos - 1; // Convert 1-based to 0-based index
-    const removedValue = nodes[actualIndex].value;
+    const removedValue = nodes[pos].value;
     const newNodes = [...nodes];
+    newNodes.splice(pos, 1);
+    const updated = renumberNodes(newNodes);
     
-    if (actualIndex === 0) {
-      // Remove head
-      newNodes.shift();
-      // Update IDs to maintain sequential order
-      for (let i = 0; i < newNodes.length; i++) {
-        newNodes[i].id = i;
-        newNodes[i].next = i < newNodes.length - 1 ? i + 1 : null;
-      }
-    } else {
-      // Remove from middle or end
-      newNodes.splice(actualIndex, 1);
-      // Update IDs and next pointers
-      for (let i = 0; i < newNodes.length; i++) {
-        newNodes[i].id = i;
-        newNodes[i].next = i < newNodes.length - 1 ? i + 1 : null;
-      }
-    }
-    
-    setNodes(newNodes);
+    setNodes(updated);
     setLastOperation('remove');
-    setOperationTarget(actualIndex);
+    setOperationTarget(updated.length ? Math.min(pos, updated.length - 1) : null);
     setPosition('');
     
     const message = `Removed "${removedValue}" from position ${pos}`;
@@ -143,19 +175,17 @@ const LinkedListVisualizer = () => {
 
     const pos = Number(position);
     
-    if (pos < 1 || pos > nodes.length) {
+    if (pos < 0 || pos >= nodes.length) {
       toast({
         title: "Out of bounds",
-        description: `Position must be between 1 and ${nodes.length}`,
+        description: `Position must be between 0 and ${nodes.length - 1}`,
         variant: "destructive",
       });
       return;
     }
 
-    // Create traversal path (convert 1-based to 0-based)
-    const actualIndex = pos - 1;
     const path = [];
-    for (let i = 0; i <= actualIndex; i++) {
+    for (let i = 0; i <= pos; i++) {
       path.push(nodes[i].id);
     }
     
@@ -165,7 +195,7 @@ const LinkedListVisualizer = () => {
     setIsViewing(true);
     setPosition('');
     
-    const message = `Viewing element at position ${pos}: ${nodes[actualIndex].value}`;
+    const message = `Viewing element at position ${pos}: ${nodes[pos].value}`;
     addToLog(message);
   };
 
@@ -219,6 +249,81 @@ const LinkedListVisualizer = () => {
     });
   };
 
+  const searchInList = async () => {
+    if (searchValue.trim() === '') {
+      toast({
+        title: "Input required",
+        description: "Please enter a value to search",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const target = Number(searchValue);
+    if (isNaN(target)) {
+      toast({
+        title: "Invalid value",
+        description: "Please enter a numeric value to search",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (nodes.length === 0) {
+      toast({
+        title: "Empty list",
+        description: "Add or generate nodes before searching",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    setTraversalPath([]);
+    setCurrentTraversal(-1);
+    setLastOperation('search');
+    setOperationTarget(null);
+
+    for (let i = 0; i < nodes.length; i++) {
+      setOperationTarget(i);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      if (nodes[i].value === target) {
+        const message = `Found "${target}" at position ${i}`;
+        addToLog(message);
+        toast({ title: "Element found", description: message });
+        setIsSearching(false);
+        return;
+      }
+    }
+
+    const message = `"${target}" not found in the list`;
+    addToLog(message);
+    toast({ title: "Not found", description: message, variant: "destructive" });
+    setOperationTarget(null);
+    setIsSearching(false);
+  };
+
+  const reverseList = () => {
+    if (nodes.length === 0) {
+      toast({
+        title: "Empty list",
+        description: "Cannot reverse an empty list",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reversed = [...nodes].reverse();
+    const updated = renumberNodes(reversed);
+    setNodes(updated);
+    setLastOperation('reverse');
+    setOperationTarget(null);
+
+    const message = "Reversed the linked list";
+    addToLog(message);
+    toast({ title: "List reversed", description: message });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -233,30 +338,61 @@ const LinkedListVisualizer = () => {
         </div>
         
         <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Linked List Visualization</h2>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-xl font-semibold">Linked List Visualization</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="number"
+                  min={1}
+                  value={listSize}
+                  onChange={(e) => setListSize(e.target.value)}
+                  placeholder="Size"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button 
+                  onClick={generateRandomList} 
+                  variant="outline"
+                  className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+                >
+                  <Shuffle className="h-4 w-4" />
+                  Generate
+                </Button>
+                <input
+                  type="number"
+                  min={0}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Search value"
+                  className="w-28 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                />
+                <Button
+                  onClick={searchInList}
+                  variant="outline"
+                  className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+                  disabled={isSearching}
+                >
+                  <Search className="h-4 w-4" />
+                  Search
+                </Button>
+                <Button
+                  onClick={reverseList}
+                  variant="outline"
+                  className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                  Reverse List
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
               <input
                 type="number"
-                value={listSize}
-                onChange={(e) => setListSize(e.target.value)}
-                placeholder="Size"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
-              />
-              <Button 
-                onClick={generateRandomList} 
-                variant="outline"
-                className="flex items-center gap-2 border-arena-green text-arena-green hover:bg-arena-green hover:text-white"
-              >
-                <Shuffle className="h-4 w-4" />
-                Generate Random List
-              </Button>
-              <input
-                type="number"
+                min={0}
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
                 placeholder="Position"
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
               />
               <Button
                 onClick={viewAtPosition}
@@ -285,20 +421,16 @@ const LinkedListVisualizer = () => {
                   {nodes.map((node, index) => (
                     <div key={node.id} className="flex items-center">
                       <div className="flex flex-col items-center">
-                        {/* HEAD indicator above first node */}
-                        {index === 0 && (
-                          <div className="text-sm font-medium text-arena-green mb-2">
-                            Head
-                          </div>
-                        )}
-                        
-                        {/* TAIL indicator above last node */}
-                        {index === nodes.length - 1 && (
-                          <div className="text-sm font-medium text-arena-green mb-2">
-                            Tail
-                          </div>
-                        )}
-                        
+                        {/* HEAD and TAIL indicators */}
+                        <div className="h-6 mb-2 flex items-center gap-1">
+                          {index === 0 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-arena-green/10 text-arena-green border border-arena-green">Head</span>
+                          )}
+                          {index === nodes.length - 1 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-arena-green/10 text-arena-green border border-arena-green">Tail</span>
+                          )}
+                        </div>
+
                         <div
                           className={cn(
                             "min-w-[80px] h-16 m-1 rounded-lg border-2 border-gray-200 flex flex-col justify-center items-center transition-all duration-300 relative overflow-hidden",
@@ -315,7 +447,7 @@ const LinkedListVisualizer = () => {
                           }}
                         >
                           <div className="text-lg font-medium">{node.value}</div>
-                          <div className="text-xs text-arena-gray">Node {index + 1}</div>
+                          <div className="text-xs text-arena-gray">Index {index}</div>
                         </div>
                       </div>
                       
@@ -344,11 +476,11 @@ const LinkedListVisualizer = () => {
           
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Add element */}
+            {/* Insert element */}
             <div className="bg-arena-light rounded-xl p-4">
               <h3 className="text-lg font-medium mb-3 flex items-center">
                 <Plus className="h-5 w-5 text-arena-green mr-2" />
-                Add Element
+                Insert Element
               </h3>
               <div className="flex">
                 <input
@@ -358,13 +490,22 @@ const LinkedListVisualizer = () => {
                   placeholder="Enter value"
                   className="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-arena-green focus:border-transparent"
                 />
-                <Button
-                  onClick={appendElement}
-                  variant="default"
-                  className="rounded-l-none bg-arena-green text-white hover:bg-arena-green/90"
-                >
-                  Add
-                </Button>
+                <div className="flex">
+                  <Button
+                    onClick={insertAtHead}
+                    variant="default"
+                    className="rounded-none bg-arena-green text-white hover:bg-arena-green/90"
+                  >
+                    Head
+                  </Button>
+                  <Button
+                    onClick={insertAtTail}
+                    variant="default"
+                    className="rounded-l-none rounded-r-lg bg-arena-green text-white hover:bg-arena-green/90"
+                  >
+                    Tail
+                  </Button>
+                </div>
               </div>
             </div>
             
@@ -377,6 +518,7 @@ const LinkedListVisualizer = () => {
               <div className="space-y-2">
                 <input
                   type="number"
+                  min={0}
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="Position"
@@ -438,27 +580,9 @@ const LinkedListVisualizer = () => {
 
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-2">About Linked Lists</h2>
-          <p className="text-arena-gray mb-4">
-            A linked list is a linear data structure where elements are stored in nodes, and each node contains data and a reference to the next node.
+          <p className="text-arena-gray">
+            A singly linked list is a linear data structure made of nodes, where each node stores data and a pointer to the next node. It allows efficient insertions and deletions at any position without shifting elements. However, accessing elements is slower since traversal must start from the head each time.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Time Complexity:</span>
-              <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Access: O(n)</li>
-                <li>Search: O(n)</li>
-                <li>Insertion: O(1) at head</li>
-                <li>Deletion: O(1) at head</li>
-              </ul>
-            </div>
-            <div className="bg-arena-light p-3 rounded-lg">
-              <span className="font-medium">Space Complexity:</span>
-              <ul className="list-disc pl-5 mt-1 text-arena-gray">
-                <li>Storage: O(n)</li>
-                <li>Auxiliary: O(1)</li>
-              </ul>
-            </div>
-          </div>
         </div>
       </div>
       

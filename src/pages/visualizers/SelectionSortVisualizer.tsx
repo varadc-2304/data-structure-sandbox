@@ -1,532 +1,314 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { SortAsc, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Slider } from '@/components/ui/slider';
-
-interface SortStep {
-  array: number[];
-  currentMin: number;
-  currentIndex: number;
-  comparing: number;
-  sortedIndices: number[];
-  comparison?: string;
-}
+import React from "react";
+import Navbar from "@/components/Navbar";
+import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SelectionSortControls from "./selection-sort/SelectionSortControls";
+import SelectionSortVisualization from "./selection-sort/SelectionSortVisualization";
+import { useSelectionSortVisualizer } from "./selection-sort/useSelectionSortVisualizer";
 
 const SelectionSortVisualizer = () => {
-  const [array, setArray] = useState<number[]>([]);
-  const [arraySize, setArraySize] = useState<number>(10);
-  const [customArrayInput, setCustomArrayInput] = useState<string>('');
-  const [currentMin, setCurrentMin] = useState<number>(-1);
-  const [currentIndex, setCurrentIndex] = useState<number>(-1);
-  const [comparing, setComparing] = useState<number>(-1);
-  const [sortedIndices, setSortedIndices] = useState<number[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [sortSteps, setSortSteps] = useState<SortStep[]>([]);
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [comparisons, setComparisons] = useState(0);
+  const {
+    state: {
+      array,
+      arraySize,
+      customArrayInput,
+      currentIndex,
+      scanIndex,
+      minIndex,
+      sortedIndices,
+      isRunning,
+      speed,
+      steps,
+      currentStep,
+      comparisons,
+      comparisonText,
+    },
+    actions: {
+      setArraySize,
+      setCustomArrayInput,
+      setSpeed,
+      generateRandomArray,
+      generateCustomArray,
+      resetSort,
+      startSort,
+      nextStep,
+      prevStep,
+      goToStep,
+    },
+  } = useSelectionSortVisualizer();
 
-  useEffect(() => {
-    if (!isRunning) return;
-    
-    if (currentStep >= sortSteps.length - 1) {
-      setIsRunning(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      nextStep();
-    }, 2000 / speed);
-
-    return () => clearTimeout(timer);
-  }, [isRunning, currentStep, sortSteps.length, speed]);
-
-  const generateRandomArray = () => {
-    const newArray = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 100) + 1);
-    setArray(newArray);
-    resetSort();
-  };
-
-  const generateCustomArray = () => {
-    if (!customArrayInput.trim()) return;
-    
-    try {
-      const newArray = customArrayInput
-        .split(/[,\s]+/)
-        .filter(Boolean)
-        .map(val => {
-          const num = parseInt(val.trim());
-          if (isNaN(num)) throw new Error('Invalid number');
-          return num;
-        });
-      
-      if (newArray.length === 0) throw new Error('Empty array');
-      
-      setArray(newArray);
-      setCustomArrayInput('');
-      resetSort();
-    } catch (error) {
-      console.error("Invalid array format");
-    }
-  };
-
-  const resetSort = () => {
-    setCurrentMin(-1);
-    setCurrentIndex(-1);
-    setComparing(-1);
-    setSortedIndices([]);
-    setIsRunning(false);
-    setSortSteps([]);
-    setCurrentStep(-1);
-    setComparisons(0);
-  };
-
-  const calculateSortSteps = (arr: number[]) => {
-    const steps: SortStep[] = [];
-    const arrCopy = [...arr];
-    const n = arrCopy.length;
-    let compCount = 0;
-    
-    steps.push({
-      array: [...arrCopy],
-      currentMin: -1,
-      currentIndex: -1,
-      comparing: -1,
-      sortedIndices: [],
-      comparison: 'Starting Selection Sort'
-    });
-    
-    for (let i = 0; i < n - 1; i++) {
-      let minIndex = i;
-      
-      steps.push({
-        array: [...arrCopy],
-        currentMin: minIndex,
-        currentIndex: i,
-        comparing: -1,
-        sortedIndices: Array.from({ length: i }, (_, k) => k),
-        comparison: `Looking for minimum in unsorted portion starting at index ${i}`
-      });
-      
-      for (let j = i + 1; j < n; j++) {
-        compCount++;
-        
-        steps.push({
-          array: [...arrCopy],
-          currentMin: minIndex,
-          currentIndex: i,
-          comparing: j,
-          sortedIndices: Array.from({ length: i }, (_, k) => k),
-          comparison: `Comparing ${arrCopy[j]} with current minimum ${arrCopy[minIndex]}`
-        });
-        
-        if (arrCopy[j] < arrCopy[minIndex]) {
-          minIndex = j;
-          steps.push({
-            array: [...arrCopy],
-            currentMin: minIndex,
-            currentIndex: i,
-            comparing: j,
-            sortedIndices: Array.from({ length: i }, (_, k) => k),
-            comparison: `New minimum found: ${arrCopy[minIndex]} at index ${minIndex}`
-          });
-        }
-      }
-      
-      if (minIndex !== i) {
-        [arrCopy[i], arrCopy[minIndex]] = [arrCopy[minIndex], arrCopy[i]];
-        steps.push({
-          array: [...arrCopy],
-          currentMin: -1,
-          currentIndex: i,
-          comparing: -1,
-          sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
-          comparison: `Swapped ${arrCopy[i]} with ${arrCopy[minIndex]} and placed it in position ${i}`
-        });
-      } else {
-        steps.push({
-          array: [...arrCopy],
-          currentMin: -1,
-          currentIndex: i,
-          comparing: -1,
-          sortedIndices: Array.from({ length: i + 1 }, (_, k) => k),
-          comparison: `Element ${arrCopy[i]} is already in the correct position`
-        });
-      }
-    }
-    
-    steps.push({
-      array: [...arrCopy],
-      currentMin: -1,
-      currentIndex: -1,
-      comparing: -1,
-      sortedIndices: Array.from({ length: n }, (_, i) => i),
-      comparison: 'Array is completely sorted!'
-    });
-    
-    return { steps, totalComparisons: compCount };
-  };
-
-  const startSort = () => {
-    if (array.length === 0 || isRunning) return;
-    
-    resetSort();
-    const { steps } = calculateSortSteps(array);
-    setSortSteps(steps);
-    setIsRunning(true);
-  };
-
-  const nextStep = () => {
-    if (currentStep >= sortSteps.length - 1) {
-      setIsRunning(false);
-      return;
-    }
-    
-    const nextStepIndex = currentStep + 1;
-    setCurrentStep(nextStepIndex);
-    
-    const step = sortSteps[nextStepIndex];
-    setArray(step.array);
-    setCurrentMin(step.currentMin);
-    setCurrentIndex(step.currentIndex);
-    setComparing(step.comparing);
-    setSortedIndices(step.sortedIndices);
-    setComparisons(nextStepIndex);
-  };
-
-  const prevStep = () => {
-    if (currentStep <= 0) return;
-    
-    const prevStepIndex = currentStep - 1;
-    setCurrentStep(prevStepIndex);
-    
-    const step = sortSteps[prevStepIndex];
-    setArray(step.array);
-    setCurrentMin(step.currentMin);
-    setCurrentIndex(step.currentIndex);
-    setComparing(step.comparing);
-    setSortedIndices(step.sortedIndices);
-    setComparisons(prevStepIndex);
-  };
-
-  const goToStep = (step: number) => {
-    if (step < 0 || step >= sortSteps.length) return;
-    
-    setCurrentStep(step);
-    setIsRunning(false);
-    
-    const sortStep = sortSteps[step];
-    setArray(sortStep.array);
-    setCurrentMin(sortStep.currentMin);
-    setCurrentIndex(sortStep.currentIndex);
-    setComparing(sortStep.comparing);
-    setSortedIndices(sortStep.sortedIndices);
-    setComparisons(step);
-  };
-
-  const togglePlayPause = () => {
-    if (currentStep >= sortSteps.length - 1) {
+  const handleStart = () => {
+    if (steps.length === 0 && array.length > 0) {
       startSort();
     } else {
-      setIsRunning(!isRunning);
+      if (isRunning) {
+        setSpeed(speed);
+      } else {
+        startSort();
+      }
     }
-  };
-
-  const getBarHeight = (value: number) => {
-    const maxHeight = 200;
-    const maxValue = Math.max(...array, 1);
-    return (value / maxValue) * maxHeight;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      
-      <div className="page-container mt-20">
-        <div className="mb-8">
-          <Link to="/dashboard/algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-20 pb-12">
+        <div className="mb-6">
+          <Link to="/dashboard/algorithms" className="inline-flex items-center text-primary hover:underline mb-4 font-medium transition-colors text-sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Algorithms
           </Link>
-          <h1 className="text-4xl font-bold text-drona-dark mb-2">Selection Sort Visualization</h1>
-          <p className="text-lg text-drona-gray">
-            Selection sort finds the minimum element and places it at the beginning, then repeats for the remaining elements.
-            <span className="font-semibold text-drona-green"> Time Complexity: O(n²)</span>
-          </p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Selection Sort</h1>
+          <p className="text-muted-foreground text-sm">Walk through Selection Sort with highlighted current position, candidate minimum, and sorted prefix.</p>
         </div>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* Controls Panel */}
-          <div className="xl:col-span-1 space-y-6">
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Array Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">Array Size</Label>
-                    <Input
-                      type="number"
-                      value={arraySize}
-                      onChange={(e) => setArraySize(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
-                      min={5}
-                      max={20}
-                      className="border-2 focus:border-drona-green"
-                    />
-                  </div>
-                  
-                  <Button 
-                    onClick={generateRandomArray} 
-                    variant="outline"
-                    className="w-full font-semibold border-2 hover:border-drona-green/50"
-                  >
-                    Generate Random Array
-                  </Button>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">Custom Array (comma-separated)</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g., 64, 34, 25, 12"
-                        value={customArrayInput}
-                        onChange={(e) => setCustomArrayInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && generateCustomArray()}
-                        className="flex-1 border-2 focus:border-drona-green"
-                      />
-                      <Button 
-                        onClick={generateCustomArray}
-                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
-                      >
-                        Set
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {speed}x
-                  </Label>
-                  <div className="flex items-center mt-1">
-                    <input 
-                      type="range" 
-                      min={0.5} 
-                      max={3} 
-                      step={0.5} 
-                      value={speed} 
-                      onChange={(e) => setSpeed(Number(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-drona-gray">
-                    <span>Slower</span>
-                    <span>Faster</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid grid-cols-5 gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(0)}
-                    disabled={sortSteps.length === 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={prevStep}
-                    disabled={currentStep <= 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm"
-                    onClick={togglePlayPause}
-                    disabled={array.length === 0}
-                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
-                  >
-                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={nextStep}
-                    disabled={currentStep >= sortSteps.length - 1}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(sortSteps.length - 1)}
-                    disabled={sortSteps.length === 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <Button 
-                  onClick={() => {
-                    resetSort();
-                    setIsRunning(false);
-                  }} 
-                  variant="outline" 
-                  disabled={isRunning}
-                  className="w-full border-2 hover:border-drona-green/50"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
-                </Button>
+        <Tabs defaultValue="visualizer" className="w-full">
+          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+            <TabsTrigger 
+              value="visualizer" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Visualizer
+            </TabsTrigger>
+            <TabsTrigger 
+              value="algorithm" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Algorithm
+            </TabsTrigger>
+          </TabsList>
 
-                {sortSteps.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">
-                      Step: {currentStep + 1} of {sortSteps.length}
-                    </Label>
-                    <Slider
-                      value={[currentStep + 1]}
-                      onValueChange={([value]) => goToStep(value - 1)}
-                      max={sortSteps.length}
-                      min={1}
-                      step={1}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="visualizer" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+          <SelectionSortControls
+            arraySize={arraySize}
+            customArrayInput={customArrayInput}
+            speed={speed}
+            currentStep={currentStep}
+            stepsCount={steps.length}
+            isRunning={isRunning}
+            comparisons={comparisons}
+            onArraySizeChange={setArraySize}
+            onCustomArrayChange={setCustomArrayInput}
+            onSpeedChange={setSpeed}
+            onGenerateRandom={generateRandomArray}
+            onGenerateCustom={generateCustomArray}
+            onStart={handleStart}
+            onPrev={prevStep}
+            onNext={nextStep}
+            onFirst={() => goToStep(0)}
+            onLast={() => goToStep(steps.length - 1)}
+            onGoToStep={goToStep}
+            onReset={resetSort}
+          />
+              </div>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid gap-4">
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
-                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
-                  </div>
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Array Size</p>
-                    <p className="text-3xl font-bold text-drona-dark">{array.length}</p>
-                  </div>
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
-                    <p className="text-xl font-bold text-drona-dark">{sortSteps.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Visualization Panel */}
-          <div className="xl:col-span-3">
-            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">Array Visualization</CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
-                {array.length === 0 ? (
-                  <div className="flex items-center justify-center h-64 text-drona-gray">
-                    <div className="text-center">
-                      <SortAsc className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Generate an array to start visualization</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <div className="flex items-end justify-center gap-1 h-60">
-                      {array.map((value, index) => (
-                        <div
-                          key={index}
-                          className={`
-                            w-12 transition-all flex items-center justify-center font-bold text-white rounded-t-lg
-                            ${index === comparing ? 'bg-orange-500 scale-110 shadow-lg' : 
-                              index === currentMin ? 'bg-red-500 scale-110 shadow-lg' :
-                              index === currentIndex ? 'bg-purple-500 scale-110 shadow-lg' :
-                              sortedIndices.includes(index) ? 'bg-green-500' : 'bg-blue-500'}
-                          `}
-                          style={{ 
-                            height: `${getBarHeight(value)}px`,
-                          }}
-                        >
-                          {value}
-                        </div>
-                      ))}
-                    </div>
-
-                    {currentStep >= 0 && currentStep < sortSteps.length && (
-                      <div className="text-center p-4 rounded-xl border-2 bg-gradient-to-r from-blue-50 to-blue-100">
-                        <p className="text-lg font-semibold text-drona-dark">
-                          {sortSteps[currentStep].comparison}
-                        </p>
+              <div className="md:col-span-2">
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <Button onClick={handleStart} variant="default" size="sm" disabled={isRunning || array.length === 0}>
+                      <Play className="mr-2 h-3 w-3" />
+                      Run
+                    </Button>
+                    <Button onClick={() => setSpeed(speed)} variant="outline" disabled={!steps.length || !isRunning} size="sm">
+                      <Pause className="mr-2 h-3 w-3" />
+                      Pause
+                    </Button>
+                    <Button onClick={handleStart} variant="outline" disabled={!steps.length || isRunning || currentStep >= steps.length - 1} size="sm">
+                      <Play className="mr-2 h-3 w-3" />
+                      Resume
+                    </Button>
+                    <Button onClick={resetSort} variant="outline" disabled={!steps.length} size="sm">
+                      <SkipBack className="mr-2 h-3 w-3" />
+                      Reset
+                    </Button>
+                    <Button onClick={prevStep} variant="outline" disabled={!steps.length || currentStep <= -1} size="sm">
+                      <SkipBack className="h-3 w-3" />
+                    </Button>
+                    <Button onClick={nextStep} variant="outline" disabled={!steps.length || currentStep >= steps.length - 1} size="sm">
+                      <SkipForward className="h-3 w-3" />
+                    </Button>
+                    {steps.length > 0 && (
+                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                        <Timer className="mr-2 h-3 w-3 text-primary" />
+                        <span className="text-foreground font-medium text-sm">
+                          Step: {currentStep + 1} / {steps.length}
+                        </span>
                       </div>
                     )}
-                    
-                    <div className="flex justify-center gap-6">
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
-                        <span className="font-medium">Unsorted</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 bg-purple-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current Position</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
-                        <span className="font-medium">Current Min</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
-                        <span className="font-medium">Comparing</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
-                        <span className="font-medium">Sorted</span>
-                      </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium mb-2">Visualization</h3>
+            <SelectionSortVisualization
+              array={array}
+              currentIndex={currentIndex}
+              scanIndex={scanIndex}
+              minIndex={minIndex}
+              sortedIndices={sortedIndices}
+              comparisonText={comparisonText}
+            />
+                  </div>
+
+                  {steps.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <Card className="bg-secondary">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-muted-foreground">Comparisons</p>
+                          <p className="text-xl font-bold text-foreground">{comparisons}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-secondary">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <p className="text-xl font-bold text-foreground">{comparisonText || "Sorting..."}</p>
+                        </CardContent>
+                      </Card>
                     </div>
-                    
-                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
-                      <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">How Selection Sort Works</CardTitle>
+                  )}
+                </div>
+              </div>
+
+              <div className="md:col-span-3">
+                <div className="bg-card rounded-lg border border-border p-4 text-sm">
+                  <h2 className="text-lg font-semibold mb-2">About Selection Sort</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">Selection Sort is a simple sorting algorithm that finds the minimum element from the unsorted portion and places it at the beginning.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Find the minimum element in the unsorted portion of the array.</li>
-                          <li>Swap it with the first element of the unsorted portion.</li>
-                          <li>Move the boundary of the sorted portion one position to the right.</li>
-                          <li>Repeat until the entire array is sorted.</li>
-                        </ol>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Simple to understand</li>
+                          <li>In-place sorting</li>
+                          <li>Only O(n) swaps</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Time Complexity</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Best Case: O(n²)</li>
+                          <li>Average Case: O(n²)</li>
+                          <li>Worst Case: O(n²)</li>
+                        </ul>
                       </CardContent>
                     </Card>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="algorithm" className="mt-0">
+            <div className="bg-card rounded-lg border border-border p-6 md:p-8">
+              <div className="space-y-8">
+                <div className="border-b border-border pb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                    Selection Sort – Algorithm
+                  </h1>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-4xl">
+                    Selection Sort is a simple sorting algorithm that repeatedly finds the minimum element from the unsorted portion and places it at the beginning.
+                  </p>
+                </div>
+
+                <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary rounded-full"></span>
+                      Key Idea
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm text-foreground">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Find minimum element in unsorted portion</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Swap with first unsorted element</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Move boundary of sorted portion</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Repeat until entire array is sorted</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Step-by-Step)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">Start from the first element (index 0)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Find the minimum element in the remaining unsorted array</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">Swap the found minimum with the first unsorted element</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                          <span className="flex-1 pt-1">Move the boundary of sorted portion one position ahead</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">5</span>
+                          <span className="flex-1 pt-1">Repeat steps 2-4 for remaining unsorted elements</span>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode
+                  </h2>
+                  <Card className="bg-muted/50 border-border">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`SelectionSort(array):
+    n = array.length
+    
+    for i = 0 to n - 1:
+        minIndex = i
+        for j = i + 1 to n - 1:
+            if array[j] < array[minIndex]:
+                minIndex = j
+        swap(array[i], array[minIndex])
+    
+    return array`}
+                      </pre>
+                    </CardContent>
+                  </Card>
+            </div>
           </div>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
