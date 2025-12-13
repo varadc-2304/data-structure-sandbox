@@ -1,621 +1,318 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import Navbar from '@/components/Navbar';
-import { Card } from '@/components/ui/card';
-import { Play, Pause, RotateCcw, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
-
-interface BoardState {
-  grid: (0 | 1)[][];
-  queens: number[];
-  isSolution?: boolean;
-  solutionIndex?: number;
-  currentColumn?: number;
-  currentRow?: number;
-  isBacktracking?: boolean;
-  isConflict?: boolean;
-  message?: string;
-}
-
-interface Solution {
-  queens: number[];
-  grid: (0 | 1)[][];
-  steps: BoardState[];
-}
+import React from "react";
+import Navbar from "@/components/Navbar";
+import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import NQueensControls from "./nqueens/NQueensControls";
+import NQueensBoard from "./nqueens/NQueensBoard";
+import { useNQueensVisualizer } from "./nqueens/useNQueensVisualizer";
 
 const NQueensVisualizer = () => {
-  const [boardSize, setBoardSize] = useState<number>(4);
-  const [solutions, setSolutions] = useState<Solution[]>([]);
-  const [currentSolutionIndex, setCurrentSolutionIndex] = useState<number>(0);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [speed, setSpeed] = useState<number>(1);
-  const [currentStep, setCurrentStep] = useState<number>(-1);
-  const [solutionFound, setSolutionFound] = useState<boolean>(false);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  
-  useEffect(() => {
-    initializeBoard();
-  }, [boardSize]);
-  
-  const initializeBoard = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
-    setSolutionFound(false);
-    setCurrentSolutionIndex(0);
-    setIsInitialized(false);
-    
-    const allSolutions: Solution[] = [];
-    const initialBoard = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-    
-    // Find all solutions
-    findAllSolutions(initialBoard, 0, Array(boardSize).fill(-1), allSolutions);
-    
-    setSolutions(allSolutions);
-    setIsInitialized(true);
-  };
-  
-  const findAllSolutions = (
-    board: (0 | 1)[][],
-    col: number,
-    queens: number[],
-    allSolutions: Solution[]
-  ) => {
-    if (col >= boardSize) {
-      // Found a solution - generate detailed steps to reach it
-      const steps = generateDetailedStepsToSolution([...queens]);
-      allSolutions.push({
-        queens: [...queens],
-        grid: JSON.parse(JSON.stringify(board)),
-        steps: steps
-      });
-      return;
-    }
-    
-    for (let row = 0; row < boardSize; row++) {
-      if (isSafe(board, row, col)) {
-        board[row][col] = 1;
-        queens[col] = row;
-        
-        findAllSolutions(board, col + 1, queens, allSolutions);
-        
-        board[row][col] = 0;
-        queens[col] = -1;
-      }
-    }
-  };
-  
-  const generateDetailedStepsToSolution = (targetQueens: number[]): BoardState[] => {
-    const steps: BoardState[] = [];
-    
-    // Simulate the backtracking algorithm step by step
-    const solveWithSteps = (board: (0 | 1)[][], col: number, queens: number[]): boolean => {
-      // Base case: if all queens are placed
-      if (col >= boardSize) {
-        steps.push({
-          grid: JSON.parse(JSON.stringify(board)),
-          queens: [...queens],
-          isSolution: true,
-          message: `Solution found! All ${boardSize} queens placed successfully.`
-        });
-        return true;
-      }
-      
-      // Try placing queen in each row of current column
-      for (let row = 0; row < boardSize; row++) {
-        // Show attempt to place queen
-        steps.push({
-          grid: JSON.parse(JSON.stringify(board)),
-          queens: [...queens],
-          currentColumn: col,
-          currentRow: row,
-          message: `Trying to place queen at position (${row + 1}, ${col + 1})`
-        });
-        
-        if (isSafe(board, row, col)) {
-          // Place queen
-          board[row][col] = 1;
-          queens[col] = row;
-          
-          steps.push({
-            grid: JSON.parse(JSON.stringify(board)),
-            queens: [...queens],
-            currentColumn: col,
-            currentRow: row,
-            message: `Queen placed at (${row + 1}, ${col + 1}). Safe position!`
-          });
-          
-          // Recursively place queens in remaining columns
-          if (solveWithSteps(board, col + 1, queens)) {
-            return true;
-          }
-          
-          // If placing queen doesn't lead to solution, backtrack
-          steps.push({
-            grid: JSON.parse(JSON.stringify(board)),
-            queens: [...queens],
-            currentColumn: col,
-            currentRow: row,
-            isBacktracking: true,
-            message: `Backtracking from (${row + 1}, ${col + 1}). No solution found in this path.`
-          });
-          
-          board[row][col] = 0;
-          queens[col] = -1;
-          
-          steps.push({
-            grid: JSON.parse(JSON.stringify(board)),
-            queens: [...queens],
-            currentColumn: col,
-            isBacktracking: true,
-            message: `Queen removed from (${row + 1}, ${col + 1}). Trying next position.`
-          });
-        } else {
-          // Show conflict
-          steps.push({
-            grid: JSON.parse(JSON.stringify(board)),
-            queens: [...queens],
-            currentColumn: col,
-            currentRow: row,
-            isConflict: true,
-            message: `Cannot place queen at (${row + 1}, ${col + 1}). Conflicts with existing queens.`
-          });
-        }
-      }
-      
-      return false;
-    };
-    
-    const board = Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-    const queens = Array(boardSize).fill(-1);
-    
-    // Add initial step
-    steps.push({
-      grid: JSON.parse(JSON.stringify(board)),
-      queens: [...queens],
-      message: `Starting to solve ${boardSize}-Queens problem. Let's place queens column by column.`
-    });
-    
-    solveWithSteps(board, 0, queens);
-    
-    return steps;
-  };
-  
-  const isSafe = (board: (0 | 1)[][], row: number, col: number): boolean => {
-    // Check this row on left side
-    for (let i = 0; i < col; i++) {
-      if (board[row][i] === 1) {
-        return false;
-      }
-    }
-    
-    // Check upper diagonal on left side
-    for (let i = row, j = col; i >= 0 && j >= 0; i--, j--) {
-      if (board[i][j] === 1) {
-        return false;
-      }
-    }
-    
-    // Check lower diagonal on left side
-    for (let i = row, j = col; i < boardSize && j >= 0; i++, j--) {
-      if (board[i][j] === 1) {
-        return false;
-      }
-    }
-    
-    return true;
-  };
-  
-  const resetVisualization = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
-    setSolutionFound(false);
-  };
-  
-  const toggleRunning = () => {
-    if (!isInitialized || solutions.length === 0) return;
-    
-    if (currentStep >= getCurrentSteps().length - 1) {
-      setCurrentStep(-1);
-      setSolutionFound(false);
-    }
-    setIsRunning(!isRunning);
-  };
-
-  const nextStep = () => {
-    const steps = getCurrentSteps();
-    if (currentStep < steps.length - 1) {
-      const nextStepIndex = currentStep + 1;
-      setCurrentStep(nextStepIndex);
-      
-      if (steps[nextStepIndex]?.isSolution) {
-        setSolutionFound(true);
-        setIsRunning(false);
-      }
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > -1) {
-      setCurrentStep(prev => prev - 1);
-      setSolutionFound(false);
-    }
-  };
-
-  const skipToStart = () => {
-    setIsRunning(false);
-    setCurrentStep(-1);
-    setSolutionFound(false);
-  };
-
-  const skipToEnd = () => {
-    const steps = getCurrentSteps();
-    setIsRunning(false);
-    setCurrentStep(steps.length - 1);
-    if (steps[steps.length - 1]?.isSolution) {
-      setSolutionFound(true);
-    }
-  };
-
-  const goToStep = (stepIndex: number) => {
-    const steps = getCurrentSteps();
-    setIsRunning(false);
-    setCurrentStep(stepIndex);
-    setSolutionFound(stepIndex >= 0 && steps[stepIndex]?.isSolution);
-  };
-  
-  const changeSolution = (direction: 'prev' | 'next') => {
-    if (solutions.length === 0) return;
-    
-    setIsRunning(false);
-    setCurrentStep(-1);
-    setSolutionFound(false);
-    
-    if (direction === 'next') {
-      setCurrentSolutionIndex((prev) => (prev + 1) % solutions.length);
-    } else {
-      setCurrentSolutionIndex((prev) => (prev - 1 + solutions.length) % solutions.length);
-    }
-  };
-  
-  const getCurrentSteps = (): BoardState[] => {
-    if (!isInitialized || solutions.length === 0) return [];
-    return solutions[currentSolutionIndex]?.steps || [];
-  };
-  
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    const steps = getCurrentSteps();
-    
-    if (isRunning && currentStep < steps.length - 1) {
-      timer = setTimeout(() => {
-        const nextStepIndex = currentStep + 1;
-        setCurrentStep(nextStepIndex);
-        
-        if (steps[nextStepIndex]?.isSolution) {
-          setSolutionFound(true);
-          setIsRunning(false);
-        }
-      }, 2000 / speed);
-    } else if (currentStep >= steps.length - 1) {
-      setIsRunning(false);
-    }
-    
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isRunning, currentStep, speed, currentSolutionIndex, isInitialized]);
-  
-  // Current board to display
-  const getCurrentBoard = () => {
-    if (!isInitialized || solutions.length === 0) {
-      return Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-    }
-    
-    const steps = getCurrentSteps();
-    if (currentStep >= 0 && currentStep < steps.length) {
-      return steps[currentStep].grid;
-    }
-    
-    return Array(boardSize).fill(0).map(() => Array(boardSize).fill(0));
-  };
-
-  const getCurrentStepInfo = () => {
-    const steps = getCurrentSteps();
-    if (currentStep >= 0 && currentStep < steps.length) {
-      return steps[currentStep];
-    }
-    return null;
-  };
+  const {
+    state: { boardSize, solutions, currentSolutionIndex, isRunning, speed, currentStep, solutionFound, isInitialized },
+    actions: { setBoardSize, setSpeed, resetVisualization, toggleRunning, nextStep, prevStep, skipToStart, skipToEnd, goToStep, changeSolution, getCurrentSteps, getCurrentBoard, getCurrentStepInfo },
+  } = useNQueensVisualizer();
 
   const displayBoard = getCurrentBoard();
   const currentSteps = getCurrentSteps();
   const currentStepInfo = getCurrentStepInfo();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      
-      <div className="page-container mt-20">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="section-title mb-2">N-Queens Problem Visualization</h1>
-          <p className="text-drona-gray mb-8">
-            The N-Queens problem is to place N queens on an N×N chessboard so that no two queens threaten each other.
-            Thus, no two queens can share the same row, column, or diagonal.
-          </p>
-          
-          <div className="flex flex-col space-y-6">
-            <Card className="p-6">
-              <div className="flex flex-col space-y-4">
-                <div className="flex flex-wrap gap-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Board Size:</label>
-                    <select 
-                      value={boardSize} 
-                      onChange={(e) => {
-                        setBoardSize(parseInt(e.target.value));
-                      }}
-                      className="border border-gray-300 rounded px-2 py-1"
-                      disabled={isRunning}
-                    >
-                      {[4, 5, 6, 7, 8].map(n => (
-                        <option key={n} value={n}>{n}x{n}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium">Speed: {speed}x</label>
-                    <Slider
-                      value={[speed]}
-                      onValueChange={([value]) => setSpeed(value)}
-                      min={0.5}
-                      max={3}
-                      step={0.5}
-                      className="w-32"
-                      disabled={isRunning}
-                    />
-                  </div>
-                </div>
-
-                {/* Solution Selection */}
-                {isInitialized && solutions.length > 0 && (
-                  <div className="flex justify-center items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => changeSolution('prev')} 
-                      disabled={solutions.length <= 1 || isRunning}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Prev Solution
-                    </Button>
-                    <div className="text-center">
-                      <span className="font-semibold">Solution {currentSolutionIndex + 1} of {solutions.length}</span>
-                      <div className="text-sm text-gray-600">
-                        {currentSteps.length} detailed steps
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => changeSolution('next')} 
-                      disabled={solutions.length <= 1 || isRunning}
-                    >
-                      Next Solution <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Playback Controls */}
-                <div className="grid grid-cols-6 gap-2">
-                  <Button 
-                    onClick={skipToStart} 
-                    disabled={currentSteps.length === 0 || currentStep === -1}
-                    size="sm"
-                    variant="outline"
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={prevStep} 
-                    disabled={currentSteps.length === 0 || currentStep <= -1}
-                    size="sm"
-                    variant="outline"
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={toggleRunning} 
-                    disabled={currentSteps.length === 0 || solutionFound}
-                    size="sm"
-                    className="bg-drona-green hover:bg-drona-green/90"
-                  >
-                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  
-                  <Button 
-                    onClick={nextStep} 
-                    disabled={currentSteps.length === 0 || currentStep >= currentSteps.length - 1 || solutionFound}
-                    size="sm"
-                    variant="outline"
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={skipToEnd} 
-                    disabled={currentSteps.length === 0 || currentStep === currentSteps.length - 1}
-                    size="sm"
-                    variant="outline"
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    onClick={resetVisualization} 
-                    variant="outline" 
-                    disabled={isRunning}
-                    size="sm"
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Step Slider */}
-                {currentSteps.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">Step:</span>
-                      <Slider
-                        value={[currentStep + 1]}
-                        onValueChange={([value]) => goToStep(value - 1)}
-                        min={0}
-                        max={currentSteps.length}
-                        step={1}
-                        className="flex-1"
-                        disabled={isRunning}
-                      />
-                      <span className="text-sm text-gray-500 w-16">
-                        {currentStep + 1}/{currentSteps.length}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Current Step Message */}
-                {currentStepInfo && currentStepInfo.message && (
-                  <div className={`p-3 rounded-lg text-center font-medium ${
-                    currentStepInfo.isSolution 
-                      ? 'bg-green-100 text-green-800' 
-                      : currentStepInfo.isConflict
-                      ? 'bg-red-100 text-red-800'
-                      : currentStepInfo.isBacktracking
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {currentStepInfo.message}
-                  </div>
-                )}
-                
-                {/* Chessboard */}
-                <div className="flex justify-center">
-                  <div 
-                    className="grid border border-gray-800"
-                    style={{
-                      gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
-                      width: Math.min(400, boardSize * 50),
-                      height: Math.min(400, boardSize * 50)
-                    }}
-                  >
-                    {displayBoard.map((row, rowIdx) => (
-                      row.map((cell, colIdx) => {
-                        const isCurrentPosition = currentStepInfo && 
-                          currentStepInfo.currentRow === rowIdx && 
-                          currentStepInfo.currentColumn === colIdx;
-                        
-                        return (
-                          <div
-                            key={`${rowIdx}-${colIdx}`}
-                            className={`
-                              flex items-center justify-center
-                              ${(rowIdx + colIdx) % 2 === 0 ? 'bg-gray-100' : 'bg-gray-400'}
-                              ${isCurrentPosition && currentStepInfo.isConflict ? 'bg-red-300' : ''}
-                              ${isCurrentPosition && currentStepInfo.isBacktracking ? 'bg-yellow-300' : ''}
-                              ${isCurrentPosition && !currentStepInfo.isConflict && !currentStepInfo.isBacktracking ? 'bg-blue-300' : ''}
-                            `}
-                            style={{
-                              width: Math.min(50, 400 / boardSize),
-                              height: Math.min(50, 400 / boardSize)
-                            }}
-                          >
-                            {cell === 1 && (
-                              <span className="text-2xl">♛</span>
-                            )}
-                            {isCurrentPosition && cell === 0 && (
-                              <span className={`text-xl ${
-                                currentStepInfo.isConflict ? 'text-red-600' : 'text-blue-600'
-                              }`}>
-                                ●
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Status Display */}
-                <div className="text-center mt-4">
-                  {isInitialized && solutions.length > 0 && (
-                    <>
-                      {solutionFound && (
-                        <p className="font-bold text-green-600 text-lg">
-                          🎉 Solution {currentSolutionIndex + 1} Found! All {boardSize} queens are safely placed!
-                        </p>
-                      )}
-                      {currentStep >= currentSteps.length - 1 && currentSteps.length > 0 && !solutionFound && (
-                        <p className="font-bold text-blue-600">✅ Detailed simulation completed!</p>
-                      )}
-                    </>
-                  )}
-                  {!isInitialized && (
-                    <p className="text-gray-500">Calculating detailed solutions...</p>
-                  )}
-                  {isInitialized && solutions.length === 0 && (
-                    <p className="text-red-500">No solutions exist for {boardSize}x{boardSize} board</p>
-                  )}
-                </div>
-              </div>
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-3">Detailed Algorithm Visualization</h2>
-              <p className="text-drona-gray mb-4">
-                This visualization shows every step of the backtracking algorithm including:
-              </p>
-              
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-blue-300 rounded"></div>
-                    <span className="text-sm">Attempting to place queen</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-green-100 rounded"></div>
-                    <span className="text-sm">Successfully placed queen</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-red-300 rounded"></div>
-                    <span className="text-sm">Conflict detected</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-yellow-300 rounded"></div>
-                    <span className="text-sm">Backtracking step</span>
-                  </div>
-                </div>
-              </div>
-              
-              <h3 className="text-lg font-semibold mt-4 mb-2">Backtracking Process</h3>
-              <ol className="list-decimal list-inside space-y-2 text-drona-gray">
-                <li>Try to place a queen in each row of the current column</li>
-                <li>Check if the position conflicts with existing queens</li>
-                <li>If safe, place the queen and move to the next column</li>
-                <li>If no safe position exists, backtrack to the previous column</li>
-                <li>Remove the queen and try the next position</li>
-                <li>Continue until all queens are placed or all possibilities exhausted</li>
-              </ol>
-            </Card>
-          </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-20 pb-12">
+        <div className="mb-6">
+          <Link to="/dashboard/algorithms" className="inline-flex items-center text-primary hover:underline mb-4 font-medium transition-colors text-sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Algorithms
+          </Link>
+          <h1 className="text-3xl font-bold text-foreground mb-2">N-Queens Problem</h1>
+          <p className="text-muted-foreground text-sm">The N-Queens problem is to place N queens on an N×N chessboard so that no two queens threaten each other.</p>
         </div>
+
+        <Tabs defaultValue="visualizer" className="w-full">
+          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+            <TabsTrigger 
+              value="visualizer" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Visualizer
+            </TabsTrigger>
+            <TabsTrigger 
+              value="algorithm" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Algorithm
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="visualizer" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <NQueensControls
+                  boardSize={boardSize}
+                  solutions={solutions}
+                  currentSolutionIndex={currentSolutionIndex}
+                  isRunning={isRunning}
+                  speed={speed}
+                  currentStep={currentStep}
+                  currentStepsLength={currentSteps.length}
+                  solutionFound={solutionFound}
+                  isInitialized={isInitialized}
+                  onBoardSizeChange={setBoardSize}
+                  onSpeedChange={setSpeed}
+                  onChangeSolution={changeSolution}
+                  onToggleRunning={toggleRunning}
+                  onNextStep={nextStep}
+                  onPrevStep={prevStep}
+                  onSkipToStart={skipToStart}
+                  onSkipToEnd={skipToEnd}
+                  onReset={resetVisualization}
+                  onGoToStep={goToStep}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <Button onClick={toggleRunning} variant="default" size="sm" disabled={isRunning || !isInitialized}>
+                      <Play className="mr-2 h-3 w-3" />
+                      Run
+                    </Button>
+                    <Button onClick={toggleRunning} variant="outline" disabled={!currentSteps.length || !isRunning} size="sm">
+                      <Pause className="mr-2 h-3 w-3" />
+                      Pause
+                    </Button>
+                    <Button onClick={toggleRunning} variant="outline" disabled={!currentSteps.length || isRunning || currentStep >= currentSteps.length - 1} size="sm">
+                      <Play className="mr-2 h-3 w-3" />
+                      Resume
+                    </Button>
+                    <Button onClick={resetVisualization} variant="outline" disabled={!currentSteps.length} size="sm">
+                      <SkipBack className="mr-2 h-3 w-3" />
+                      Reset
+                    </Button>
+                    <Button onClick={prevStep} variant="outline" disabled={!currentSteps.length || currentStep <= 0} size="sm">
+                      <SkipBack className="h-3 w-3" />
+                    </Button>
+                    <Button onClick={nextStep} variant="outline" disabled={!currentSteps.length || currentStep >= currentSteps.length - 1} size="sm">
+                      <SkipForward className="h-3 w-3" />
+                    </Button>
+                    {currentSteps.length > 0 && (
+                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                        <Timer className="mr-2 h-3 w-3 text-primary" />
+                        <span className="text-foreground font-medium text-sm">
+                          Step: {currentStep + 1} / {currentSteps.length}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium mb-2">Visualization</h3>
+                    {currentStepInfo && currentStepInfo.message && (
+                      <div
+                        className={`p-3 rounded-lg text-center font-medium mb-4 ${
+                          currentStepInfo.isSolution
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                            : currentStepInfo.isConflict
+                            ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                            : currentStepInfo.isBacktracking
+                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
+                            : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                        }`}
+                      >
+                        {currentStepInfo.message}
+                      </div>
+                    )}
+                    <NQueensBoard boardSize={boardSize} displayBoard={displayBoard} currentStepInfo={currentStepInfo} />
+                  </div>
+
+                  {solutions.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <Card className="bg-secondary">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-muted-foreground">Solutions Found</p>
+                          <p className="text-xl font-bold text-foreground">{solutions.length}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-secondary">
+                        <CardContent className="p-3 flex flex-col items-center justify-center">
+                          <p className="text-sm text-muted-foreground">Current Solution</p>
+                          <p className="text-xl font-bold text-foreground">{currentSolutionIndex + 1}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="md:col-span-3">
+                <div className="bg-card rounded-lg border border-border p-4 text-sm">
+                  <h2 className="text-lg font-semibold mb-2">About N-Queens Problem</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">The N-Queens problem is a classic constraint satisfaction problem that uses backtracking to find all valid queen placements.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Backtracking algorithm</li>
+                          <li>Constraint satisfaction</li>
+                          <li>Exponential time complexity</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Time Complexity</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Best Case: O(n!)</li>
+                          <li>Average Case: O(n!)</li>
+                          <li>Worst Case: O(n!)</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="algorithm" className="mt-0">
+            <div className="bg-card rounded-lg border border-border p-6 md:p-8">
+              <div className="space-y-8">
+                <div className="border-b border-border pb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                    N-Queens Problem – Algorithm
+                  </h1>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-4xl">
+                    The N-Queens problem is a classic constraint satisfaction problem that uses backtracking to place N queens on an N×N chessboard.
+                  </p>
+                </div>
+
+                <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary rounded-full"></span>
+                      Key Idea
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm text-foreground">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Place queens one column at a time</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Check for conflicts with existing queens</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">If conflict, backtrack and try next position</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Continue until all queens are placed</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Step-by-Step)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">Start with column 0</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Try placing queen in each row of current column</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">Check if position is safe (no conflicts with existing queens)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                          <span className="flex-1 pt-1">If safe, place queen and move to next column</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">5</span>
+                          <span className="flex-1 pt-1">If no safe position, backtrack to previous column</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">6</span>
+                          <span className="flex-1 pt-1">Remove queen and try next row</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">7</span>
+                          <span className="flex-1 pt-1">Repeat until all queens are placed or all possibilities exhausted</span>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode
+                  </h2>
+                  <Card className="bg-muted/50 border-border">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`NQueens(board, col):
+    if col >= N:
+        return true  // All queens placed
+    
+    for row = 0 to N - 1:
+        if isSafe(board, row, col):
+            board[row][col] = QUEEN
+            
+            if NQueens(board, col + 1):
+                return true
+            
+            board[row][col] = EMPTY  // Backtrack
+    
+    return false
+
+isSafe(board, row, col):
+    // Check row
+    for i = 0 to col - 1:
+        if board[row][i] == QUEEN:
+            return false
+    
+    // Check upper diagonal
+    for i = row - 1, j = col - 1; i >= 0 and j >= 0; i--, j--:
+        if board[i][j] == QUEEN:
+            return false
+    
+    // Check lower diagonal
+    for i = row + 1, j = col - 1; i < N and j >= 0; i++, j--:
+        if board[i][j] == QUEEN:
+            return false
+    
+    return true`}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

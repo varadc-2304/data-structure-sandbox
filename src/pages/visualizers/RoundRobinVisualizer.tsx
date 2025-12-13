@@ -1,261 +1,107 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Navbar from '@/components/Navbar';
-import { Process, GanttChartItem, runRoundRobin } from '@/utils/cpuSchedulingUtils';
-import ProcessInput from '@/components/ProcessInput';
-import GanttChart from '@/components/GanttChart';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from "@/components/ui/use-toast";
-import { Play, Pause, SkipBack, SkipForward, Timer } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React from "react";
+import Navbar from "@/components/Navbar";
+import ProcessInput from "@/components/ProcessInput";
+import GanttChart from "@/components/GanttChart";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useRoundRobinVisualizer } from "./round-robin/useRoundRobinVisualizer";
 
 const RoundRobinVisualizer = () => {
-  const [processes, setProcesses] = useState<Process[]>([]);
-  const [ganttChart, setGanttChart] = useState<GanttChartItem[]>([]);
-  const [scheduledProcesses, setScheduledProcesses] = useState<Process[]>([]);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [totalTime, setTotalTime] = useState(0);
-  const [timeQuantum, setTimeQuantum] = useState(2);
-  const [avgWaitingTime, setAvgWaitingTime] = useState(0);
-  const [avgTurnaroundTime, setAvgTurnaroundTime] = useState(0);
-  
-  const { toast } = useToast();
-  const timerRef = useRef<number | null>(null);
-  
-  const runSimulation = () => {
-    if (processes.length === 0) {
-      toast({
-        title: "No processes",
-        description: "Add at least one process to run the simulation",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (timeQuantum <= 0) {
-      toast({
-        title: "Invalid time quantum",
-        description: "Time quantum must be a positive integer",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Run Round Robin algorithm
-    const { ganttChart: newGanttChart, scheduledProcesses: newScheduledProcesses } = 
-      runRoundRobin(processes, timeQuantum);
-    
-    setGanttChart(newGanttChart);
-    setScheduledProcesses(newScheduledProcesses);
-    
-    if (newGanttChart.length > 0) {
-      setTotalTime(newGanttChart[newGanttChart.length - 1].endTime);
-      setCurrentTime(0);
-      setIsSimulating(true);
-      
-      // Calculate average waiting and turnaround times
-      if (newScheduledProcesses.length > 0) {
-        const totalWaiting = newScheduledProcesses.reduce((sum, p) => sum + (p.waitingTime || 0), 0);
-        const totalTurnaround = newScheduledProcesses.reduce((sum, p) => sum + (p.turnaroundTime || 0), 0);
-        
-        setAvgWaitingTime(totalWaiting / newScheduledProcesses.length);
-        setAvgTurnaroundTime(totalTurnaround / newScheduledProcesses.length);
-      }
-    }
-    
-    toast({
-      title: "Simulation started",
-      description: `Round Robin scheduling algorithm with time quantum ${timeQuantum} is running`,
-    });
-  };
-  
-  const pauseSimulation = () => {
-    setIsSimulating(false);
-    
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  const {
+    state: { processes, ganttChart, scheduledProcesses, currentTime, isSimulating, totalTime, timeQuantum, avgWaitingTime, avgTurnaroundTime },
+    actions: { setProcesses, handleTimeQuantumChange, runSimulation, pauseSimulation, resumeSimulation, resetSimulation, stepBackward, stepForward },
+  } = useRoundRobinVisualizer();
 
-  const resumeSimulation = () => {
-    if (currentTime < totalTime) {
-      setIsSimulating(true);
-    }
-  };
-  
-  const resetSimulation = () => {
-    pauseSimulation();
-    setCurrentTime(0);
-  };
-  
-  const stepBackward = () => {
-    pauseSimulation();
-    setCurrentTime(prev => Math.max(0, prev - 1));
-  };
-  
-  const stepForward = () => {
-    pauseSimulation();
-    setCurrentTime(prev => Math.min(totalTime, prev + 1));
-  };
-  
-  const handleTimeQuantumChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value > 0) {
-      setTimeQuantum(value);
-    }
-  };
-  
-  // Timer effect
-  useEffect(() => {
-    if (isSimulating) {
-      if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
-      }
-      
-      timerRef.current = window.setInterval(() => {
-        setCurrentTime(prev => {
-          const next = prev + 1;
-          if (next > totalTime) {
-            pauseSimulation();
-            return totalTime;
-          }
-          return next;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (timerRef.current !== null) {
-        window.clearInterval(timerRef.current);
-      }
-    };
-  }, [isSimulating, totalTime]);
-  
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
           <div className="arena-chip mb-2">CPU Scheduling Visualization</div>
           <h1 className="text-3xl font-bold text-arena-dark mb-2">Round Robin Scheduling</h1>
-          <p className="text-arena-gray text-sm">
-            Visualize the Round Robin scheduling algorithm. Each process is assigned a fixed time slot in a cyclic way.
-          </p>
+          <p className="text-arena-gray text-sm">Visualize the Round Robin scheduling algorithm. Each process is assigned a fixed time slot in a cyclic way.</p>
         </div>
-        
+
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-4 w-full justify-start bg-arena-light p-1">
-            <TabsTrigger value="visualizer" className="data-[state=active]:bg-white data-[state=active]:text-arena-dark px-6">
+          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+            <TabsTrigger 
+              value="visualizer" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
               Visualizer
             </TabsTrigger>
-            <TabsTrigger value="algorithm" className="data-[state=active]:bg-white data-[state=active]:text-arena-dark px-6">
+            <TabsTrigger 
+              value="algorithm" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
               Algorithm
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="visualizer" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Process Input Section - Takes 1/3 of the screen */}
               <div className="md:col-span-1">
                 <ProcessInput processes={processes} setProcesses={setProcesses} />
-                
-                <div className="mt-4 bg-white rounded-xl shadow-sm p-4">
-                  <Label htmlFor="timeQuantum" className="text-sm font-medium mb-1 block">
-                    Time Quantum
-                  </Label>
-                  <Input
-                    id="timeQuantum"
-                    type="number"
-                    min="1"
-                    value={timeQuantum}
-                    onChange={handleTimeQuantumChange}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-arena-gray mt-1">
-                    The time slice each process gets before being preempted.
-                  </p>
-                </div>
+                <Card className="mt-3">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Time Quantum</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Input 
+                      id="timeQuantum" 
+                      type="number" 
+                      min="1" 
+                      value={timeQuantum} 
+                      onChange={handleTimeQuantumChange} 
+                      className="h-8 text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1.5">Time slice per process</p>
+                  </CardContent>
+                </Card>
               </div>
-              
-              {/* Visualization Controls and Gantt Chart - Takes 2/3 of the screen */}
+
               <div className="md:col-span-2">
                 <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
                   <div className="flex flex-wrap gap-3 mb-4">
-                    <Button 
-                      onClick={runSimulation} 
-                      variant="default"
-                      size="sm"
-                    >
+                    <Button onClick={runSimulation} variant="default" size="sm" disabled={isSimulating}>
                       <Play className="mr-2 h-3 w-3" />
                       Run
                     </Button>
-                    
-                    <Button 
-                      onClick={pauseSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || !isSimulating}
-                      size="sm"
-                    >
+                    <Button onClick={pauseSimulation} variant="outline" disabled={!ganttChart.length || !isSimulating} size="sm">
                       <Pause className="mr-2 h-3 w-3" />
                       Pause
                     </Button>
-
-                    <Button 
-                      onClick={resumeSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || isSimulating || currentTime >= totalTime}
-                      size="sm"
-                    >
+                    <Button onClick={resumeSimulation} variant="outline" disabled={!ganttChart.length || isSimulating || currentTime >= totalTime} size="sm">
                       <Play className="mr-2 h-3 w-3" />
                       Resume
                     </Button>
-                    
-                    <Button 
-                      onClick={resetSimulation} 
-                      variant="outline" 
-                      disabled={!ganttChart.length}
-                      size="sm"
-                    >
+                    <Button onClick={resetSimulation} variant="outline" disabled={!ganttChart.length} size="sm">
                       <SkipBack className="mr-2 h-3 w-3" />
                       Reset
                     </Button>
-                    
-                    <Button 
-                      onClick={stepBackward} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || currentTime <= 0}
-                      size="sm"
-                    >
+                    <Button onClick={stepBackward} variant="outline" disabled={!ganttChart.length || currentTime <= 0} size="sm">
                       <SkipBack className="h-3 w-3" />
                     </Button>
-                    
-                    <Button 
-                      onClick={stepForward} 
-                      variant="outline" 
-                      disabled={!ganttChart.length || currentTime >= totalTime}
-                      size="sm"
-                    >
+                    <Button onClick={stepForward} variant="outline" disabled={!ganttChart.length || currentTime >= totalTime} size="sm">
                       <SkipForward className="h-3 w-3" />
                     </Button>
-                    
                     <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
                       <Timer className="mr-2 h-3 w-3 text-arena-red" />
-                      <span className="text-arena-dark font-medium text-sm">Time: {currentTime} / {totalTime}</span>
+                      <span className="text-arena-dark font-medium text-sm">
+                        Time: {currentTime} / {totalTime}
+                      </span>
                     </div>
                   </div>
-                  
-                  {/* Gantt Chart */}
+
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
                     <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
                   </div>
-                  
-                  {/* Performance Metrics */}
+
                   {scheduledProcesses.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-arena-light">
@@ -272,8 +118,7 @@ const RoundRobinVisualizer = () => {
                       </Card>
                     </div>
                   )}
-                  
-                  {/* Scheduled Processes */}
+
                   {scheduledProcesses.length > 0 && (
                     <div>
                       <h3 className="text-sm font-medium mb-2">Scheduled Processes</h3>
@@ -314,14 +159,11 @@ const RoundRobinVisualizer = () => {
                   )}
                 </div>
               </div>
-              
-              {/* Algorithm Info - Takes full width at the bottom but smaller */}
+
               <div className="md:col-span-3">
                 <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
                   <h2 className="text-lg font-semibold mb-2">About Round Robin Scheduling</h2>
-                  <p className="text-arena-gray mb-3 text-sm">
-                    Round Robin (RR) is a CPU scheduling algorithm where each process is assigned a fixed time slot (time quantum) in a cyclic way. It is designed especially for time-sharing systems.
-                  </p>
+                  <p className="text-arena-gray mb-3 text-sm">Round Robin (RR) is a CPU scheduling algorithm where each process is assigned a fixed time slot (time quantum) in a cyclic way. It is designed especially for time-sharing systems.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <Card className="bg-arena-light">
                       <CardHeader className="py-2 px-3">
@@ -354,148 +196,255 @@ const RoundRobinVisualizer = () => {
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="algorithm" className="mt-0">
-            <div className="bg-white rounded-2xl shadow-md p-6 animate-scale-in">
-              <h2 className="text-xl font-semibold mb-4">Round Robin Algorithm</h2>
-              
-              <div className="prose max-w-none text-arena-gray">
-                <h3 className="text-lg font-medium text-arena-dark">How Round Robin Works</h3>
-                <p>
-                  Round Robin (RR) is a CPU scheduling algorithm that is especially designed for time-sharing systems.
-                  In Round Robin scheduling, each process is assigned a fixed time slot called a time quantum or time slice.
-                  Once a process has executed for the given time quantum, it is preempted and added to the end of the ready queue,
-                  allowing the next process in the queue to execute.
-                </p>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Algorithm Implementation</h3>
-                <div className="bg-arena-light rounded-lg p-4 my-4">
-                  <h4 className="font-medium mb-2">Round Robin Pseudocode</h4>
-                  <pre className="bg-black text-white p-3 rounded overflow-x-auto"><code>{`function runRoundRobin(processes, timeQuantum) {
-  let processQueue = copy(processes)
-  let readyQueue = []
-  let currentTime = 0
-  let scheduledProcesses = Array(processes.length).fill(null)
-  let ganttChart = []
-  
-  // Sort by arrival time
-  processQueue.sort((a, b) => a.arrivalTime - b.arrivalTime)
-  
-  // While there are processes to execute
-  while (processQueue.length > 0 || readyQueue.length > 0) {
-    // Move newly arrived processes to ready queue
-    while (processQueue.length > 0 && processQueue[0].arrivalTime <= currentTime) {
-      readyQueue.push(processQueue.shift())
-    }
-    
-    if (readyQueue.length === 0) {
-      // No process in ready queue, jump to next arrival
-      if (processQueue.length > 0) {
-        currentTime = processQueue[0].arrivalTime
-        continue
-      } else {
-        break // No more processes to execute
-      }
-    }
-    
-    // Get next process from ready queue
-    let currentProcess = readyQueue.shift()
-    
-    // If process is starting for the first time
-    if (currentProcess.startTime === undefined) {
-      currentProcess.startTime = currentTime
-    }
-    
-    // Calculate execution time for this round
-    let executionTime = Math.min(timeQuantum, currentProcess.remainingTime)
-    
-    // Add to Gantt chart
-    ganttChart.push({
-      process: currentProcess.id,
-      startTime: currentTime,
-      endTime: currentTime + executionTime
-    })
-    
-    // Update current time and remaining time
-    currentTime += executionTime
-    currentProcess.remainingTime -= executionTime
-    
-    // Move newly arrived processes to ready queue
-    while (processQueue.length > 0 && processQueue[0].arrivalTime <= currentTime) {
-      readyQueue.push(processQueue.shift())
-    }
-    
-    // If process still has remaining time, put it back in ready queue
-    if (currentProcess.remainingTime > 0) {
-      readyQueue.push(currentProcess)
-    } else {
-      // Process completed
-      currentProcess.finishTime = currentTime
-      currentProcess.turnaroundTime = currentProcess.finishTime - currentProcess.arrivalTime
-      currentProcess.waitingTime = currentProcess.turnaroundTime - currentProcess.burstTime
-      
-      // Save completed process
-      scheduledProcesses[findIndex(processes, currentProcess.id)] = currentProcess
-    }
-  }
-  
-  return { ganttChart, scheduledProcesses: scheduledProcesses.filter(p => p !== null) }
-}`}</code></pre>
+            <div className="bg-card rounded-lg border border-border shadow-lg p-6 md:p-8">
+              <div className="space-y-8">
+                {/* Header */}
+                <div className="border-b border-border pb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                    Round Robin (RR) CPU Scheduling – Algorithm
+                  </h1>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-4xl">
+                    Round Robin is a preemptive CPU scheduling algorithm designed for time-sharing systems, where each process gets a fixed time quantum in a cyclic order.
+                  </p>
                 </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Performance Metrics</h3>
-                <div className="bg-arena-light rounded-lg p-4 my-4">
-                  <h4 className="font-medium mb-2">Key Metrics</h4>
-                  <ul className="list-disc pl-5">
-                    <li><strong>Waiting Time</strong>: Sum of time periods where process was in ready queue and not executing</li>
-                    <li><strong>Turnaround Time</strong>: Process completion time - Process arrival time</li>
-                    <li><strong>Response Time</strong>: First time a process gets CPU - Process arrival time</li>
-                    <li><strong>Context Switches</strong>: Number of times CPU switched between processes</li>
-                  </ul>
-                </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Time Quantum Selection</h3>
-                <p>
-                  The time quantum is a critical parameter in Round Robin scheduling:
-                </p>
-                <ul className="list-disc pl-5 mt-2">
-                  <li><strong>Large time quantum</strong>: Approaches FCFS behavior, with fewer context switches but potentially longer waiting times for short processes</li>
-                  <li><strong>Small time quantum</strong>: Better responsiveness but increased context switching overhead</li>
-                  <li><strong>Optimal time quantum</strong>: Typically should be slightly larger than the majority of CPU bursts to balance throughput and response time</li>
-                </ul>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Advantages and Disadvantages</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  <div className="bg-arena-light p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Advantages</h4>
-                    <ul className="list-disc pl-5">
-                      <li>Fair CPU allocation to all processes</li>
-                      <li>Prevents starvation of processes</li>
-                      <li>Good for time-sharing systems</li>
-                      <li>Better response time for short processes</li>
+
+                {/* Key Idea */}
+                <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary rounded-full"></span>
+                      Key Idea
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm text-foreground">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">CPU is allocated for a fixed time slice (time quantum)</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Processes are executed in a circular queue</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Preemptive: process is paused if quantum expires</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Ensures fairness among all processes</span>
+                      </li>
                     </ul>
-                  </div>
-                  <div className="bg-arena-light p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">Disadvantages</h4>
-                    <ul className="list-disc pl-5">
-                      <li>Context switching overhead can be significant</li>
-                      <li>Higher average turnaround time than SJF</li>
-                      <li>Performance heavily depends on time quantum selection</li>
-                      <li>Not optimal for processes with widely varying CPU bursts</li>
-                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Algorithm Steps */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Step-by-Step)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">Initialize a ready queue (FIFO)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Set time quantum (q)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">Insert all arrived processes into the ready queue</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                          <div className="flex-1 pt-1">
+                            <span className="block mb-2">While the queue is not empty:</span>
+                            <ul className="ml-6 space-y-2 text-muted-foreground list-disc">
+                              <li>Dequeue the first process</li>
+                              <li>If remaining burst time &gt; q:</li>
+                              <ul className="ml-4 mt-1 space-y-1 list-disc">
+                                <li>Execute for q units</li>
+                                <li>Subtract q from remaining time</li>
+                                <li>Enqueue process back</li>
+                              </ul>
+                              <li>Else:</li>
+                              <ul className="ml-4 mt-1 space-y-1 list-disc">
+                                <li>Execute till completion</li>
+                                <li>Calculate CT, TAT, WT</li>
+                              </ul>
+                            </ul>
+                          </div>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Pseudocode */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode
+                  </h2>
+                  <Card className="bg-muted/50 border-border shadow-sm">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`RoundRobin(processes, q):
+    currentTime = 0
+    readyQueue = empty queue
+
+    while there are unfinished processes:
+        add all processes with ArrivalTime ≤ currentTime
+            and not in queue to readyQueue
+
+        if readyQueue is empty:
+            currentTime++
+            continue
+
+        process = dequeue(readyQueue)
+
+        if process.RemainingTime > q:
+            execute process for q units
+            currentTime += q
+            process.RemainingTime -= q
+            enqueue process back into readyQueue
+        else:
+            execute process for RemainingTime units
+            currentTime += process.RemainingTime
+            process.RemainingTime = 0
+            process.CompletionTime = currentTime`}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Time Calculations */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Time Calculations
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Completion Time (CT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">CT = Time when process finishes execution</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Turnaround Time (TAT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">TAT = CT − Arrival Time</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary/50 border-border shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold text-foreground">Waiting Time (WT)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm font-medium text-primary">WT = TAT − Burst Time</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-                
-                <h3 className="text-lg font-medium text-arena-dark mt-6">Real-world Applications</h3>
-                <p>
-                  Round Robin is widely used in various operating systems and environments:
-                </p>
-                <ul className="list-disc pl-5 mt-2">
-                  <li>Time-sharing operating systems like Unix, Linux, and Windows</li>
-                  <li>Network schedulers for fair bandwidth allocation</li>
-                  <li>Process scheduling in multitasking environments</li>
-                  <li>As part of multi-level queue and multi-level feedback queue schedulers</li>
-                </ul>
+
+                {/* Advantages and Disadvantages */}
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Advantages & Disadvantages
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                          <span className="text-green-600 dark:text-green-400">✓</span>
+                          Advantages
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2.5 text-sm text-foreground">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Fair CPU allocation</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                            <span>No starvation</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Best for time-sharing systems</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-red-200 dark:border-red-800 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                          <span className="text-red-600 dark:text-red-400">✗</span>
+                          Disadvantages
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2.5 text-sm text-foreground">
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Context switching overhead</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Performance depends on time quantum</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Too small → too many switches</span>
+                          </li>
+                          <li className="flex items-start gap-2.5">
+                            <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 text-base">•</span>
+                            <span>Too large → behaves like FCFS</span>
+                          </li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Where Round Robin is Used */}
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800 shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
+                      Where Round Robin is Used
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2.5 text-sm text-foreground">
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Operating systems</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Time-sharing environments</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5 text-base">•</span>
+                        <span>Interactive systems (terminals, servers)</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </TabsContent>

@@ -1,32 +1,40 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 const Hero = () => {
   return (
-    <div className="relative overflow-hidden hero-gradient">
-      {/* Enhanced background elements */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-radial from-drona-green/10 to-transparent rounded-full blur-3xl animate-float" />
-      <div className="absolute top-1/2 -left-48 w-96 h-96 bg-gradient-radial from-drona-green/15 to-transparent rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-gradient-radial from-blue-500/5 to-transparent rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
-      
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        <div className="pt-32 pb-16 md:pt-40 md:pb-20">
-          <div className="text-center">
-            <div className="drona-chip mb-6 animate-bounce-in">
-              <Sparkles className="w-4 h-4 inline mr-2" />
-              Interactive Visualizations
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-drona-dark sm:text-5xl md:text-7xl animate-slide-in leading-tight">
+    <div className="relative overflow-hidden bg-gradient-to-b from-background via-background to-secondary/30">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(142,76%,36%,0.03),transparent_50%)]"></div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative">
+        <div className="pt-20 pb-12 md:pt-28 md:pb-16">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
               Visualize &amp; Learn
-              <span className="block text-gradient mt-2">Computer Science</span>
+              <span className="block text-primary mt-2">Computer Science</span>
             </h1>
-            <p className="mt-6 max-w-4xl mx-auto text-xl text-drona-gray sm:text-2xl md:mt-8 leading-relaxed animate-fade-in font-medium" style={{ animationDelay: '0.2s' }}>
-              Master data structures and algorithms through 
-              <span className="text-drona-green font-bold"> immersive interactive visualizations</span> 
+            <p className="text-base text-muted-foreground sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-6">
+              Master data structures and algorithms through interactive visualizations 
               that make complex concepts crystal clear.
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>100% Free</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>No Ads</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>Open Source</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>Privacy Focused</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

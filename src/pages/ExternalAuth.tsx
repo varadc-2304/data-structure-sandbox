@@ -123,7 +123,8 @@ const ExternalAuth = () => {
         // Set user in context
         setUser({
           id: user_data.id,
-          email: user_data.email
+          email: user_data.email,
+          name: user_data.name || user_data.email?.split('@')[0] || 'User'
         });
 
         setStatus('Authentication successful! Redirecting...');
@@ -159,7 +160,7 @@ const ExternalAuth = () => {
         <p className="text-gray-600">{status}</p>
         {!isProcessing && (
           <button 
-            onClick={() => navigate('/login')} 
+            onClick={() => navigate('/')} 
             className="mt-4 px-4 py-2 bg-drona-green text-white rounded hover:bg-drona-dark transition-colors"
           >
             Go to Login

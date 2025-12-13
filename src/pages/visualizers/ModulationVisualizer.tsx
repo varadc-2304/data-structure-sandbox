@@ -229,7 +229,7 @@ const ModulationVisualizer = () => {
                         cx={point.x}
                         cy={-point.y}
                         r="0.1"
-                        fill={index === Math.floor(currentStep / 4) % constellation.length ? "#22c55e" : "#3b82f6"}
+                        fill={index === Math.floor(currentStep / 4) % constellation.length ? "#628141" : "#3b82f6"}
                         stroke="#fff"
                         strokeWidth="0.02"
                       />
@@ -288,7 +288,7 @@ const ModulationVisualizer = () => {
                     y1="0"
                     x2={currentStep * 25}
                     y2="200"
-                    stroke="#22c55e"
+                    stroke="#628141"
                     strokeWidth="2"
                     strokeDasharray="5,5"
                   />

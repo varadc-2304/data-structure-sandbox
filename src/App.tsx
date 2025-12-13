@@ -5,14 +5,20 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import ExternalAuth from "./pages/ExternalAuth";
 import NotFound from "./pages/NotFound";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import About from "./pages/About";
+import Landing from "./pages/Landing";
 import { useIframe } from "./hooks/useIframe";
 import { useEffect } from "react";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Main category pages
 import DataStructures from "./pages/DataStructures";
@@ -23,11 +29,20 @@ import DiskScheduling from "./pages/DiskScheduling";
 import ECEAlgorithms from "./pages/ECEAlgorithms";
 import AIAlgorithms from "./pages/AIAlgorithms";
 
-// Data Structure Visualizers
+// Data Structure Category Pages
+import ArraysPage from "./pages/categories/ArraysPage";
+import LinkedListsPage from "./pages/categories/LinkedListsPage";
+import QueuesPage from "./pages/categories/QueuesPage";
+import TreesPage from "./pages/categories/TreesPage";
+import StacksPage from "./pages/categories/StacksPage";
+import GraphsPage from "./pages/categories/GraphsPage";
+
+// Data Structure Visualizers (kept for backward compatibility if needed)
 import ArrayVisualizer from "./pages/visualizers/ArrayVisualizer";
 import LinkedListVisualizer from "./pages/visualizers/LinkedListVisualizer";
 import StackVisualizer from "./pages/visualizers/StackVisualizer";
 import QueueVisualizer from "./pages/visualizers/QueueVisualizer";
+import CircularQueueVisualizer from "./pages/visualizers/CircularQueueVisualizer";
 import DequeVisualizer from "./pages/visualizers/DequeVisualizer";
 import BinaryTreeVisualizer from "./pages/visualizers/BinaryTreeVisualizer";
 import BSTVisualizer from "./pages/visualizers/BSTVisualizer";
@@ -104,15 +119,18 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Redirect root to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
+        <ScrollToTop />
+        <Routes>
+          {/* Redirect root to dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
         <Route path="/auth" element={<Auth />} />
-        
         <Route path="/external-auth" element={<ExternalAuth />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/about" element={<About />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={<ProtectedRoute />}>
@@ -127,11 +145,23 @@ const AppContent = () => {
           <Route path="ece-algorithms" element={<ECEAlgorithms />} />
           <Route path="ai-algorithms" element={<AIAlgorithms />} />
 
-          {/* Data Structure Visualizers */}
+          {/* Data Structure Category Pages (with tabs) */}
+          <Route path="data-structures/arrays" element={<ArraysPage />} />
+          <Route path="data-structures/linked-lists" element={<LinkedListsPage />} />
+          <Route path="data-structures/linked-lists/:tab" element={<LinkedListsPage />} />
+          {/* direct linked-list routes for deep links */}
+          <Route path="data-structures/linked-list/:tab" element={<LinkedListsPage />} />
+          <Route path="data-structures/queues" element={<QueuesPage />} />
+          <Route path="data-structures/trees" element={<TreesPage />} />
+          <Route path="data-structures/stacks" element={<StacksPage />} />
+          <Route path="data-structures/graphs" element={<GraphsPage />} />
+
+          {/* Legacy routes for backward compatibility */}
           <Route path="data-structures/array" element={<ArrayVisualizer />} />
           <Route path="data-structures/linked-list" element={<LinkedListVisualizer />} />
           <Route path="data-structures/stack" element={<StackVisualizer />} />
           <Route path="data-structures/queue" element={<QueueVisualizer />} />
+          <Route path="data-structures/circular-queue" element={<CircularQueueVisualizer />} />
           <Route path="data-structures/deque" element={<DequeVisualizer />} />
           <Route path="data-structures/binary-tree" element={<BinaryTreeVisualizer />} />
           <Route path="data-structures/bst" element={<BSTVisualizer />} />
@@ -197,13 +227,15 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <AppContent />
-      </AuthProvider>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <AppContent />
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 // This is for testing

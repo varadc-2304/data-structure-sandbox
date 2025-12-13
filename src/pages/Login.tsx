@@ -4,74 +4,46 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { loginSchema, changePasswordSchema, type LoginFormData, type ChangePasswordFormData } from '@/lib/validation';
+import { Shield, Lock } from 'lucide-react';
+import { Chrome } from 'lucide-react';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isChangePassword, setIsChangePassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const { setUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setLoading(true);
-    setErrors({});
-
     try {
-      // Validate input data
-      const formData: LoginFormData = { username, password };
-      const validationResult = loginSchema.safeParse(formData);
+      // Get the current origin for the redirect URL
+      const redirectUrl = `${window.location.origin}/auth`;
       
-      if (!validationResult.success) {
-        const fieldErrors: Record<string, string> = {};
-        validationResult.error.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            fieldErrors[issue.path[0] as string] = issue.message;
-          }
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-
-      // Call the authentication edge function
-      const { data: authResult, error } = await supabase.functions.invoke('authenticate', {
-        body: {
-          email: username.trim().toLowerCase(),
-          password: password,
-          action: 'login'
-        }
+      // Initiate Google OAuth flow
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
 
-      if (error || !authResult?.success) {
+      if (error) {
+        console.error('Google OAuth error:', error);
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: authResult?.error || "Invalid email or password",
+          description: error.message || "Failed to initiate Google login",
         });
-        return;
+        setLoading(false);
       }
-
-      // Set user in context
-      setUser({
-        id: authResult.user.id,
-        email: authResult.user.email
-      });
-
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
-
-      navigate('/dashboard', { replace: true });
+      // If successful, the user will be redirected to Google
+      // and then back to /auth route
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -79,170 +51,76 @@ const Login = () => {
         title: "Login Failed",
         description: "An error occurred during login",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({});
-
-    try {
-      // Validate input data
-      const formData: ChangePasswordFormData = { 
-        username, 
-        currentPassword: password, 
-        newPassword 
-      };
-      const validationResult = changePasswordSchema.safeParse(formData);
-      
-      if (!validationResult.success) {
-        const fieldErrors: Record<string, string> = {};
-        validationResult.error.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            fieldErrors[issue.path[0] as string] = issue.message;
-          }
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-
-      // Call the authentication edge function for password change
-      const { data: changeResult, error } = await supabase.functions.invoke('authenticate', {
-        body: {
-          email: username.trim().toLowerCase(),
-          password: password,
-          newPassword: newPassword,
-          action: 'changePassword'
-        }
-      });
-
-      if (error || !changeResult?.success) {
-        toast({
-          variant: "destructive",
-          title: "Update Failed",
-          description: changeResult?.error || "Failed to update password",
-        });
-        return;
-      }
-
-      toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated",
-      });
-
-      // Reset form and go back to login
-      setUsername('');
-      setPassword('');
-      setNewPassword('');
-      setErrors({});
-      setIsChangePassword(false);
-    } catch (error) {
-      console.error('Change password error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An error occurred while changing password",
-      });
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/6f3dd66f-503a-45c3-9ff8-6a169b14f030.png" 
-              alt="Drona Logo" 
-              className="w-16 h-16"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border">
+        <CardHeader className="text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <img 
+                src="/lovable-uploads/6f3dd66f-503a-45c3-9ff8-6a169b14f030.png" 
+                alt="Drona Logo" 
+                className="w-12 h-12"
+              />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-drona-green">
-            {isChangePassword ? 'Change Password' : 'Welcome to Drona'}
+          <CardTitle className="text-2xl font-bold text-foreground">
+            Welcome to Drona
           </CardTitle>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Sign in to access interactive computer science visualizations
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+              <div className="flex items-center gap-1">
+                <Shield className="h-3 w-3 text-primary" />
+                <span>Secure</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Lock className="h-3 w-3 text-primary" />
+                <span>Encrypted</span>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isChangePassword ? handleChangePassword : handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Email</Label>
-              <Input
-                id="username"
-                type="email"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your email address"
-                required
-                className={errors.username ? 'border-red-500' : ''}
-              />
-              {errors.username && (
-                <p className="text-sm text-red-500">{errors.username}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">
-                {isChangePassword ? 'Current Password' : 'Password'}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={isChangePassword ? "Enter your current password" : "Enter your password"}
-                required
-                className={errors.password || errors.currentPassword ? 'border-red-500' : ''}
-              />
-              {(errors.password || errors.currentPassword) && (
-                <p className="text-sm text-red-500">{errors.password || errors.currentPassword}</p>
-              )}
-            </div>
-            {isChangePassword && (
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter your new password (min 8 chars, mixed case, number)"
-                  required
-                  className={errors.newPassword ? 'border-red-500' : ''}
-                />
-                {errors.newPassword && (
-                  <p className="text-sm text-red-500">{errors.newPassword}</p>
-                )}
-              </div>
-            )}
+          <div className="space-y-6">
             <Button 
-              type="submit" 
-              className="w-full" 
+              onClick={handleGoogleLogin}
+              className="w-full h-12 text-base flex items-center justify-center gap-3"
               disabled={loading}
+              variant="outline"
             >
-              {loading 
-                ? (isChangePassword ? 'Updating...' : 'Logging in...') 
-                : (isChangePassword ? 'Update Password' : 'Login')
-              }
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <Chrome className="h-5 w-5" />
+                  <span>Continue with Google</span>
+                </>
+              )}
             </Button>
-          </form>
+          </div>
           
-          <div className="mt-4 text-center">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsChangePassword(!isChangePassword);
-                setUsername('');
-                setPassword('');
-                setNewPassword('');
-                setErrors({});
-              }}
-              className="text-sm"
-            >
-              {isChangePassword ? 'Back to Login' : 'Change Password'}
-            </Button>
+          {/* Security Indicators */}
+          <div className="mt-6 pt-6 border-t border-border">
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                <span>Secure Login</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                <span>Encrypted</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

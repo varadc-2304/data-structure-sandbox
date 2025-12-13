@@ -1,434 +1,155 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Slider } from '@/components/ui/slider';
-
-interface Item {
-  id: number;
-  name: string;
-  weight: number;
-  value: number;
-}
-
-interface KnapsackStep {
-  dpTable: number[][];
-  currentItem: number;
-  currentWeight: number;
-  selectedItems: number[];
-}
+import React from "react";
+import { Package, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Timer } from "lucide-react";
+import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useKnapsackVisualizer } from "./knapsack/useKnapsackVisualizer";
 
 const ZeroOneKnapsackVisualizer = () => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [capacity, setCapacity] = useState<number>(10);
-  const [customItemsInput, setCustomItemsInput] = useState<string>('');
-  const [dpTable, setDpTable] = useState<number[][]>([[]]);
-  const [currentItem, setCurrentItem] = useState<number>(-1);
-  const [currentWeight, setCurrentWeight] = useState<number>(0);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [knapsackSteps, setKnapsackSteps] = useState<KnapsackStep[]>([]);
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [comparisons, setComparisons] = useState(0);
-
-  useEffect(() => {
-    if (!isRunning) return;
-    
-    if (currentStep >= knapsackSteps.length - 1) {
-      setIsRunning(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      nextStep();
-    }, 2000 / speed);
-
-    return () => clearTimeout(timer);
-  }, [isRunning, currentStep, knapsackSteps.length, speed]);
-
-  const generateRandomItems = () => {
-    const newItems = Array.from({ length: 5 }, (_, i) => ({
-      id: i + 1,
-      name: `Item ${i + 1}`,
-      weight: Math.floor(Math.random() * 8) + 1,
-      value: Math.floor(Math.random() * 20) + 1,
-    }));
-    setItems(newItems);
-    resetKnapsack();
-  };
-
-  const generateCustomItems = () => {
-    if (!customItemsInput.trim()) return;
-    
-    try {
-      const newItems = customItemsInput
-        .split(';')
-        .filter(Boolean)
-        .map((itemStr, i) => {
-          const [name, weightStr, valueStr] = itemStr.split(',').map(s => s.trim());
-          const weight = parseInt(weightStr || '');
-          const value = parseInt(valueStr || '');
-          
-          if (!name || isNaN(weight) || isNaN(value)) {
-            throw new Error('Invalid item format');
-          }
-          
-          return {
-            id: i + 1,
-            name,
-            weight,
-            value,
-          };
-        });
-      
-      setItems(newItems);
-      setCustomItemsInput('');
-      resetKnapsack();
-    } catch (error) {
-      console.error("Invalid items format");
-    }
-  };
-
-  const resetKnapsack = () => {
-    setDpTable([[]]);
-    setCurrentItem(-1);
-    setCurrentWeight(0);
-    setSelectedItems([]);
-    setIsRunning(false);
-    setKnapsackSteps([]);
-    setCurrentStep(-1);
-    setComparisons(0);
-  };
-
-  const calculateKnapsackSteps = (items: Item[], capacity: number) => {
-    const steps: KnapsackStep[] = [];
-    const n = items.length;
-    let compCount = 0;
-    
-    const initialDpTable = Array(n + 1).fill(null).map(() => Array(capacity + 1).fill(0));
-    steps.push({
-      dpTable: initialDpTable.map(row => [...row]),
-      currentItem: -1,
-      currentWeight: 0,
-      selectedItems: [],
-    });
-    
-    const dpTable = Array(n + 1).fill(null).map(() => Array(capacity + 1).fill(0));
-    
-    for (let i = 1; i <= n; i++) {
-      for (let w = 0; w <= capacity; w++) {
-        compCount++;
-        
-        const item = items[i - 1];
-        
-        if (item.weight <= w) {
-          dpTable[i][w] = Math.max(
-            item.value + dpTable[i - 1][w - item.weight],
-            dpTable[i - 1][w]
-          );
-        } else {
-          dpTable[i][w] = dpTable[i - 1][w];
-        }
-        
-        steps.push({
-          dpTable: dpTable.map(row => [...row]),
-          currentItem: i - 1,
-          currentWeight: w,
-          selectedItems: [],
-        });
-      }
-    }
-    
-    const selected: number[] = [];
-    let w = capacity;
-    for (let i = n; i > 0 && w > 0; i--) {
-      if (dpTable[i][w] !== dpTable[i - 1][w]) {
-        selected.push(i - 1);
-        w -= items[i - 1].weight;
-      }
-    }
-    
-    steps.forEach(step => step.selectedItems = [...selected]);
-    
-    return { steps, totalComparisons: compCount };
-  };
-
-  const startKnapsack = () => {
-    if (items.length === 0 || isRunning) return;
-    
-    resetKnapsack();
-    const { steps } = calculateKnapsackSteps(items, capacity);
-    setKnapsackSteps(steps);
-    setIsRunning(true);
-  };
-
-  const nextStep = () => {
-    if (currentStep >= knapsackSteps.length - 1) {
-      setIsRunning(false);
-      return;
-    }
-    
-    const nextStepIndex = currentStep + 1;
-    setCurrentStep(nextStepIndex);
-    
-    const step = knapsackSteps[nextStepIndex];
-    setDpTable(step.dpTable);
-    setCurrentItem(step.currentItem);
-    setCurrentWeight(step.currentWeight);
-    setSelectedItems(step.selectedItems);
-    setComparisons(nextStepIndex);
-  };
-
-  const prevStep = () => {
-    if (currentStep <= 0) return;
-    
-    const prevStepIndex = currentStep - 1;
-    setCurrentStep(prevStepIndex);
-    
-    const step = knapsackSteps[prevStepIndex];
-    setDpTable(step.dpTable);
-    setCurrentItem(step.currentItem);
-    setCurrentWeight(step.currentWeight);
-    setSelectedItems(step.selectedItems);
-    setComparisons(prevStepIndex);
-  };
-
-  const togglePlayPause = () => {
-    if (currentStep >= knapsackSteps.length - 1) {
-      startKnapsack();
-    } else {
-      setIsRunning(!isRunning);
-    }
-  };
-
-  const goToStep = (step: number) => {
-    if (step < 0 || step >= knapsackSteps.length) return;
-    
-    setCurrentStep(step);
-    setIsRunning(false);
-    
-    const knapsackStep = knapsackSteps[step];
-    setDpTable(knapsackStep.dpTable);
-    setCurrentItem(knapsackStep.currentItem);
-    setCurrentWeight(knapsackStep.currentWeight);
-    setSelectedItems(knapsackStep.selectedItems);
-    setComparisons(step);
-  };
+  const {
+    state: { items, capacity, customItemsInput, dpTable, currentItem, currentWeight, selectedItems, isRunning, speed, knapsackSteps, currentStep },
+    actions: { setCapacity, setCustomItemsInput, setSpeed, generateRandomItems, generateCustomItems, resetKnapsack, startKnapsack, nextStep, prevStep, togglePlayPause, goToStep },
+  } = useKnapsackVisualizer();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      
-      <div className="page-container mt-20">
-        <div className="mb-8">
-          <Link to="/dashboard/algorithms" className="flex items-center text-drona-green hover:underline mb-4 font-medium">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-20 pb-12">
+        <div className="mb-6">
+          <Link to="/dashboard/algorithms" className="inline-flex items-center text-primary hover:underline mb-4 font-medium transition-colors text-sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Algorithms
           </Link>
-          <h1 className="text-4xl font-bold text-drona-dark mb-2">0/1 Knapsack Visualization</h1>
-          <p className="text-lg text-drona-gray">
-            The 0/1 Knapsack problem uses dynamic programming to find the optimal selection of items.
-            <span className="font-semibold text-drona-green"> Time Complexity: O(n×W)</span>
-          </p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">0/1 Knapsack</h1>
+          <p className="text-muted-foreground text-sm">The 0/1 Knapsack problem uses dynamic programming to find the optimal selection of items.</p>
         </div>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* Controls Panel */}
-          <div className="xl:col-span-1 space-y-6">
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Items Configuration</CardTitle>
+
+        <Tabs defaultValue="visualizer" className="w-full">
+          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+            <TabsTrigger 
+              value="visualizer" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Visualizer
+            </TabsTrigger>
+            <TabsTrigger 
+              value="algorithm" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
+            >
+              Algorithm
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="visualizer" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1 space-y-6">
+                <Card className="bg-card border border-border">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-semibold text-foreground">Items Configuration</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">Capacity</Label>
-                    <Input
-                      type="number"
-                      value={capacity}
-                      onChange={(e) => setCapacity(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))}
-                      min={5}
-                      max={20}
-                      className="border-2 focus:border-drona-green"
-                    />
+                        <Label className="text-sm font-semibold text-foreground">Capacity</Label>
+                        <Input type="number" value={capacity} onChange={(e) => setCapacity(Math.max(5, Math.min(20, parseInt(e.target.value) || 10)))} min={5} max={20} />
                   </div>
-                  
-                  <Button 
-                    onClick={generateRandomItems} 
-                    variant="outline"
-                    className="w-full font-semibold border-2 hover:border-drona-green/50"
-                  >
+                      <Button onClick={generateRandomItems} variant="outline" className="w-full font-semibold">
                     Generate Random Items
                   </Button>
-                  
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">
-                      Custom Items (name, weight, value; separated by semicolons)
-                    </Label>
+                        <Label className="text-sm font-semibold text-foreground">Custom Items (name, weight, value; separated by semicolons)</Label>
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="e.g., Item1,5,6; Item2,3,4"
-                        value={customItemsInput}
-                        onChange={(e) => setCustomItemsInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && generateCustomItems()}
-                        className="flex-1 border-2 focus:border-drona-green"
-                      />
-                      <Button 
-                        onClick={generateCustomItems}
-                        className="bg-drona-green hover:bg-drona-green/90 font-semibold"
-                      >
+                          <Input placeholder="e.g., Item1,5,6; Item2,3,4" value={customItemsInput} onChange={(e) => setCustomItemsInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && generateCustomItems()} className="flex-1" />
+                          <Button onClick={generateCustomItems}>
                         Set
                       </Button>
                     </div>
                   </div>
                 </div>
-                
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-drona-dark">
-                    Animation Speed: {speed}x
-                  </Label>
+                      <Label className="text-sm font-semibold text-foreground">Animation Speed: {speed}x</Label>
                   <div className="flex items-center mt-1">
-                    <input 
-                      type="range" 
-                      min={0.5} 
-                      max={3} 
-                      step={0.5} 
-                      value={speed} 
-                      onChange={(e) => setSpeed(Number(e.target.value))}
-                      className="w-full"
-                    />
+                    <input type="range" min={0.5} max={3} step={0.5} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-full" />
                   </div>
-                  <div className="flex justify-between text-xs text-drona-gray">
-                    <span>Slower</span>
-                    <span>Faster</span>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>0.5x</span>
+                        <span>1x</span>
+                        <span>1.5x</span>
+                        <span>2.0x</span>
+                        <span>2.5x</span>
+                        <span>3x</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Playback Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid grid-cols-5 gap-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(0)}
-                    disabled={knapsackSteps.length === 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={prevStep}
-                    disabled={currentStep <= 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    size="sm"
-                    onClick={togglePlayPause}
-                    disabled={items.length === 0}
-                    className="bg-drona-green hover:bg-drona-green/90 font-semibold"
-                  >
-                    {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={nextStep}
-                    disabled={currentStep >= knapsackSteps.length - 1}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => goToStep(knapsackSteps.length - 1)}
-                    disabled={knapsackSteps.length === 0}
-                    className="border-2 hover:border-drona-green/50"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <Button 
-                  onClick={() => {
-                    resetKnapsack();
-                    setIsRunning(false);
-                  }} 
-                  variant="outline" 
-                  disabled={isRunning}
-                  className="w-full border-2 hover:border-drona-green/50"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
-                </Button>
-
-                {knapsackSteps.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-drona-dark">
-                      Step: {currentStep + 1} of {knapsackSteps.length}
-                    </Label>
-                    <Slider
-                      value={[currentStep + 1]}
-                      onValueChange={([value]) => goToStep(value - 1)}
-                      max={knapsackSteps.length}
-                      min={1}
-                      step={1}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg border-2 border-drona-green/20">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-xl font-bold text-drona-dark">Statistics</CardTitle>
+                <Card className="bg-card border border-border">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-semibold text-foreground">Statistics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
                 <div className="grid gap-4">
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Current Step</p>
-                    <p className="text-3xl font-bold text-drona-dark">{Math.max(0, currentStep)}</p>
+                      <div className="bg-card p-4 rounded-lg border border-border">
+                        <p className="text-sm font-semibold text-muted-foreground">Current Step</p>
+                        <p className="text-3xl font-bold text-foreground">{Math.max(0, currentStep)}</p>
                   </div>
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Number of Items</p>
-                    <p className="text-3xl font-bold text-drona-dark">{items.length}</p>
+                      <div className="bg-card p-4 rounded-lg border border-border">
+                        <p className="text-sm font-semibold text-muted-foreground">Number of Items</p>
+                        <p className="text-3xl font-bold text-foreground">{items.length}</p>
                   </div>
-                  <div className="bg-gradient-to-r from-drona-light to-white p-4 rounded-lg border-2 border-drona-green/10">
-                    <p className="text-sm font-semibold text-drona-gray">Total Steps</p>
-                    <p className="text-xl font-bold text-drona-dark">{knapsackSteps.length}</p>
+                      <div className="bg-card p-4 rounded-lg border border-border">
+                        <p className="text-sm font-semibold text-muted-foreground">Total Steps</p>
+                        <p className="text-xl font-bold text-foreground">{knapsackSteps.length}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-          
-          {/* Visualization Panel */}
-          <div className="xl:col-span-3">
-            <Card className="shadow-lg border-2 border-drona-green/20 h-full">
-              <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-                <CardTitle className="text-2xl font-bold text-drona-dark">Knapsack Visualization</CardTitle>
-              </CardHeader>
-              <CardContent className="p-8">
+
+              <div className="md:col-span-2">
+                <div className="bg-card rounded-lg border border-border p-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <Button onClick={togglePlayPause} variant="default" size="sm" disabled={isRunning || items.length === 0}>
+                      <Play className="mr-2 h-3 w-3" />
+                      Run
+                    </Button>
+                    <Button onClick={togglePlayPause} variant="outline" disabled={!knapsackSteps.length || !isRunning} size="sm">
+                      <Pause className="mr-2 h-3 w-3" />
+                      Pause
+                    </Button>
+                    <Button onClick={togglePlayPause} variant="outline" disabled={!knapsackSteps.length || isRunning || currentStep >= knapsackSteps.length - 1} size="sm">
+                      <Play className="mr-2 h-3 w-3" />
+                      Resume
+                    </Button>
+                    <Button onClick={() => { resetKnapsack(); }} variant="outline" disabled={!knapsackSteps.length} size="sm">
+                      <SkipBack className="mr-2 h-3 w-3" />
+                      Reset
+                    </Button>
+                    <Button onClick={prevStep} variant="outline" disabled={!knapsackSteps.length || currentStep <= 0} size="sm">
+                      <SkipBack className="h-3 w-3" />
+                    </Button>
+                    <Button onClick={nextStep} variant="outline" disabled={!knapsackSteps.length || currentStep >= knapsackSteps.length - 1} size="sm">
+                      <SkipForward className="h-3 w-3" />
+                    </Button>
+                    {knapsackSteps.length > 0 && (
+                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                        <Timer className="mr-2 h-3 w-3 text-primary" />
+                        <span className="text-foreground font-medium text-sm">
+                          Step: {currentStep + 1} / {knapsackSteps.length}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium mb-2">Visualization</h3>
                 {items.length === 0 ? (
-                  <div className="flex items-center justify-center h-64 text-drona-gray">
+                      <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <div className="text-center">
                       <Package className="mx-auto h-16 w-16 mb-4 opacity-50" />
                       <p className="text-xl font-semibold">Generate items to start visualization</p>
@@ -437,47 +158,36 @@ const ZeroOneKnapsackVisualizer = () => {
                 ) : (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Items List */}
                       <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-drona-dark">Items:</h3>
+                            <h3 className="text-xl font-semibold text-foreground">Items:</h3>
                         <ul className="space-y-2">
                           {items.map((item, index) => (
-                            <li
-                              key={item.id}
-                              className={`p-3 rounded-lg border-2 ${
-                                index === currentItem ? 'border-drona-green shadow-md' : 'border-drona-green/20'
-                              }`}
-                            >
+                                <li key={item.id} className={`p-3 rounded-lg border ${index === currentItem ? "border-primary shadow-md" : "border-border"}`}>
                               <span className="font-semibold">{item.name}</span> - Weight: {item.weight}, Value: {item.value}
                             </li>
                           ))}
                         </ul>
                       </div>
-                      
-                      {/* DP Table */}
                       <div>
-                        <h3 className="text-xl font-bold text-drona-dark">DP Table:</h3>
+                            <h3 className="text-xl font-semibold text-foreground">DP Table:</h3>
                         <div className="overflow-x-auto">
-                          <table className="min-w-full border-collapse border border-drona-green/20">
+                              <table className="min-w-full border-collapse border border-border">
                             <thead>
                               <tr>
-                                <th className="border border-drona-green/20 p-2">Item</th>
+                                    <th className="border border-border p-2">Item</th>
                                 {[...Array(capacity + 1)].map((_, i) => (
-                                  <th key={i} className="border border-drona-green/20 p-2">Weight: {i}</th>
+                                      <th key={i} className="border border-border p-2">
+                                    Weight: {i}
+                                  </th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
                               {dpTable.map((row, i) => (
                                 <tr key={i}>
-                                  <td className="border border-drona-green/20 p-2">{i === 0 ? 'Empty' : items[i - 1]?.name}</td>
+                                      <td className="border border-border p-2">{i === 0 ? "Empty" : items[i - 1]?.name}</td>
                                   {row.map((value, j) => (
-                                    <td
-                                      key={j}
-                                      className={`border border-drona-green/20 p-2 text-center ${
-                                        currentItem === i - 1 && currentWeight === j ? 'bg-drona-green/10 font-semibold' : ''
-                                      }`}
-                                    >
+                                        <td key={j} className={`border border-border p-2 text-center ${currentItem === i - 1 && currentWeight === j ? "bg-primary/10 font-semibold" : ""}`}>
                                       {value}
                                     </td>
                                   ))}
@@ -489,41 +199,176 @@ const ZeroOneKnapsackVisualizer = () => {
                       </div>
                     </div>
 
-                    {/* Selected Items */}
                     <div className="space-y-4">
-                      <h3 className="text-xl font-bold text-drona-dark">Selected Items:</h3>
+                          <h3 className="text-xl font-semibold text-foreground">Selected Items:</h3>
                       {selectedItems.length === 0 ? (
-                        <p className="text-drona-gray">No items selected.</p>
+                            <p className="text-muted-foreground">No items selected.</p>
                       ) : (
                         <ul className="space-y-2">
-                          {selectedItems.map(index => (
-                            <li key={items[index].id} className="p-3 rounded-lg border-2 border-drona-green/20">
+                          {selectedItems.map((index) => (
+                                <li key={items[index].id} className="p-3 rounded-lg border border-border">
                               <span className="font-semibold">{items[index].name}</span> - Weight: {items[index].weight}, Value: {items[index].value}
                             </li>
                           ))}
                         </ul>
                       )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                     </div>
-                    
-                    <Card className="bg-gradient-to-r from-drona-light to-white border-2 border-drona-green/20">
-                      <CardHeader>
-                        <CardTitle className="text-lg font-bold text-drona-dark">How 0/1 Knapsack Works</CardTitle>
+
+              <div className="md:col-span-3">
+                <div className="bg-card rounded-lg border border-border p-4 text-sm">
+                  <h2 className="text-lg font-semibold mb-2">About 0/1 Knapsack</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">The 0/1 Knapsack problem uses dynamic programming to find the optimal selection of items that cannot be broken into fractions.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <ol className="list-decimal list-inside space-y-2 text-drona-gray font-medium">
-                          <li>Create a DP table to store maximum values for different weights.</li>
-                          <li>Iterate through each item and weight to fill the DP table.</li>
-                          <li>If the item's weight is less than or equal to the current weight, choose the maximum value between including and excluding the item.</li>
-                          <li>Backtrack from the last cell to find the selected items.</li>
-                        </ol>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Dynamic programming approach</li>
+                          <li>Items cannot be fractioned</li>
+                          <li>Optimal substructure property</li>
+                        </ul>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-secondary">
+                      <CardHeader className="py-2 px-3">
+                        <CardTitle className="text-xs font-medium">Time Complexity</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2 px-3">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
+                          <li>Best Case: O(n×W)</li>
+                          <li>Average Case: O(n×W)</li>
+                          <li>Worst Case: O(n×W)</li>
+                        </ul>
                       </CardContent>
                     </Card>
                   </div>
-                )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="algorithm" className="mt-0">
+            <div className="bg-card rounded-lg border border-border p-6 md:p-8">
+              <div className="space-y-8">
+                <div className="border-b border-border pb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                    0/1 Knapsack – Algorithm
+                  </h1>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-4xl">
+                    The 0/1 Knapsack problem uses dynamic programming to find the optimal selection of items that cannot be broken into fractions.
+                  </p>
+                </div>
+
+                <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary rounded-full"></span>
+                      Key Idea
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm text-foreground">
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Create DP table: dp[i][w] = max value with first i items and weight w</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">For each item, decide: include or exclude</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Take maximum value between including and excluding</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center text-xs mt-0.5">•</span>
+                        <span className="flex-1">Backtrack to find selected items</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Algorithm (Step-by-Step)
+                  </h2>
+                  <Card className="bg-secondary/30 border-border">
+                    <CardContent className="p-5">
+                      <ol className="space-y-4 text-sm text-foreground">
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                          <span className="flex-1 pt-1">Create a 2D DP table of size (n+1) × (W+1)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                          <span className="flex-1 pt-1">Initialize first row and column with 0</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                          <span className="flex-1 pt-1">For each item i and weight w:</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">4</span>
+                            <span className="flex-1">If item weight &gt; w, cannot include: dp[i][w] = dp[i-1][w]</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">5</span>
+                          <span className="flex-1">Otherwise: dp[i][w] = max(include, exclude)</span>
+                        </li>
+                        <li className="flex items-start gap-4">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm shadow-sm">6</span>
+                          <span className="flex-1">Backtrack from dp[n][W] to find selected items</span>
+                        </li>
+                      </ol>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-5 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-primary rounded-full"></span>
+                    Pseudocode
+                  </h2>
+                  <Card className="bg-muted/50 border-border">
+                    <CardContent className="p-5">
+                      <pre className="text-sm text-foreground font-mono overflow-x-auto leading-relaxed">
+{`Knapsack01(items, capacity):
+    n = items.length
+    dp = array[n+1][capacity+1]
+    
+    // Initialize
+    for i = 0 to n:
+        dp[i][0] = 0
+    for w = 0 to capacity:
+        dp[0][w] = 0
+    
+    // Fill DP table
+    for i = 1 to n:
+        for w = 1 to capacity:
+            if items[i-1].weight > w:
+                dp[i][w] = dp[i-1][w]
+            else:
+                include = items[i-1].value + dp[i-1][w - items[i-1].weight]
+                exclude = dp[i-1][w]
+                dp[i][w] = max(include, exclude)
+    
+    return dp[n][capacity]`}
+                      </pre>
               </CardContent>
             </Card>
           </div>
         </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

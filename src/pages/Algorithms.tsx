@@ -1,60 +1,61 @@
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
 import { ArrowLeft, Search, ArrowUpDown, Package, Briefcase, Crown, Gamepad2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 const Algorithms = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-drona-light via-white to-drona-light">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       
-      <div className="page-container mt-20">
-        <div className="mb-12">
-          <Link to="/dashboard" className="flex items-center text-drona-green hover:underline mb-6 font-medium transition-colors">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
+        <div className="mb-8 md:mb-12">
+          <RouterLink to="/dashboard" className="inline-flex items-center text-primary hover:underline mb-4 md:mb-6 font-medium transition-colors text-sm md:text-base">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
-          </Link>
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold text-drona-dark mb-4">Algorithm Visualizations</h1>
-            <p className="text-xl text-drona-gray max-w-4xl mx-auto leading-relaxed">
+          </RouterLink>
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-3xl font-bold text-foreground sm:text-4xl md:text-5xl mb-3 md:mb-4">Algorithm Visualizations</h1>
+            <p className="text-base text-muted-foreground sm:text-lg md:text-xl max-w-4xl mx-auto leading-relaxed px-4">
               Master fundamental algorithms through interactive step-by-step visualizations. 
               Understand how different algorithmic approaches solve computational problems efficiently.
             </p>
           </div>
           
-          <div className="bg-gradient-to-r from-drona-green/10 to-drona-green/5 rounded-2xl p-6 border-2 border-drona-green/20 mb-8">
-            <h2 className="text-2xl font-bold text-drona-dark mb-3">Algorithm Categories</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-drona-gray">
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+          <div className="bg-card rounded-lg p-4 md:p-6 border border-border mb-6 md:mb-8">
+            <h2 className="text-xl font-semibold text-foreground sm:text-2xl mb-3">Algorithm Categories</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm md:text-base text-muted-foreground">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                 <p>Searching algorithms for data retrieval</p>
               </div>
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                 <p>Sorting algorithms for data organization</p>
               </div>
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                 <p>Dynamic programming for optimization</p>
               </div>
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-drona-green rounded-full mt-2 flex-shrink-0"></div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                 <p>Backtracking for constraint satisfaction</p>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="space-y-12">
+        <div className="space-y-8 md:space-y-12">
           {/* Searching Algorithms */}
           <div>
-            <h2 className="text-3xl font-bold text-drona-dark mb-6 flex items-center">
-              <Search className="mr-3 h-8 w-8 text-drona-green" />
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4 md:mb-6 flex items-center">
+              <Search className="mr-3 h-6 w-6 md:h-8 md:w-8 text-primary" />
               Searching Algorithms
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <CategoryCard
                 title="Linear Search"
                 description="Sequential search through elements one by one. Simple approach with O(n) time complexity suitable for unsorted data."
@@ -74,11 +75,11 @@ const Algorithms = () => {
 
           {/* Sorting Algorithms */}
           <div>
-            <h2 className="text-3xl font-bold text-drona-dark mb-6 flex items-center">
-              <ArrowUpDown className="mr-3 h-8 w-8 text-drona-green" />
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4 md:mb-6 flex items-center">
+              <ArrowUpDown className="mr-3 h-6 w-6 md:h-8 md:w-8 text-primary" />
               Sorting Algorithms
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               <CategoryCard
                 title="Bubble Sort"
                 description="Simple comparison-based sort that repeatedly swaps adjacent elements. O(n²) complexity but easy to understand."
@@ -119,11 +120,11 @@ const Algorithms = () => {
 
           {/* Dynamic Programming */}
           <div>
-            <h2 className="text-3xl font-bold text-drona-dark mb-6 flex items-center">
-              <Package className="mr-3 h-8 w-8 text-drona-green" />
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4 md:mb-6 flex items-center">
+              <Package className="mr-3 h-6 w-6 md:h-8 md:w-8 text-primary" />
               Dynamic Programming & Optimization
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               <CategoryCard
                 title="0/1 Knapsack Problem"
                 description="Classic optimization problem: maximize value while staying within weight constraint. Cannot break items."
@@ -150,11 +151,11 @@ const Algorithms = () => {
 
           {/* Backtracking */}
           <div>
-            <h2 className="text-3xl font-bold text-drona-dark mb-6 flex items-center">
-              <Gamepad2 className="mr-3 h-8 w-8 text-drona-green" />
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl mb-4 md:mb-6 flex items-center">
+              <Gamepad2 className="mr-3 h-6 w-6 md:h-8 md:w-8 text-primary" />
               Backtracking Algorithms
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               <CategoryCard
                 title="Tower of Hanoi"
                 description="Classic recursive puzzle: move disks between pegs following size constraints. Demonstrates divide-and-conquer thinking."
@@ -173,53 +174,53 @@ const Algorithms = () => {
           </div>
         </div>
 
-        <div className="mt-16">
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 border-2 border-purple-200">
-            <h3 className="text-2xl font-bold text-drona-dark mb-6 text-center">
+        <div className="mt-12 md:mt-16">
+          <div className="bg-card rounded-lg p-6 md:p-8 border border-border">
+            <h3 className="text-xl font-semibold text-foreground sm:text-2xl mb-4 md:mb-6 text-center">
               Algorithm Complexity Comparison
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-purple-200">
-                    <th className="text-left p-3 font-semibold text-drona-dark">Algorithm Type</th>
-                    <th className="text-left p-3 font-semibold text-drona-dark">Best Case</th>
-                    <th className="text-left p-3 font-semibold text-drona-dark">Average Case</th>
-                    <th className="text-left p-3 font-semibold text-drona-dark">Worst Case</th>
-                    <th className="text-left p-3 font-semibold text-drona-dark">Space</th>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left p-3 font-semibold text-foreground">Algorithm Type</th>
+                    <th className="text-left p-3 font-semibold text-foreground">Best Case</th>
+                    <th className="text-left p-3 font-semibold text-foreground">Average Case</th>
+                    <th className="text-left p-3 font-semibold text-foreground">Worst Case</th>
+                    <th className="text-left p-3 font-semibold text-foreground">Space</th>
                   </tr>
                 </thead>
-                <tbody className="text-drona-gray">
-                  <tr className="border-b border-purple-100">
-                    <td className="p-3 font-medium">Linear Search</td>
+                <tbody className="text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <td className="p-3 font-medium text-foreground">Linear Search</td>
                     <td className="p-3">O(1)</td>
                     <td className="p-3">O(n)</td>
                     <td className="p-3">O(n)</td>
                     <td className="p-3">O(1)</td>
                   </tr>
-                  <tr className="border-b border-purple-100">
-                    <td className="p-3 font-medium">Binary Search</td>
+                  <tr className="border-b border-border">
+                    <td className="p-3 font-medium text-foreground">Binary Search</td>
                     <td className="p-3">O(1)</td>
                     <td className="p-3">O(log n)</td>
                     <td className="p-3">O(log n)</td>
                     <td className="p-3">O(1)</td>
                   </tr>
-                  <tr className="border-b border-purple-100">
-                    <td className="p-3 font-medium">Bubble Sort</td>
+                  <tr className="border-b border-border">
+                    <td className="p-3 font-medium text-foreground">Bubble Sort</td>
                     <td className="p-3">O(n)</td>
                     <td className="p-3">O(n²)</td>
                     <td className="p-3">O(n²)</td>
                     <td className="p-3">O(1)</td>
                   </tr>
-                  <tr className="border-b border-purple-100">
-                    <td className="p-3 font-medium">Merge Sort</td>
+                  <tr className="border-b border-border">
+                    <td className="p-3 font-medium text-foreground">Merge Sort</td>
                     <td className="p-3">O(n log n)</td>
                     <td className="p-3">O(n log n)</td>
                     <td className="p-3">O(n log n)</td>
                     <td className="p-3">O(n)</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-medium">Quick Sort</td>
+                    <td className="p-3 font-medium text-foreground">Quick Sort</td>
                     <td className="p-3">O(n log n)</td>
                     <td className="p-3">O(n log n)</td>
                     <td className="p-3">O(n²)</td>
@@ -231,49 +232,45 @@ const Algorithms = () => {
           </div>
         </div>
 
-        <div className="mt-12">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border-2 border-blue-200">
-            <h3 className="text-2xl font-bold text-drona-dark mb-4 text-center">
+        <div className="mt-12 md:mt-16">
+          <div className="bg-card rounded-lg p-6 md:p-8 border border-border">
+            <h3 className="text-xl font-semibold text-foreground sm:text-2xl mb-4 md:mb-6 text-center">
               Algorithm Design Paradigms
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 text-center">
               <div>
-                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Search className="h-8 w-8 text-blue-600" />
+                <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Search className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                 </div>
-                <h4 className="font-semibold text-drona-dark mb-2">Divide & Conquer</h4>
-                <p className="text-sm text-drona-gray">Break problem into smaller subproblems</p>
+                <h4 className="font-semibold text-foreground mb-2 text-sm md:text-base">Divide & Conquer</h4>
+                <p className="text-xs md:text-sm text-muted-foreground">Break problem into smaller subproblems</p>
               </div>
               <div>
-                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Package className="h-8 w-8 text-green-600" />
+                <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Package className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                 </div>
-                <h4 className="font-semibold text-drona-dark mb-2">Dynamic Programming</h4>
-                <p className="text-sm text-drona-gray">Optimize by storing subproblem solutions</p>
+                <h4 className="font-semibold text-foreground mb-2 text-sm md:text-base">Dynamic Programming</h4>
+                <p className="text-xs md:text-sm text-muted-foreground">Optimize by storing subproblem solutions</p>
               </div>
               <div>
-                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Briefcase className="h-8 w-8 text-purple-600" />
+                <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Briefcase className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                 </div>
-                <h4 className="font-semibold text-drona-dark mb-2">Greedy Algorithms</h4>
-                <p className="text-sm text-drona-gray">Make locally optimal choices</p>
+                <h4 className="font-semibold text-foreground mb-2 text-sm md:text-base">Greedy Algorithms</h4>
+                <p className="text-xs md:text-sm text-muted-foreground">Make locally optimal choices</p>
               </div>
               <div>
-                <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Gamepad2 className="h-8 w-8 text-orange-600" />
+                <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Gamepad2 className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                 </div>
-                <h4 className="font-semibold text-drona-dark mb-2">Backtracking</h4>
-                <p className="text-sm text-drona-gray">Explore all possibilities systematically</p>
+                <h4 className="font-semibold text-foreground mb-2 text-sm md:text-base">Backtracking</h4>
+                <p className="text-xs md:text-sm text-muted-foreground">Explore all possibilities systematically</p>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Copyright Notice */}
-        <div className="mt-16 text-center text-sm text-drona-gray">
-          © 2024 Ikshvaku Innovations. All rights reserved.
-        </div>
       </div>
+      <Footer />
     </div>
   );
 };

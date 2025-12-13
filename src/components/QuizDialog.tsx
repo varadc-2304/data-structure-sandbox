@@ -296,7 +296,7 @@ const QuizDialog: React.FC<QuizDialogProps> = ({ isOpen, onClose }) => {
                           key={optionIndex}
                           className={`p-2 rounded ${
                             optionIndex === question.correctAnswer
-                              ? 'bg-green-100 border-green-500'
+                              ? 'bg-green-700 border-green-700'
                               : userAnswers[index] === optionIndex && !isCorrect
                               ? 'bg-red-100 border-red-500'
                               : 'bg-gray-50'
