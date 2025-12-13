@@ -20,6 +20,14 @@
     <priority>0.9</priority>
   </url>
   
+  <!-- About and Legal Pages -->
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/about</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
   <!-- Data Structures -->
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/data-structures</loc>
@@ -78,6 +86,90 @@
     <priority>0.9</priority>
   </url>
   
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/linear-search</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/binary-search</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/bubble-sort</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/selection-sort</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/insertion-sort</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/merge-sort</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/quick-sort</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/tower-of-hanoi</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/n-queens</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/fractional-knapsack</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/01-knapsack</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/algorithms/job-sequencing</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
   <!-- CPU Scheduling -->
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/cpu-scheduling</loc>
@@ -90,28 +182,28 @@
     <loc>https://drona.ikshvaku-innovations.in/dashboard/cpu-scheduling/fcfs</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/cpu-scheduling/sjf</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/cpu-scheduling/round-robin</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/cpu-scheduling/priority</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <!-- Memory Management / Page Replacement -->
@@ -126,21 +218,28 @@
     <loc>https://drona.ikshvaku-innovations.in/dashboard/page-replacement/fifo</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/page-replacement/lru</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/page-replacement/optimal</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/page-replacement/mru</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   
   <!-- Disk Scheduling -->
@@ -151,6 +250,98 @@
     <priority>0.9</priority>
   </url>
   
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/fcfs</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/sstf</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/scan</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/c-scan</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/look</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/disk-scheduling/c-look</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- ECE Algorithms -->
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/fft</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/viterbi</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/kalman</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/turbo</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/ldpc</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ece-algorithms/modulation</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
   <!-- AI Algorithms -->
   <url>
     <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms</loc>
@@ -159,5 +350,53 @@
     <priority>0.9</priority>
   </url>
   
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/cnn</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/random-forest</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/decision-tree</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/kmeans</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/logistic-regression</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/hill-climbing</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://drona.ikshvaku-innovations.in/dashboard/ai-algorithms/a-star</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
 </urlset>
-

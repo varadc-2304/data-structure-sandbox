@@ -2,13 +2,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, Clock, Timer, RotateCcw, TrendingUp } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const CPUScheduling = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="CPU Scheduling Algorithms | FCFS, SJF, Round Robin, Priority | Drona"
+        description="Understand how operating systems manage process execution with interactive Gantt charts. Explore FCFS, Shortest Job First, Round Robin, and Priority scheduling algorithms with performance metrics and visualizations."
+        keywords="CPU scheduling, FCFS algorithm, shortest job first, round robin scheduling, priority scheduling, operating system, process scheduling, Gantt chart, CPU scheduling simulator"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -170,6 +177,7 @@ const CPUScheduling = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 

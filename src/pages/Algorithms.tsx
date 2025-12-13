@@ -3,13 +3,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, Search, ArrowUpDown, Package, Briefcase, Crown, Gamepad2 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const Algorithms = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="Algorithm Visualizations | Sorting, Searching, Dynamic Programming | Drona"
+        description="Master fundamental algorithms through interactive step-by-step visualizations. Learn sorting algorithms (bubble, merge, quick sort), searching algorithms (linear, binary), dynamic programming, and backtracking with hands-on simulations."
+        keywords="algorithm visualizer, sorting algorithms, searching algorithms, bubble sort, merge sort, quick sort, binary search, dynamic programming, algorithm tutorial, computer science algorithms"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -272,6 +279,7 @@ const Algorithms = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 

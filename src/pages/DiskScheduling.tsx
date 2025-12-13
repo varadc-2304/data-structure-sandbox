@@ -2,13 +2,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, HardDrive, Clock, Search, Zap, Eye, RotateCcw } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const DiskScheduling = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="Disk Scheduling Algorithms | FCFS, SSTF, SCAN, C-SCAN, LOOK | Drona"
+        description="Explore disk scheduling algorithms with interactive visualizations. Learn FCFS, SSTF, SCAN, C-SCAN, LOOK, and C-LOOK algorithms. Understand how disk head movement affects performance and I/O throughput."
+        keywords="disk scheduling, FCFS disk, SSTF algorithm, SCAN algorithm, C-SCAN, LOOK algorithm, disk I/O, operating system, disk head movement"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -195,6 +202,7 @@ const DiskScheduling = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 
