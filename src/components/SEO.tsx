@@ -7,6 +7,13 @@ interface SEOProps {
   keywords?: string;
   image?: string;
   type?: string;
+  breadcrumbs?: Array<{ name: string; url: string }>;
+  courseSchema?: {
+    name: string;
+    description: string;
+    provider?: string;
+    educationalLevel?: string;
+  };
 }
 
 const SEO = ({ 
@@ -14,7 +21,9 @@ const SEO = ({
   description = "Master computer science concepts through interactive visualizations. Learn data structures, algorithms, CPU scheduling, memory management, and AI algorithms with hands-on simulations.",
   keywords = "computer science visualization, algorithm visualizer, data structure visualizer, learn algorithms, interactive CS education",
   image = "https://drona.ikshvaku-innovations.in/og-image.png",
-  type = "website"
+  type = "website",
+  breadcrumbs,
+  courseSchema
 }: SEOProps) => {
   const location = useLocation();
   const baseUrl = "https://drona.ikshvaku-innovations.in";
@@ -75,7 +84,7 @@ const SEO = ({
       });
 
       // Add page-specific structured data
-      const structuredData = {
+      const structuredData: any = {
         "@context": "https://schema.org",
         "@type": "WebPage",
         "name": title,
@@ -95,6 +104,44 @@ const SEO = ({
         "learningResourceType": "Interactive Visualization"
       };
 
+      // Add breadcrumb structured data if provided
+      if (breadcrumbs && breadcrumbs.length > 0) {
+        structuredData.breadcrumb = {
+          "@type": "BreadcrumbList",
+          "itemListElement": breadcrumbs.map((crumb, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": crumb.name,
+            "item": crumb.url
+          }))
+        };
+      }
+
+      // Add Course schema if provided
+      if (courseSchema) {
+        const courseData = {
+          "@context": "https://schema.org",
+          "@type": "Course",
+          "name": courseSchema.name,
+          "description": courseSchema.description,
+          "provider": {
+            "@type": "Organization",
+            "name": courseSchema.provider || "Drona",
+            "url": baseUrl
+          },
+          "educationalLevel": courseSchema.educationalLevel || "All Levels",
+          "learningResourceType": "Interactive Visualization",
+          "url": currentUrl,
+          "inLanguage": "en-US"
+        };
+
+        const courseScript = document.createElement('script');
+        courseScript.type = 'application/ld+json';
+        courseScript.id = 'course-ld';
+        courseScript.textContent = JSON.stringify(courseData);
+        document.head.appendChild(courseScript);
+      }
+
       const script = document.createElement('script');
       script.type = 'application/ld+json';
       script.id = 'page-specific-ld';
@@ -103,7 +150,7 @@ const SEO = ({
     };
 
     addStructuredData();
-  }, [title, description, keywords, image, type, currentUrl]);
+  }, [title, description, keywords, image, type, currentUrl, breadcrumbs, courseSchema]);
 
   return null;
 };

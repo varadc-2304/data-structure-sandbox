@@ -48,7 +48,11 @@ Allow: /dashboard/algorithms
 Allow: /dashboard/cpu-scheduling
 Allow: /dashboard/page-replacement
 Allow: /dashboard/disk-scheduling
+Allow: /dashboard/ece-algorithms
 Allow: /dashboard/ai-algorithms
+Allow: /about
+Allow: /terms-and-conditions
+Allow: /privacy-policy
 
 # Crawl-delay
 Crawl-delay: 1

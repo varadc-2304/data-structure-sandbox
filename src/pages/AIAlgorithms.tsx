@@ -3,13 +3,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, Target, Mountain, Route } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const AIAlgorithms = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="AI Algorithms Visualization | K-means, Hill Climbing, A* Pathfinding | Drona"
+        description="Explore artificial intelligence and machine learning algorithms with interactive visualizations. Learn K-means clustering, Hill Climbing optimization, A* pathfinding, and other AI algorithms through hands-on simulations."
+        keywords="AI algorithms, machine learning visualization, k-means clustering, hill climbing algorithm, A star algorithm, pathfinding, AI tutorial, machine learning education"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -158,6 +165,7 @@ const AIAlgorithms = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 

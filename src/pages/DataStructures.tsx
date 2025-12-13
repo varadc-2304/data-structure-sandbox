@@ -2,13 +2,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, Database, Link, Layers, ArrowRightLeft, ListTree, Search, Shuffle, Share2, RotateCw } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const DataStructures = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="Data Structures Visualization | Learn Arrays, Linked Lists, Trees, Graphs | Drona"
+        description="Explore fundamental data structures with interactive visualizations. Learn arrays, linked lists, stacks, queues, trees, and graphs through step-by-step animations. Understand how data is stored, organized, and accessed in computer memory."
+        keywords="data structures, array visualization, linked list, stack, queue, tree data structure, graph algorithm, data structure tutorial, computer science education, interactive learning"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -119,6 +126,7 @@ const DataStructures = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 

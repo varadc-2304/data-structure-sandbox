@@ -2,13 +2,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, Zap, Waves, Target, Cpu, Radio, Antenna } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const ECEAlgorithms = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="ECE Algorithms | FFT, Viterbi, Kalman Filter, LDPC, Turbo Decoding | Drona"
+        description="Explore electrical and computer engineering algorithms with interactive visualizations. Learn FFT, Viterbi algorithm, Kalman Filter, LDPC decoding, Turbo decoding, and modulation techniques through step-by-step animations."
+        keywords="ECE algorithms, FFT visualization, Viterbi algorithm, Kalman filter, LDPC decoding, turbo codes, signal processing, error correction, digital modulation"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -196,6 +203,7 @@ const ECEAlgorithms = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 

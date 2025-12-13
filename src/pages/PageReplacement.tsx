@@ -2,13 +2,20 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CategoryCard from '@/components/CategoryCard';
+import SEO from '@/components/SEO';
 import { ArrowLeft, MemoryStick, Clock, History } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 
 const PageReplacement = () => {
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navbar />
+    <>
+      <SEO 
+        title="Page Replacement Algorithms | FIFO, LRU, MRU Memory Management | Drona"
+        description="Explore how operating systems manage virtual memory through page replacement algorithms. Learn FIFO, LRU, and MRU algorithms with interactive visualizations showing page faults and memory management strategies."
+        keywords="page replacement, FIFO algorithm, LRU algorithm, MRU algorithm, virtual memory, memory management, page fault, operating system, memory scheduling"
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <Navbar />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-24 pb-12">
         <div className="mb-8 md:mb-12">
@@ -157,6 +164,7 @@ const PageReplacement = () => {
       </div>
       <Footer />
     </div>
+    </>
   );
 };
 
