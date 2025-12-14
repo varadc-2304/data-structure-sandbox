@@ -209,7 +209,12 @@ const Navbar = () => {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-12">
             <div className="flex items-center min-w-0 flex-1">
-              <Link to="/dashboard" className="flex items-center">
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <img 
+                  src="/DronaLogo.png" 
+                  alt="Drona Logo" 
+                  className="h-6 w-6 object-contain"
+                />
                 <span className="text-lg font-bold text-primary">Drona</span>
               </Link>
             </div>
