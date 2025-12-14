@@ -325,7 +325,7 @@ const LinkedListVisualizer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="page-container pt-32">

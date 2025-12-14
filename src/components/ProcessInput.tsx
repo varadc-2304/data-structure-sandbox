@@ -138,7 +138,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Controls</CardTitle>
+          <CardTitle className="text-base text-foreground">Controls</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -172,7 +172,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
             <Label className="text-xs text-muted-foreground mb-2 block">Add Process</Label>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label htmlFor="arrivalTime" className="text-xs">Arrival</Label>
+                <Label htmlFor="arrivalTime" className="text-xs text-foreground">Arrival</Label>
                 <Input
                   id="arrivalTime"
                   type="number"
@@ -186,7 +186,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
               </div>
               
               <div>
-                <Label htmlFor="burstTime" className="text-xs">Burst</Label>
+                <Label htmlFor="burstTime" className="text-xs text-foreground">Burst</Label>
                 <Input
                   id="burstTime"
                   type="number"
@@ -201,7 +201,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
               
               {includePriority && (
                 <div>
-                  <Label htmlFor="priority" className="text-xs">Priority</Label>
+                  <Label htmlFor="priority" className="text-xs text-foreground">Priority</Label>
                   <Input
                     id="priority"
                     type="number"
@@ -217,7 +217,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
               
               {includeTimeQuantum && (
                 <div>
-                  <Label htmlFor="timeQuantum" className="text-xs">Quantum</Label>
+                  <Label htmlFor="timeQuantum" className="text-xs text-foreground">Quantum</Label>
                   <Input
                     id="timeQuantum"
                     type="number"
@@ -247,7 +247,7 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
       {processes.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Processes ({processes.length})</CardTitle>
+            <CardTitle className="text-base text-foreground">Processes ({processes.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -269,13 +269,13 @@ const ProcessInput: React.FC<ProcessInputProps> = ({
                       <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: process.color }}></div>
-                          <span className="text-xs font-medium">{process.id}</span>
+                          <span className="text-xs font-medium text-foreground">{process.id}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs">{process.arrivalTime}</td>
-                      <td className="px-3 py-2 whitespace-nowrap text-xs">{process.burstTime}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-foreground">{process.arrivalTime}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs text-foreground">{process.burstTime}</td>
                       {includePriority && (
-                        <td className="px-3 py-2 whitespace-nowrap text-xs">{process.priority}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-xs text-foreground">{process.priority}</td>
                       )}
                       <td className="px-3 py-2 whitespace-nowrap">
                         <Button 

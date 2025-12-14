@@ -144,10 +144,14 @@ export const useSelectionSortVisualizer = () => {
     resetSort();
     const s = calculateSteps(array);
     setSteps(s);
+    if (s.length > 0) {
+      applyStep(0);
+    }
     setIsRunning(true);
   };
 
   const applyStep = (index: number) => {
+    if (index < 0 || index >= steps.length) return;
     const step = steps[index];
     setArray(step.array);
     setCurrentIndex(step.currentIndex);
@@ -166,7 +170,7 @@ export const useSelectionSortVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
     applyStep(currentStep - 1);
   };
 
@@ -203,6 +207,7 @@ export const useSelectionSortVisualizer = () => {
       setArraySize,
       setCustomArrayInput,
       setSpeed,
+      setIsRunning,
       generateRandomArray,
       generateCustomArray,
       resetSort,

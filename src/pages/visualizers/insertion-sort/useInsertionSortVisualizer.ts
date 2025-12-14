@@ -139,10 +139,14 @@ export const useInsertionSortVisualizer = () => {
     resetSort();
     const steps = calculateSortSteps(array);
     setSortSteps(steps);
+    if (steps.length > 0) {
+      applyStep(0);
+    }
     setIsRunning(true);
   };
 
   const applyStep = (stepIndex: number) => {
+    if (stepIndex < 0 || stepIndex >= sortSteps.length) return;
     const step = sortSteps[stepIndex];
     setArray(step.array);
     setCurrentIndex(step.currentIndex);
@@ -160,7 +164,7 @@ export const useInsertionSortVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
     applyStep(currentStep - 1);
   };
 
@@ -209,6 +213,7 @@ export const useInsertionSortVisualizer = () => {
       setArraySize,
       setCustomArrayInput,
       setSpeed,
+      setIsRunning,
       generateRandomArray,
       generateCustomArray,
       resetSort,

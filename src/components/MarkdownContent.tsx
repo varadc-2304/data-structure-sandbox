@@ -28,32 +28,6 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, className = 
             <h3 className="text-lg font-semibold text-foreground mb-3 mt-6" {...props} />
           ),
           p: ({ node, ...props }) => {
-            const text = String(props.children || '');
-            // Check if paragraph contains email link
-            if (text.includes('ikshvaku.innovations@gmail.com') || text.includes('📧')) {
-              return (
-                <p className="text-base text-foreground leading-relaxed mb-4" {...props}>
-                  {text.split(/(ikshvaku\.innovations@gmail\.com|📧)/).map((part, i) => {
-                    if (part === 'ikshvaku.innovations@gmail.com') {
-                      return (
-                        <a
-                          key={i}
-                          href={`mailto:${part}`}
-                          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
-                        >
-                          <Mail className="h-5 w-5" />
-                          {part}
-                        </a>
-                      );
-                    }
-                    if (part === '📧') {
-                      return <span key={i}>{part} </span>;
-                    }
-                    return <span key={i}>{part}</span>;
-                  })}
-                </p>
-              );
-            }
             return <p className="text-base text-foreground leading-relaxed mb-4" {...props} />;
           },
           ul: ({ node, ...props }) => (
@@ -80,9 +54,8 @@ const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, className = 
               return (
                 <a
                   {...props}
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors"
+                  className="text-primary hover:text-primary/80 font-medium transition-colors underline"
                 >
-                  <Mail className="h-5 w-5" />
                   {props.children}
                 </a>
               );

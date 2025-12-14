@@ -1,13 +1,15 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import LinearSearchControls from "./linear-search/LinearSearchControls";
 import LinearSearchVisualization from "./linear-search/LinearSearchVisualization";
 import { useLinearSearchVisualizer } from "./linear-search/useLinearSearchVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
 
 const LinearSearchVisualizer = () => {
   const {
@@ -46,7 +48,7 @@ const LinearSearchVisualizer = () => {
   const handleStart = () => {
     if (searchSteps.length === 0 && searchValue !== null && array.length > 0) {
       startSearch();
-    } else {
+    } else if (searchSteps.length > 0) {
       togglePlayPause();
     }
   };
@@ -65,7 +67,7 @@ const LinearSearchVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -114,37 +116,33 @@ const LinearSearchVisualizer = () => {
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={handleStart} variant="default" size="sm" disabled={isRunning || array.length === 0}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={() => setIsRunning(false)} variant="outline" disabled={!searchSteps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={handleStart} variant="outline" disabled={!searchSteps.length || isRunning || currentStep >= searchSteps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={() => { resetSearch(); setIsRunning(false); }} variant="outline" disabled={!searchSteps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={prevStep} variant="outline" disabled={!searchSteps.length || currentStep <= -1} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={nextStep} variant="outline" disabled={!searchSteps.length || currentStep >= searchSteps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {searchSteps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {searchSteps.length}
-                        </span>
-                      </div>
-                    )}
+                  {/* Search Element Input */}
+                  <div className="mb-4">
+                    <Label className="text-sm font-semibold text-foreground mb-2 block">Search Element</Label>
+                    <Input
+                      type="number"
+                      value={searchValue ?? ""}
+                      onChange={(e) => handleSearchValueChange(e.target.value)}
+                      placeholder="Enter value to find"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={searchSteps.length}
+                      onPlay={handleStart}
+                      onPause={() => setIsRunning(false)}
+                      onResume={handleStart}
+                      onReset={() => { resetSearch(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(searchSteps.length - 1)}
+                      disabled={array.length === 0 || searchValue === null}
+                    />
                   </div>
 
                   <div className="mb-4">

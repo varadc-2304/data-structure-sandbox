@@ -17,12 +17,12 @@ const OptimalVisualizer = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <Link to="/dashboard/memory-management" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+          <Link to="/dashboard/memory-management" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Memory Management
           </Link>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Optimal Page Replacement</h1>
-          <p className="text-gray-600">Visualize the Optimal page replacement algorithm</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Optimal Page Replacement</h1>
+          <p className="text-muted-foreground">Visualize the Optimal page replacement algorithm</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -80,8 +80,8 @@ const OptimalVisualizer = () => {
                   {Array.from({ length: frames }).map((_, index) => (
                     <div key={index} className="flex items-center gap-4">
                       <span className="text-sm font-medium w-16">Frame {index + 1}:</span>
-                      <div className="w-16 h-16 border-2 border-green-300 rounded-lg flex items-center justify-center bg-white">
-                        {memory[index] !== null ? <span className="text-lg font-bold text-blue-600">{memory[index]}</span> : <span className="text-gray-400">Empty</span>}
+                      <div className="w-16 h-16 border-2 border-primary rounded-lg flex items-center justify-center bg-card">
+                        {memory[index] !== null ? <span className="text-lg font-bold text-primary">{memory[index]}</span> : <span className="text-muted-foreground">Empty</span>}
                       </div>
                     </div>
                   ))}
@@ -97,20 +97,20 @@ const OptimalVisualizer = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{pageFaults}</div>
-                  <div className="text-sm text-gray-600">Page Faults</div>
+                  <div className="text-2xl font-bold text-destructive">{pageFaults}</div>
+                  <div className="text-sm text-muted-foreground">Page Faults</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-700">{pageHits}</div>
-                  <div className="text-sm text-gray-600">Page Hits</div>
+                  <div className="text-2xl font-bold text-success">{pageHits}</div>
+                  <div className="text-sm text-muted-foreground">Page Hits</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{hitRate}%</div>
-                  <div className="text-sm text-gray-600">Hit Rate</div>
+                  <div className="text-lg font-semibold text-foreground">{hitRate}%</div>
+                  <div className="text-sm text-muted-foreground">Hit Rate</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{faultRate}%</div>
-                  <div className="text-sm text-gray-600">Fault Rate</div>
+                  <div className="text-lg font-semibold text-foreground">{faultRate}%</div>
+                  <div className="text-sm text-muted-foreground">Fault Rate</div>
                 </div>
               </CardContent>
             </Card>

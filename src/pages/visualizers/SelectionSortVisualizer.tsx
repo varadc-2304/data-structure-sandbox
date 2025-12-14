@@ -1,13 +1,13 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SelectionSortControls from "./selection-sort/SelectionSortControls";
 import SelectionSortVisualization from "./selection-sort/SelectionSortVisualization";
 import { useSelectionSortVisualizer } from "./selection-sort/useSelectionSortVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
 
 const SelectionSortVisualizer = () => {
   const {
@@ -30,6 +30,7 @@ const SelectionSortVisualizer = () => {
       setArraySize,
       setCustomArrayInput,
       setSpeed,
+      setIsRunning,
       generateRandomArray,
       generateCustomArray,
       resetSort,
@@ -43,12 +44,23 @@ const SelectionSortVisualizer = () => {
   const handleStart = () => {
     if (steps.length === 0 && array.length > 0) {
       startSort();
-    } else {
+    } else if (steps.length > 0) {
+      // Toggle play/pause if steps exist
       if (isRunning) {
-        setSpeed(speed);
+        setIsRunning(false);
       } else {
-        startSort();
+        setIsRunning(true);
       }
+    }
+  };
+
+  const handlePause = () => {
+    setIsRunning(false);
+  };
+
+  const handleResume = () => {
+    if (steps.length > 0 && currentStep < steps.length - 1) {
+      setIsRunning(true);
     }
   };
 
@@ -66,7 +78,7 @@ const SelectionSortVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -109,49 +121,33 @@ const SelectionSortVisualizer = () => {
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={handleStart} variant="default" size="sm" disabled={isRunning || array.length === 0}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={() => setSpeed(speed)} variant="outline" disabled={!steps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={handleStart} variant="outline" disabled={!steps.length || isRunning || currentStep >= steps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={resetSort} variant="outline" disabled={!steps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={prevStep} variant="outline" disabled={!steps.length || currentStep <= -1} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={nextStep} variant="outline" disabled={!steps.length || currentStep >= steps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {steps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {steps.length}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={steps.length}
+                      onPlay={handleStart}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onReset={() => { resetSort(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(steps.length - 1)}
+                      disabled={array.length === 0}
+                    />
                   </div>
 
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Visualization</h3>
-            <SelectionSortVisualization
-              array={array}
-              currentIndex={currentIndex}
-              scanIndex={scanIndex}
-              minIndex={minIndex}
-              sortedIndices={sortedIndices}
-              comparisonText={comparisonText}
-            />
+                    <SelectionSortVisualization
+                      array={array}
+                      currentIndex={currentIndex}
+                      scanIndex={scanIndex}
+                      minIndex={minIndex}
+                      sortedIndices={sortedIndices}
+                      comparisonText={comparisonText}
+                    />
                   </div>
 
                   {steps.length > 0 && (

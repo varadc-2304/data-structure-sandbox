@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search } from "lucide-react";
 
 interface BinarySearchVisualizationProps {
   array: number[];
@@ -6,62 +6,73 @@ interface BinarySearchVisualizationProps {
   right: number | null;
   mid: number | null;
   searchValue: number | null;
+  found?: boolean | null;
+  foundIndex?: number | null;
 }
 
-const BinarySearchVisualization = ({ array, left, right, mid, searchValue }: BinarySearchVisualizationProps) => {
+const BinarySearchVisualization = ({ 
+  array, 
+  left, 
+  right, 
+  mid, 
+  searchValue,
+  found,
+  foundIndex 
+}: BinarySearchVisualizationProps) => {
   return (
-    <Card className="shadow-lg border-2 border-drona-green/20 h-full">
-      <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-        <CardTitle className="text-2xl font-bold text-drona-dark">Binary Search Visualization</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        {array.length === 0 ? (
-          <div className="text-center text-drona-gray py-10">
-            Generate or set a sorted array to begin.
+    <div className="space-y-6">
+      {array.length === 0 ? (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          <div className="text-center">
+            <Search className="mx-auto h-16 w-16 mb-4 opacity-50" />
+            <p className="text-xl font-semibold">Generate an array to start visualization</p>
           </div>
-        ) : (
-          <>
-            <div className="flex flex-wrap justify-center gap-2">
-              {array.map((value, index) => {
-                const isMid = mid === index;
-                const isInRange = left !== null && right !== null && index >= left && index <= right;
-                const isFound = isMid && searchValue !== null && value === searchValue;
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap justify-center gap-3">
+            {array.map((value, index) => {
+              const isMid = mid === index;
+              const isInRange = left !== null && right !== null && index >= left && index <= right;
+              const isFound = found === true && foundIndex === index;
+              
+              let bgClass = "bg-card dark:bg-card border-border dark:border-border";
+              if (isFound) {
+                bgClass = "bg-green-200 dark:bg-green-800 border-green-500 dark:border-green-600 scale-110 animate-pulse";
+              } else if (isMid) {
+                bgClass = "bg-yellow-200 dark:bg-yellow-800 border-yellow-400 dark:border-yellow-600 scale-105";
+              } else if (isInRange) {
+                bgClass = "bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600";
+              } else if (left !== null && right !== null && (index < left || index > right)) {
+                bgClass = "bg-secondary dark:bg-secondary/50 border-border dark:border-border/50 opacity-50 dark:opacity-40";
+              }
+              
+              return (
+                <div
+                  key={index}
+                  className={`w-16 h-16 flex flex-col items-center justify-center rounded-xl border transition-all duration-300 font-bold text-lg ${bgClass}`}
+                >
+                  <span className="text-foreground dark:text-foreground">{value}</span>
+                  <span className="text-[10px] text-muted-foreground dark:text-muted-foreground">idx {index}</span>
+                </div>
+              );
+            })}
+          </div>
 
-                return (
-                  <div
-                    key={index}
-                    className={`w-12 h-16 flex flex-col items-center justify-center rounded-lg border-2 text-sm font-semibold transition-all
-                      ${isFound ? "bg-green-200 border-green-500 scale-110" : ""}
-                      ${isMid && !isFound ? "bg-yellow-100 border-yellow-400 scale-105" : ""}
-                      ${!isMid && isInRange ? "bg-blue-50 border-blue-300" : ""}
-                      ${!isInRange ? "bg-gray-50 border-gray-200 text-gray-500" : ""}
-                    `}
-                  >
-                    <span>{value}</span>
-                    <span className="text-[10px] text-gray-500">idx {index}</span>
-                  </div>
-                );
-              })}
+          {found !== null && (
+            <div className="text-center p-6 rounded-lg border border-border bg-card">
+              {found ? (
+                <div className="text-green-700 dark:text-green-400 text-xl font-bold">
+                  ✅ Found {searchValue} at index {foundIndex}!
+                </div>
+              ) : (
+                <div className="text-red-600 dark:text-red-400 text-xl font-bold">❌ {searchValue} not found in the array.</div>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-drona-dark">
-              <div className="p-3 rounded-lg border-2 border-drona-green/10 bg-drona-light/40">
-                <p className="font-semibold">Left</p>
-                <p>{left !== null ? left : "—"}</p>
-              </div>
-              <div className="p-3 rounded-lg border-2 border-drona-green/10 bg-drona-light/40">
-                <p className="font-semibold">Mid</p>
-                <p>{mid !== null ? mid : "—"}</p>
-              </div>
-              <div className="p-3 rounded-lg border-2 border-drona-green/10 bg-drona-light/40">
-                <p className="font-semibold">Right</p>
-                <p>{right !== null ? right : "—"}</p>
-              </div>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 

@@ -53,7 +53,7 @@ const DataStructureCategory: React.FC<DataStructureCategoryProps> = ({
 
         {tabs.length > 1 ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 w-full justify-start bg-secondary p-1 h-auto overflow-x-auto">
+            <TabsList className="mb-4 w-fit justify-start bg-secondary p-1 h-auto overflow-x-auto">
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.value}

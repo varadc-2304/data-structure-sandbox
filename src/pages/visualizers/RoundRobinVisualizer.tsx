@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ProcessInput from "@/components/ProcessInput";
 import GanttChart from "@/components/GanttChart";
@@ -17,17 +19,21 @@ const RoundRobinVisualizer = () => {
   } = useRoundRobinVisualizer();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
+          <Link to="/dashboard/cpu-scheduling" className="flex items-center text-primary hover:underline mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to CPU Scheduling
+          </Link>
           <div className="arena-chip mb-2">CPU Scheduling Visualization</div>
-          <h1 className="text-3xl font-bold text-arena-dark mb-2">Round Robin Scheduling</h1>
-          <p className="text-arena-gray text-sm">Visualize the Round Robin scheduling algorithm. Each process is assigned a fixed time slot in a cyclic way.</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Round Robin Scheduling</h1>
+          <p className="text-muted-foreground text-sm">Visualize the Round Robin scheduling algorithm. Each process is assigned a fixed time slot in a cyclic way.</p>
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -48,7 +54,7 @@ const RoundRobinVisualizer = () => {
                 <ProcessInput processes={processes} setProcesses={setProcesses} />
                 <Card className="mt-3">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Time Quantum</CardTitle>
+                    <CardTitle className="text-base text-foreground">Time Quantum</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Input 
@@ -65,7 +71,7 @@ const RoundRobinVisualizer = () => {
               </div>
 
               <div className="md:col-span-2">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in border border-border" style={{ animationDelay: "0.2s" }}>
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button onClick={runSimulation} variant="default" size="sm" disabled={isSimulating}>
                       <Play className="mr-2 h-3 w-3" />
@@ -89,31 +95,31 @@ const RoundRobinVisualizer = () => {
                     <Button onClick={stepForward} variant="outline" disabled={!ganttChart.length || currentTime >= totalTime} size="sm">
                       <SkipForward className="h-3 w-3" />
                     </Button>
-                    <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
-                      <Timer className="mr-2 h-3 w-3 text-arena-red" />
-                      <span className="text-arena-dark font-medium text-sm">
+                    <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                      <Timer className="mr-2 h-3 w-3 text-primary" />
+                      <span className="text-foreground font-medium text-sm">
                         Time: {currentTime} / {totalTime}
                       </span>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
-                    <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
+                    <h3 className="text-sm font-medium mb-2 text-foreground">Gantt Chart</h3>
+                    <GanttChart data={ganttChart} currentTime={currentTime} className="border border-border" />
                   </div>
 
                   {scheduledProcesses.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Average Waiting Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgWaitingTime.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">Average Waiting Time</p>
+                          <p className="text-xl font-bold text-foreground">{avgWaitingTime.toFixed(2)}</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Average Turnaround Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgTurnaroundTime.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">Average Turnaround Time</p>
+                          <p className="text-xl font-bold text-foreground">{avgTurnaroundTime.toFixed(2)}</p>
                         </CardContent>
                       </Card>
                     </div>
@@ -121,23 +127,23 @@ const RoundRobinVisualizer = () => {
 
                   {scheduledProcesses.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Scheduled Processes</h3>
+                      <h3 className="text-sm font-medium mb-2 text-foreground">Scheduled Processes</h3>
                       <div className="overflow-x-auto max-h-[150px]">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-arena-light">
+                        <table className="min-w-full divide-y divide-border text-sm">
+                          <thead className="bg-secondary">
                             <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">ID</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Arrival</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Burst</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Start</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Finish</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Waiting</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Turnaround</th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody className="bg-card divide-y divide-border">
                             {scheduledProcesses.map((process) => (
-                              <tr key={process.id} className={currentTime >= process.startTime! ? "bg-green-50" : "bg-white"}>
+                              <tr key={process.id} className={currentTime >= process.startTime! ? "bg-success/20" : "bg-card"}>
                                 <td className="px-3 py-2 whitespace-nowrap">
                                   <div className="flex items-center">
                                     <div className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: process.color }}></div>
@@ -161,16 +167,16 @@ const RoundRobinVisualizer = () => {
               </div>
 
               <div className="md:col-span-3">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
-                  <h2 className="text-lg font-semibold mb-2">About Round Robin Scheduling</h2>
-                  <p className="text-arena-gray mb-3 text-sm">Round Robin (RR) is a CPU scheduling algorithm where each process is assigned a fixed time slot (time quantum) in a cyclic way. It is designed especially for time-sharing systems.</p>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in border border-border text-sm" style={{ animationDelay: "0.4s" }}>
+                  <h2 className="text-lg font-semibold mb-2 text-foreground">About Round Robin Scheduling</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">Round Robin (RR) is a CPU scheduling algorithm where each process is assigned a fixed time slot (time quantum) in a cyclic way. It is designed especially for time-sharing systems.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Characteristics</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>Preemptive scheduling algorithm</li>
                           <li>Time slice or quantum is assigned to each process</li>
                           <li>After time quantum expires, process is preempted and added to the end of the ready queue</li>
@@ -178,12 +184,12 @@ const RoundRobinVisualizer = () => {
                         </ul>
                       </CardContent>
                     </Card>
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Performance Factors</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Performance Factors</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>Time quantum affects performance significantly</li>
                           <li>Large time quantum: approximates FCFS</li>
                           <li>Small time quantum: better response time but more context switching overhead</li>

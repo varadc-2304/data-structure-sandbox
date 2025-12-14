@@ -1,23 +1,45 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import NQueensControls from "./nqueens/NQueensControls";
 import NQueensBoard from "./nqueens/NQueensBoard";
 import { useNQueensVisualizer } from "./nqueens/useNQueensVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
 
 const NQueensVisualizer = () => {
   const {
     state: { boardSize, solutions, currentSolutionIndex, isRunning, speed, currentStep, solutionFound, isInitialized },
-    actions: { setBoardSize, setSpeed, resetVisualization, toggleRunning, nextStep, prevStep, skipToStart, skipToEnd, goToStep, changeSolution, getCurrentSteps, getCurrentBoard, getCurrentStepInfo },
+    actions: { setBoardSize, setSpeed, resetVisualization, toggleRunning, nextStep, prevStep, skipToStart, skipToEnd, goToStep, changeSolution, getCurrentSteps, getCurrentBoard, getCurrentStepInfo, setIsRunning },
   } = useNQueensVisualizer();
 
   const displayBoard = getCurrentBoard();
   const currentSteps = getCurrentSteps();
   const currentStepInfo = getCurrentStepInfo();
+
+  const handleStart = () => {
+    if (!isInitialized) {
+      resetVisualization();
+    } else if (currentSteps.length > 0) {
+      if (isRunning) {
+        setIsRunning(false);
+      } else {
+        setIsRunning(true);
+      }
+    }
+  };
+
+  const handlePause = () => {
+    setIsRunning(false);
+  };
+
+  const handleResume = () => {
+    if (currentSteps.length > 0 && currentStep < currentSteps.length - 1) {
+      setIsRunning(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -33,7 +55,7 @@ const NQueensVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -76,44 +98,28 @@ const NQueensVisualizer = () => {
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={toggleRunning} variant="default" size="sm" disabled={isRunning || !isInitialized}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={toggleRunning} variant="outline" disabled={!currentSteps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={toggleRunning} variant="outline" disabled={!currentSteps.length || isRunning || currentStep >= currentSteps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={resetVisualization} variant="outline" disabled={!currentSteps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={prevStep} variant="outline" disabled={!currentSteps.length || currentStep <= 0} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={nextStep} variant="outline" disabled={!currentSteps.length || currentStep >= currentSteps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {currentSteps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {currentSteps.length}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={currentSteps.length}
+                      onPlay={handleStart}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onReset={() => { resetVisualization(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(currentSteps.length - 1)}
+                      disabled={!isInitialized}
+                    />
                   </div>
 
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Visualization</h3>
                     {currentStepInfo && currentStepInfo.message && (
                       <div
-                        className={`p-3 rounded-lg text-center font-medium mb-4 ${
+                        className={`p-3 rounded-lg text-center font-medium mb-4 animate-in fade-in duration-300 ${
                           currentStepInfo.isSolution
                             ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
                             : currentStepInfo.isConflict
@@ -129,20 +135,22 @@ const NQueensVisualizer = () => {
                     <NQueensBoard boardSize={boardSize} displayBoard={displayBoard} currentStepInfo={currentStepInfo} />
                   </div>
 
-                  {solutions.length > 0 && (
+                  {currentSteps.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Solutions Found</p>
-                          <p className="text-xl font-bold text-foreground">{solutions.length}</p>
+                          <p className="text-sm text-muted-foreground">Step</p>
+                          <p className="text-xl font-bold text-foreground">{currentStep + 1} / {currentSteps.length}</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-secondary">
-                        <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Current Solution</p>
-                          <p className="text-xl font-bold text-foreground">{currentSolutionIndex + 1}</p>
-                        </CardContent>
-                      </Card>
+                      {solutions.length > 0 && (
+                        <Card className="bg-secondary">
+                          <CardContent className="p-3 flex flex-col items-center justify-center">
+                            <p className="text-sm text-muted-foreground">Solutions Found</p>
+                            <p className="text-xl font-bold text-foreground">{solutions.length}</p>
+                          </CardContent>
+                        </Card>
+                      )}
                     </div>
                   )}
                 </div>

@@ -4,7 +4,7 @@ Learn how Drona collects, protects, and uses your information while delivering i
 
 **Last Updated:** December 13, 2025  
 **Jurisdiction:** Pune, Maharashtra, India  
-**Contact:** ikshvaku.innovations@gmail.com
+**Contact:** [ikshvaku.innovations@gmail.com](mailto:ikshvaku.innovations@gmail.com)
 
 ## Privacy Policy
 
@@ -102,7 +102,7 @@ Under Indian DPDP principles, you have the right to:
 - Withdraw consent at any time
 - Raise complaints or concerns
 
-All requests can be sent to: 📧 ikshvaku.innovations@gmail.com
+All requests can be sent to: [ikshvaku.innovations@gmail.com](mailto:ikshvaku.innovations@gmail.com)
 
 ## 8. Security Measures
 
@@ -135,7 +135,7 @@ Blocking cookies may cause some features to stop working correctly.
 
 To delete your account or associated data:
 
-Email ikshvaku.innovations@gmail.com from your registered email ID.
+Email [ikshvaku.innovations@gmail.com](mailto:ikshvaku.innovations@gmail.com) from your registered email ID.
 
 **Account deletion is permanent and cannot be reversed.**
 
@@ -147,5 +147,5 @@ We may update this Privacy Policy from time to time. Continued use of Drona afte
 
 For privacy concerns, questions, or complaints:
 
-📧 ikshvaku.innovations@gmail.com
+[ikshvaku.innovations@gmail.com](mailto:ikshvaku.innovations@gmail.com)
 

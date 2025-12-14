@@ -1,20 +1,52 @@
-import React from "react";
-import { Briefcase, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Timer } from "lucide-react";
+import React, { useEffect } from "react";
+import { Briefcase, ArrowLeft, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useJobSequencingVisualizer } from "./job-sequencing/useJobSequencingVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
+import SpeedControl from "@/components/SpeedControl";
 
 const JobSequencingVisualizer = () => {
   const {
     state: { jobs, numJobs, customJobsInput, currentJobIndex, selectedJobs, timeSlots, totalProfit, isRunning, speed, sequencingSteps, currentStep },
-    actions: { setNumJobs, setCustomJobsInput, setSpeed, generateRandomJobs, generateCustomJobs, resetSequencing, startSequencing, nextStep, prevStep, goToStep, togglePlayPause },
+    actions: { setNumJobs, setCustomJobsInput, setSpeed, generateRandomJobs, generateCustomJobs, resetSequencing, startSequencing, nextStep, prevStep, goToStep, togglePlayPause, setIsRunning },
   } = useJobSequencingVisualizer();
+
+  // Auto-generate jobs on mount
+  useEffect(() => {
+    if (jobs.length === 0) {
+      generateRandomJobs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleStart = () => {
+    if (sequencingSteps.length === 0 && jobs.length > 0) {
+      startSequencing();
+    } else if (sequencingSteps.length > 0) {
+      // Toggle play/pause if steps exist
+      if (isRunning) {
+        setIsRunning(false);
+      } else {
+        setIsRunning(true);
+      }
+    }
+  };
+
+  const handlePause = () => {
+    setIsRunning(false);
+  };
+
+  const handleResume = () => {
+    if (sequencingSteps.length > 0 && currentStep < sequencingSteps.length - 1) {
+      setIsRunning(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -30,7 +62,7 @@ const JobSequencingVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -74,145 +106,167 @@ const JobSequencingVisualizer = () => {
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-foreground">Animation Speed: {speed}x</Label>
-                  <div className="flex items-center mt-1">
-                    <input type="range" min={0.5} max={3} step={0.5} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="w-full" />
-                  </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>0.5x</span>
-                        <span>1x</span>
-                        <span>1.5x</span>
-                        <span>2.0x</span>
-                        <span>2.5x</span>
-                        <span>3x</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-                <Card className="bg-card border border-border">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold text-foreground">Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid gap-4">
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Current Step</p>
-                        <p className="text-3xl font-bold text-foreground">{Math.max(0, currentStep)}</p>
-                  </div>
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Number of Jobs</p>
-                        <p className="text-3xl font-bold text-foreground">{jobs.length}</p>
-                  </div>
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Total Steps</p>
-                        <p className="text-xl font-bold text-foreground">{sequencingSteps.length}</p>
-                  </div>
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Total Profit</p>
-                        <p className="text-xl font-bold text-foreground">{totalProfit}</p>
-                  </div>
-                </div>
+                <SpeedControl
+                  speed={speed}
+                  onSpeedChange={setSpeed}
+                  min={0.5}
+                  max={3}
+                  step={0.5}
+                />
               </CardContent>
             </Card>
           </div>
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={togglePlayPause} variant="default" size="sm" disabled={isRunning || jobs.length === 0}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={togglePlayPause} variant="outline" disabled={!sequencingSteps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={togglePlayPause} variant="outline" disabled={!sequencingSteps.length || isRunning || currentStep >= sequencingSteps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={() => { resetSequencing(); }} variant="outline" disabled={!sequencingSteps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={prevStep} variant="outline" disabled={!sequencingSteps.length || currentStep <= 0} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={nextStep} variant="outline" disabled={!sequencingSteps.length || currentStep >= sequencingSteps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {sequencingSteps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {sequencingSteps.length}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={sequencingSteps.length}
+                      onPlay={handleStart}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onReset={() => { resetSequencing(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(sequencingSteps.length - 1)}
+                      disabled={jobs.length === 0}
+                    />
                   </div>
 
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Visualization</h3>
-                {jobs.length === 0 ? (
+                    {jobs.length === 0 ? (
                       <div className="flex items-center justify-center h-64 text-muted-foreground">
-                    <div className="text-center">
-                      <Briefcase className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Generate jobs to start visualization</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {jobs.map((job, index) => (
-                            <Card key={job.id} className={`border ${index === currentJobIndex ? "border-primary shadow-md scale-105" : "border-border"}`}>
-                          <CardHeader>
-                                <CardTitle className="text-lg font-semibold text-foreground">Job {job.id}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-2">
-                                <p className="text-muted-foreground font-medium">Profit: {job.profit}</p>
-                                <p className="text-muted-foreground font-medium">Deadline: {job.deadline}</p>
-                                <p className="text-sm text-muted-foreground">{selectedJobs.find((j) => j.id === job.id) ? "Scheduled" : "Not Scheduled"}</p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-
-                    <div className="mb-4">
-                          <h3 className="text-xl font-semibold text-foreground mb-2">Scheduled Jobs</h3>
-                      {selectedJobs.length === 0 ? (
-                            <p className="text-muted-foreground font-medium">No jobs scheduled yet.</p>
-                      ) : (
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground font-medium">
-                          {selectedJobs.map((job) => (
-                            <li key={job.id}>
-                              Job {job.id} (Profit: {job.profit}, Deadline: {job.deadline})
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="mb-4">
-                          <h3 className="text-xl font-semibold text-foreground mb-2">Time Slots</h3>
-                      {timeSlots.every((slot) => slot === null) ? (
-                            <p className="text-muted-foreground font-medium">No jobs scheduled in any time slot.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                          {timeSlots.map((jobId, index) => (
-                                <div key={index} className="bg-card p-3 rounded-lg border border-border">
-                                  <p className="text-sm font-semibold text-foreground">Time Slot {index + 1}:</p>
-                                  <p className="text-muted-foreground font-medium">{jobId === null ? "Empty" : `Job ${jobId}`}</p>
-                            </div>
-                          ))}
+                        <div className="text-center">
+                          <Briefcase className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                          <p className="text-xl font-semibold">Generate jobs to start visualization</p>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Step-by-step explanation */}
+                        {currentStep >= 0 && currentStep < sequencingSteps.length && (
+                          <Card className="bg-card border border-border animate-in fade-in duration-300">
+                            <CardContent className="p-4 space-y-2">
+                              <p className="text-sm font-semibold text-foreground">Step {currentStep + 1} Explanation:</p>
+                              <p className="text-sm text-foreground">{sequencingSteps[currentStep].comparison}</p>
+                            </CardContent>
+                          </Card>
+                        )}
 
-                    {currentStep >= 0 && currentStep < sequencingSteps.length && (
-                          <div className="text-center p-4 rounded-lg border border-border bg-card">
-                            <p className="text-lg font-semibold text-foreground">{sequencingSteps[currentStep].comparison}</p>
+                        {/* Jobs Grid */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground mb-3">Jobs (Sorted by Profit)</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {jobs.map((job, index) => {
+                              const isCurrent = index === currentJobIndex;
+                              const isScheduled = selectedJobs.find((j) => j.id === job.id) !== undefined;
+                              let borderClass = "border-border";
+                              let bgClass = "bg-card";
+                              if (isCurrent) {
+                                borderClass = "border-primary dark:border-primary shadow-lg";
+                                bgClass = "bg-primary/5 dark:bg-primary/10";
+                              } else if (isScheduled) {
+                                borderClass = "border-green-500 dark:border-green-600";
+                                bgClass = "bg-green-50 dark:bg-green-900/20";
+                              }
+                              return (
+                                <Card 
+                                  key={job.id} 
+                                  className={`border-2 ${borderClass} ${bgClass} transition-all duration-300 ${
+                                    isCurrent ? "scale-105 animate-pulse" : "hover:scale-105"
+                                  }`}
+                                >
+                                  <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="text-lg font-semibold text-foreground">Job {job.id}</CardTitle>
+                                      {isScheduled && (
+                                        <span className="text-xs bg-green-500 dark:bg-green-600 text-white px-2 py-1 rounded animate-in fade-in">
+                                          Scheduled
+                                        </span>
+                                      )}
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-muted-foreground">Profit:</span>
+                                      <span className="font-bold text-foreground text-lg">${job.profit}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm text-muted-foreground">Deadline:</span>
+                                      <span className="font-semibold text-foreground">Slot {job.deadline}</span>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Time Slots Timeline */}
+                        {timeSlots.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-foreground mb-3">Time Slots Timeline</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                              {timeSlots.map((jobId, index) => {
+                                const isFilled = jobId !== null;
+                                const job = jobs.find(j => j.id === jobId);
+                                return (
+                                  <Card 
+                                    key={index} 
+                                    className={`border-2 transition-all duration-300 ${
+                                      isFilled 
+                                        ? "border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-900/20 shadow-md animate-in zoom-in" 
+                                        : "border-border bg-card dark:bg-card"
+                                    }`}
+                                  >
+                                    <CardContent className="p-4 text-center">
+                                      <p className="text-xs text-muted-foreground mb-2">Slot {index + 1}</p>
+                                      {isFilled ? (
+                                        <div className="space-y-1">
+                                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {jobId}
+                                          </div>
+                                          {job && (
+                                            <p className="text-xs text-foreground">
+                                              ${job.profit}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-muted-foreground text-sm">Empty</div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Scheduled Jobs Summary */}
+                        {selectedJobs.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-foreground">Scheduled Jobs Summary</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {selectedJobs.map((job) => (
+                                <Card key={job.id} className="bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600 animate-in slide-in-from-left">
+                                  <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-semibold text-foreground">Job {job.id}</span>
+                                      <span className="text-sm text-muted-foreground">Deadline: {job.deadline}</span>
+                                    </div>
+                                    <p className="text-sm font-bold text-green-600 dark:text-green-400 mt-1">
+                                      Profit: ${job.profit}
+                                    </p>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -223,14 +277,14 @@ const JobSequencingVisualizer = () => {
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Total Profit</p>
-                          <p className="text-xl font-bold text-foreground">{totalProfit}</p>
+                          <p className="text-sm text-muted-foreground">Step</p>
+                          <p className="text-xl font-bold text-foreground">{currentStep + 1} / {sequencingSteps.length}</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Scheduled Jobs</p>
-                          <p className="text-xl font-bold text-foreground">{selectedJobs.length}</p>
+                          <p className="text-sm text-muted-foreground">Total Profit</p>
+                          <p className="text-xl font-bold text-foreground">${totalProfit}</p>
                         </CardContent>
                       </Card>
                     </div>

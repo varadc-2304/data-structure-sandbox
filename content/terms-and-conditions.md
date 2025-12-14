@@ -59,5 +59,5 @@ These Terms shall be governed by and interpreted in accordance with the laws of 
 
 For questions regarding these Terms:
 
-📧 ikshvaku.innovations@gmail.com
+[ikshvaku.innovations@gmail.com](mailto:ikshvaku.innovations@gmail.com)
 

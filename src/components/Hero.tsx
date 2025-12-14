@@ -14,7 +14,7 @@ const Hero = () => {
               <span className="block text-primary mt-2">Computer Science</span>
             </h1>
             <p className="text-base text-muted-foreground sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-6">
-              Master data structures and algorithms through interactive visualizations 
+              Master data structures, algorithms, and system concepts through interactive visualizations 
               that make complex concepts crystal clear.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-muted-foreground">
@@ -29,10 +29,6 @@ const Hero = () => {
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
                 <span>Open Source</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                <span>Privacy Focused</span>
               </div>
             </div>
           </div>

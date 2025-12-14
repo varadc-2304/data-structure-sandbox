@@ -495,14 +495,14 @@ const CircularLinkedListVisualizerContent = () => {
             <div className="flex items-center justify-center w-full">
               {/* Left opening (HEAD) */}
               <div className="flex flex-col items-center">
-                <div className="w-16 h-3 bg-gray-400 rounded-l-lg border-2 border-r-0 border-gray-600 relative" style={{ transform: "perspective(100px) rotateY(-5deg)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-gray-500 to-gray-400 rounded-l-lg"></div>
+                <div className="w-16 h-3 bg-muted rounded-l-lg border-2 border-r-0 border-border relative" style={{ transform: "perspective(100px) rotateY(-5deg)" }}>
+                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-muted to-muted/80 rounded-l-lg"></div>
                 </div>
                 <div className="text-xs font-semibold text-primary mt-1">HEAD</div>
               </div>
               
               {/* Circular Linked List container */}
-              <div className="flex-1 border-2 border-gray-600 border-x-0 bg-secondary rounded-none p-4 min-h-[150px] flex items-center overflow-x-auto relative">
+              <div className="flex-1 border-2 border-border border-x-0 bg-secondary rounded-none p-4 min-h-[150px] flex items-center overflow-x-auto relative">
                 {orderedNodes.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-8 text-muted-foreground">
                     <AlertCircle className="mr-2 h-5 w-5" />
@@ -523,7 +523,7 @@ const CircularLinkedListVisualizerContent = () => {
                                     operationTarget === index && lastOperation === "search",
                                   "border-primary bg-primary/10 shadow-md scale-110":
                                     operationTarget === index && lastOperation !== "search",
-                                  "border-green-500 bg-green-200 shadow-lg":
+                                  "border-success bg-success/20 shadow-lg":
                                     operationTarget === index && lastOperation === "search",
                                   "border-border bg-card": operationTarget !== index,
                                 }
@@ -531,7 +531,7 @@ const CircularLinkedListVisualizerContent = () => {
                             >
                               <div className="text-lg font-bold text-foreground">{node.value}</div>
                               <div className="text-xs text-muted-foreground mt-1">
-                                {index === 0 ? 'HEAD' : index === orderedNodes.length - 1 ? 'TAIL' : `[${index}]`}
+                                [{index}]
                               </div>
                             </div>
                           </div>
@@ -545,7 +545,7 @@ const CircularLinkedListVisualizerContent = () => {
                                   "h-0.5 w-12 transition-all duration-300",
                                   highlightedArrow === index 
                                     ? "bg-primary" 
-                                    : "bg-gray-400"
+                                    : "bg-muted-foreground"
                                 )}></div>
                                 {/* Arrow head pointing right */}
                                 <ArrowRight 
@@ -553,7 +553,7 @@ const CircularLinkedListVisualizerContent = () => {
                                     "h-5 w-5 transition-all duration-300 absolute right-0",
                                     highlightedArrow === index 
                                       ? "text-primary scale-125" 
-                                      : "text-gray-400"
+                                      : "text-muted-foreground"
                                   )} 
                                 />
                               </div>
@@ -567,7 +567,7 @@ const CircularLinkedListVisualizerContent = () => {
                                   "h-0.5 w-12 transition-all duration-300",
                                   highlightedCircularConnection || highlightedArrow === index
                                     ? "bg-primary" 
-                                    : "bg-gray-400"
+                                    : "bg-muted-foreground"
                                 )}></div>
                                 {/* Arrow head pointing right (will connect to head) */}
                                 <ArrowRight 
@@ -575,7 +575,7 @@ const CircularLinkedListVisualizerContent = () => {
                                     "h-5 w-5 transition-all duration-300 absolute right-0",
                                     highlightedCircularConnection || highlightedArrow === index
                                       ? "text-primary scale-125" 
-                                      : "text-gray-400"
+                                      : "text-muted-foreground"
                                   )} 
                                 />
                               </div>
@@ -602,8 +602,8 @@ const CircularLinkedListVisualizerContent = () => {
               
               {/* Right opening (TAIL) */}
               <div className="flex flex-col items-center">
-                <div className="w-16 h-3 bg-gray-400 rounded-r-lg border-2 border-l-0 border-gray-600 relative" style={{ transform: "perspective(100px) rotateY(5deg)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-l from-gray-500 to-gray-400 rounded-r-lg"></div>
+                <div className="w-16 h-3 bg-muted rounded-r-lg border-2 border-l-0 border-border relative" style={{ transform: "perspective(100px) rotateY(5deg)" }}>
+                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-l from-muted to-muted/80 rounded-r-lg"></div>
                 </div>
                 <div className="text-xs font-semibold text-primary mt-1">TAIL</div>
               </div>

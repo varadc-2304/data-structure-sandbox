@@ -50,7 +50,7 @@ const FCFSDiskVisualizer = () => {
   const avgSeekTime = seekHistory.length ? (totalSeekTime / seekHistory.length).toFixed(2) : "0";
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
@@ -58,13 +58,13 @@ const FCFSDiskVisualizer = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Disk Scheduling
           </Link>
-          <div className="arena-chip mb-2">Disk Scheduling Visualization</div>
-          <h1 className="text-3xl font-bold text-arena-dark mb-2">First Come First Serve (FCFS)</h1>
-          <p className="text-arena-gray text-sm">Visualize the First Come First Serve disk scheduling algorithm. Requests are processed in the order they arrive.</p>
+          <div className="arena-chip mb-2 text-foreground">Disk Scheduling Visualization</div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">First Come First Serve (FCFS)</h1>
+          <p className="text-muted-foreground text-sm">Visualize the First Come First Serve disk scheduling algorithm. Requests are processed in the order they arrive.</p>
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -82,7 +82,7 @@ const FCFSDiskVisualizer = () => {
           <TabsContent value="visualizer" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1">
-                <Card className="bg-white rounded-2xl shadow-md p-4">
+                <Card className="bg-card rounded-2xl shadow-md p-4 border border-border">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Configuration</CardTitle>
                   </CardHeader>
@@ -107,7 +107,7 @@ const FCFSDiskVisualizer = () => {
 
                     <div>
                       <Label htmlFor="numPositions">Number of Positions</Label>
-                      <div className="flex mt-1">
+                      <div className="flex gap-2 mt-1">
                         <Input
                           id="numPositions"
                           type="number"
@@ -117,7 +117,7 @@ const FCFSDiskVisualizer = () => {
                           value={numPositions}
                           onChange={(e) => setNumPositions(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && numPositions && generateRandomRequests(Number(numPositions))}
-                          className="rounded-r-none"
+                          className="h-8 text-sm"
                         />
                         <Button 
                           onClick={() => {
@@ -126,7 +126,8 @@ const FCFSDiskVisualizer = () => {
                               setNumPositions("");
                             }
                           }}
-                          className="rounded-l-none"
+                          size="sm"
+                          className="h-8"
                         >
                           Generate
                         </Button>
@@ -136,16 +137,16 @@ const FCFSDiskVisualizer = () => {
 
                     <div>
                       <Label htmlFor="position">Request Position (Manual)</Label>
-                      <div className="flex mt-1">
+                      <div className="flex gap-2 mt-1">
                         <Input
                           id="position"
                           placeholder="e.g., 50, 95, 180"
                           value={inputPosition}
                           onChange={(e) => setInputPosition(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleAddRequest()}
-                          className="rounded-r-none"
+                          className="h-8 text-sm"
                         />
-                        <Button onClick={handleAddRequest} className="rounded-l-none">
+                        <Button onClick={handleAddRequest} size="sm" className="h-8">
                           Add
                         </Button>
                       </div>
@@ -172,7 +173,7 @@ const FCFSDiskVisualizer = () => {
               </div>
 
               <div className="md:col-span-2">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in border border-border" style={{ animationDelay: "0.2s" }}>
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button onClick={runSimulation} variant="default" size="sm" disabled={requestQueue.length === 0 || isPlaying}>
                       <Play className="mr-2 h-3 w-3" />
@@ -196,9 +197,9 @@ const FCFSDiskVisualizer = () => {
                     <Button onClick={nextStep} variant="outline" disabled={requestQueue.length === 0 || currentStep >= requestQueue.length - 1} size="sm">
                       <SkipForward className="h-3 w-3" />
                     </Button>
-                    <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
-                      <Timer className="mr-2 h-3 w-3 text-arena-green" />
-                      <span className="text-arena-dark font-medium text-sm">
+                    <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                      <Timer className="mr-2 h-3 w-3 text-primary" />
+                      <span className="text-foreground font-medium text-sm">
                         Step: {currentStep + 1} / {requestQueue.length || 1}
                       </span>
                     </div>
@@ -219,16 +220,16 @@ const FCFSDiskVisualizer = () => {
 
                   {requestQueue.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Total Seek Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{totalSeekTime} cylinders</p>
+                          <p className="text-sm text-muted-foreground">Total Seek Time</p>
+                          <p className="text-xl font-bold text-foreground">{totalSeekTime} cylinders</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Average Seek Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgSeekTime} cylinders</p>
+                          <p className="text-sm text-muted-foreground">Average Seek Time</p>
+                          <p className="text-xl font-bold text-foreground">{avgSeekTime} cylinders</p>
                         </CardContent>
                       </Card>
                     </div>
@@ -238,17 +239,17 @@ const FCFSDiskVisualizer = () => {
                     <div>
                       <h3 className="text-sm font-medium mb-2">Request Queue</h3>
                       <div className="overflow-x-auto max-h-[150px]">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-arena-light">
+                        <table className="min-w-full divide-y divide-border text-sm">
+                          <thead className="bg-secondary">
                             <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seek Time</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Position</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Seek Time</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody className="bg-card divide-y divide-border">
                             {requestQueue.map((request, index) => (
-                              <tr key={index} className={index <= currentStep ? "bg-blue-50" : "bg-white"}>
+                              <tr key={index} className={index <= currentStep ? "bg-primary/10" : "bg-card"}>
                                 <td className="px-3 py-2 whitespace-nowrap">{request.position}</td>
                                 <td className="px-3 py-2 whitespace-nowrap">
                                   {index > 0 && index <= currentStep
@@ -271,28 +272,28 @@ const FCFSDiskVisualizer = () => {
               </div>
 
               <div className="md:col-span-3">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
-                  <h2 className="text-lg font-semibold mb-2">About First Come First Serve</h2>
-                  <p className="text-arena-gray mb-3 text-sm">First Come First Serve (FCFS) is the simplest disk scheduling algorithm. In this scheme, the request that arrives first is serviced first.</p>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in text-sm border border-border" style={{ animationDelay: "0.4s" }}>
+                  <h2 className="text-lg font-semibold mb-2 text-foreground">About First Come First Serve</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">First Come First Serve (FCFS) is the simplest disk scheduling algorithm. In this scheme, the request that arrives first is serviced first.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Characteristics</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>Simple to implement</li>
                           <li>Fair in arrival order</li>
                           <li>No starvation</li>
                         </ul>
                       </CardContent>
                     </Card>
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Limitations</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Limitations</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>May result in high seek times</li>
                           <li>Not optimal for minimizing average seek time</li>
                           <li>Does not consider disk head position</li>

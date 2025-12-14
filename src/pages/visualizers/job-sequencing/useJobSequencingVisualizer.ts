@@ -164,6 +164,15 @@ export const useJobSequencingVisualizer = () => {
     resetSequencing();
     const { steps } = calculateSequencingSteps(jobs);
     setSequencingSteps(steps);
+    if (steps.length > 0) {
+      setCurrentStep(0);
+      const step = steps[0];
+      setJobs(step.jobs);
+      setCurrentJobIndex(step.currentJobIndex);
+      setSelectedJobs(step.selectedJobs);
+      setTimeSlots(step.timeSlots);
+      setTotalProfit(step.totalProfit);
+    }
     setIsRunning(true);
   };
 
@@ -186,7 +195,7 @@ export const useJobSequencingVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
 
     const prevStepIndex = currentStep - 1;
     setCurrentStep(prevStepIndex);
@@ -263,6 +272,7 @@ export const useJobSequencingVisualizer = () => {
       prevStep,
       goToStep,
       togglePlayPause,
+      setIsRunning,
     },
   };
 };

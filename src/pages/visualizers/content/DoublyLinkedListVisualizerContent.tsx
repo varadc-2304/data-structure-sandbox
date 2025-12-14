@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus, Trash, Eye, AlertCircle, Shuffle, ArrowLeft, ArrowRight, ArrowLeftRight, Search, X } from 'lucide-react';
+import { Plus, Trash, Eye, AlertCircle, Shuffle, ArrowLeft, ArrowRight, ArrowLeftRight, Search, RotateCcw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
@@ -552,9 +552,9 @@ const DoublyLinkedListVisualizerContent = () => {
                 onClick={clearList} 
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                className="flex items-center gap-2"
               >
-                <X className="h-4 w-4" />
+                <RotateCcw className="h-4 w-4" />
                 Clear
               </Button>
             </div>
@@ -568,14 +568,14 @@ const DoublyLinkedListVisualizerContent = () => {
             <div className="flex items-center justify-center w-full">
               {/* Left opening (HEAD) */}
               <div className="flex flex-col items-center">
-                <div className="w-16 h-3 bg-gray-400 rounded-l-lg border-2 border-r-0 border-gray-600 relative" style={{ transform: "perspective(100px) rotateY(-5deg)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-gray-500 to-gray-400 rounded-l-lg"></div>
+                <div className="w-16 h-3 bg-muted rounded-l-lg border-2 border-r-0 border-border relative" style={{ transform: "perspective(100px) rotateY(-5deg)" }}>
+                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-muted to-muted/80 rounded-l-lg"></div>
                 </div>
                 <div className="text-xs font-semibold text-primary mt-1">HEAD</div>
               </div>
               
               {/* Doubly Linked List container */}
-              <div className="flex-1 border-2 border-gray-600 border-x-0 bg-secondary rounded-none p-4 min-h-[180px] flex items-center overflow-x-auto">
+              <div className="flex-1 border-2 border-border border-x-0 bg-secondary rounded-none p-4 min-h-[180px] flex items-center overflow-x-auto">
                 {orderedNodes.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-8 text-muted-foreground">
                     <AlertCircle className="mr-2 h-5 w-5" />
@@ -597,7 +597,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                   operationTarget === index && lastOperation !== 'search' && lastOperation !== 'traverse',
                                 "border-primary bg-primary/10 shadow-md scale-110": 
                                   operationTarget === index && lastOperation === 'traverse',
-                                "border-green-500 bg-green-200 shadow-lg": 
+                                "border-success bg-success/20 shadow-lg": 
                                   operationTarget === index && lastOperation === 'search',
                                 "border-border bg-card": operationTarget !== index,
                               }
@@ -605,7 +605,7 @@ const DoublyLinkedListVisualizerContent = () => {
                           >
                             <div className="text-lg font-bold text-foreground">{node.value}</div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              {index === 0 ? 'HEAD' : index === orderedNodes.length - 1 ? 'TAIL' : `[${index}]`}
+                              [{index}]
                             </div>
                           </div>
                         </div>
@@ -620,7 +620,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                 "h-0.5 w-12 transition-all duration-300",
                                 lastOperation === 'traverse' && traverseDirection === 'forward' && highlightedArrow === index
                                   ? "bg-primary" 
-                                  : "bg-gray-400"
+                                  : "bg-muted-foreground"
                               )}></div>
                               {/* Arrow head pointing right */}
                               <ArrowRight 
@@ -628,7 +628,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                   "h-4 w-4 transition-all duration-300 absolute right-0",
                                   lastOperation === 'traverse' && traverseDirection === 'forward' && highlightedArrow === index
                                     ? "text-primary scale-125" 
-                                    : "text-gray-400"
+                                    : "text-muted-foreground"
                                 )} 
                               />
                             </div>
@@ -640,7 +640,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                 "h-0.5 w-12 transition-all duration-300",
                                 lastOperation === 'traverse' && traverseDirection === 'backward' && highlightedArrow === index
                                   ? "bg-primary" 
-                                  : "bg-gray-400"
+                                  : "bg-muted-foreground"
                               )}></div>
                               {/* Arrow head pointing left */}
                               <ArrowLeft 
@@ -648,7 +648,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                   "h-4 w-4 transition-all duration-300 absolute left-0",
                                   lastOperation === 'traverse' && traverseDirection === 'backward' && highlightedArrow === index
                                     ? "text-primary scale-125" 
-                                    : "text-gray-400"
+                                    : "text-muted-foreground"
                                 )} 
                               />
                             </div>
@@ -669,8 +669,8 @@ const DoublyLinkedListVisualizerContent = () => {
               
               {/* Right opening (TAIL) */}
               <div className="flex flex-col items-center">
-                <div className="w-16 h-3 bg-gray-400 rounded-r-lg border-2 border-l-0 border-gray-600 relative" style={{ transform: "perspective(100px) rotateY(5deg)" }}>
-                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-l from-gray-500 to-gray-400 rounded-r-lg"></div>
+                <div className="w-16 h-3 bg-muted rounded-r-lg border-2 border-l-0 border-border relative" style={{ transform: "perspective(100px) rotateY(5deg)" }}>
+                  <div className="absolute top-0 left-0 right-0 h-full bg-gradient-to-l from-muted to-muted/80 rounded-r-lg"></div>
                 </div>
                 <div className="text-xs font-semibold text-primary mt-1">TAIL</div>
               </div>

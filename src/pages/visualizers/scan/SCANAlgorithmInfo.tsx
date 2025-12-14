@@ -162,22 +162,22 @@ const SCANAlgorithmInfo = ({ type }: SCANAlgorithmInfoProps) => {
               <Card className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800 shadow-md">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <span className="text-green-600 dark:text-green-400">✓</span>
+                    <span className="text-primary dark:text-green-400">✓</span>
                     Advantages
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2.5 text-sm text-foreground">
                     <li className="flex items-start gap-2.5">
-                      <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                      <span className="text-primary dark:text-green-400 font-bold mt-0.5 text-base">•</span>
                       <span>Eliminates starvation - all requests are eventually served</span>
                     </li>
                     <li className="flex items-start gap-2.5">
-                      <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                      <span className="text-primary dark:text-green-400 font-bold mt-0.5 text-base">•</span>
                       <span>Provides better response time than FCFS and SSTF</span>
                     </li>
                     <li className="flex items-start gap-2.5">
-                      <span className="text-green-600 dark:text-green-400 font-bold mt-0.5 text-base">•</span>
+                      <span className="text-primary dark:text-green-400 font-bold mt-0.5 text-base">•</span>
                       <span>Uniform wait times</span>
                     </li>
                   </ul>
@@ -214,7 +214,7 @@ const SCANAlgorithmInfo = ({ type }: SCANAlgorithmInfoProps) => {
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-blue-200 dark:border-blue-800 shadow-md">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
+                <span className="w-1 h-6 bg-primary rounded-full"></span>
                 Where SCAN is Used
               </CardTitle>
             </CardHeader>

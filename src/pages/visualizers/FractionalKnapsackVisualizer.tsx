@@ -4,17 +4,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ArrowLeft, Play, Pause, SkipBack, SkipForward, RotateCcw, ChevronsLeft, ChevronsRight, Timer } from "lucide-react";
+import { Package, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useFractionalKnapsackVisualizer } from "./fractional-knapsack/useFractionalKnapsackVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
+import SpeedControl from "@/components/SpeedControl";
 
 const FractionalKnapsackVisualizer = () => {
   const {
     state: { items, knapsackCapacity, steps, currentStep, isRunning, speed, newItemWeight, newItemValue },
-    actions: { setKnapsackCapacity, setSpeed, setNewItemWeight, setNewItemValue, handleAddItem, handlePlayPause, handleReset, goToStep, setCurrentStep },
+    actions: { setKnapsackCapacity, setSpeed, setNewItemWeight, setNewItemValue, handleAddItem, handlePlayPause, handleReset, goToStep, setCurrentStep, generateRandomItems, setIsRunning, nextStep, prevStep },
   } = useFractionalKnapsackVisualizer();
+
+  const handleStart = () => {
+    if (steps.length === 0 && items.length > 0) {
+      handlePlayPause();
+    } else if (steps.length > 0) {
+      // Toggle play/pause if steps exist
+      if (isRunning) {
+        setIsRunning(false);
+      } else {
+        setIsRunning(true);
+      }
+    }
+  };
+
+  const handlePause = () => {
+    setIsRunning(false);
+  };
+
+  const handleResume = () => {
+    if (steps.length > 0 && currentStep < steps.length - 1) {
+      setIsRunning(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -30,7 +54,7 @@ const FractionalKnapsackVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -55,57 +79,29 @@ const FractionalKnapsackVisualizer = () => {
               <CardContent className="space-y-4 pt-6">
                 <div className="space-y-3">
                   <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-foreground">Knapsack Capacity</Label>
-                        <Input type="number" value={knapsackCapacity} onChange={(e) => setKnapsackCapacity(Number(e.target.value))} />
+                    <Label className="text-sm font-semibold text-foreground">Knapsack Capacity</Label>
+                    <Input type="number" value={knapsackCapacity} onChange={(e) => setKnapsackCapacity(Number(e.target.value))} min={1} />
                   </div>
+                  <Button onClick={generateRandomItems} variant="outline" className="w-full font-semibold">
+                    Generate Random Items
+                  </Button>
                   <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-foreground">Add Item</Label>
+                    <Label className="text-sm font-semibold text-foreground">Add Item</Label>
                     <div className="flex gap-2">
-                          <Input type="number" placeholder="Weight" value={newItemWeight} onChange={(e) => setNewItemWeight(Number(e.target.value))} className="flex-1" />
-                          <Input type="number" placeholder="Value" value={newItemValue} onChange={(e) => setNewItemValue(Number(e.target.value))} className="flex-1" />
+                      <Input type="number" placeholder="Weight" value={newItemWeight} onChange={(e) => setNewItemWeight(Number(e.target.value))} className="flex-1" />
+                      <Input type="number" placeholder="Value" value={newItemValue} onChange={(e) => setNewItemValue(Number(e.target.value))} className="flex-1" />
                     </div>
-                        <Button onClick={handleAddItem} className="w-full">
+                    <Button onClick={handleAddItem} className="w-full">
                       Add Item
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-foreground">Animation Speed: {speed}x</Label>
-                    <Slider value={[speed]} onValueChange={([value]) => setSpeed(value)} max={3} min={0.5} step={0.5} className="w-full" />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>0.5x</span>
-                          <span>1x</span>
-                          <span>1.5x</span>
-                          <span>2.0x</span>
-                          <span>2.5x</span>
-                          <span>3x</span>
-                        </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-                <Card className="bg-card border border-border">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold text-foreground">Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <div className="grid gap-4">
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Current Step</p>
-                        <p className="text-3xl font-bold text-foreground">{currentStep}</p>
-                  </div>
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Total Value</p>
-                        <p className="text-3xl font-bold text-foreground">
-                      {steps.length > 0 ? steps[currentStep].items.reduce((acc, item) => acc + item.value * item.fraction, 0).toFixed(2) : "0"}
-                    </p>
-                  </div>
-                      <div className="bg-card p-4 rounded-lg border border-border">
-                        <p className="text-sm font-semibold text-muted-foreground">Knapsack Weight</p>
-                        <p className="text-xl font-bold text-foreground">
-                      {steps.length > 0 ? steps[currentStep].knapsackWeight : "0"} / {knapsackCapacity}
-                    </p>
-                  </div>
+                  <SpeedControl
+                    speed={speed}
+                    onSpeedChange={setSpeed}
+                    min={0.5}
+                    max={3}
+                    step={0.5}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -113,64 +109,176 @@ const FractionalKnapsackVisualizer = () => {
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={handlePlayPause} variant="default" size="sm" disabled={isRunning || items.length === 0}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={handlePlayPause} variant="outline" disabled={!steps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={handlePlayPause} variant="outline" disabled={!steps.length || isRunning || currentStep >= steps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={handleReset} variant="outline" disabled={!steps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={() => setCurrentStep(currentStep - 1)} variant="outline" disabled={!steps.length || currentStep <= 0} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={() => setCurrentStep(currentStep + 1)} variant="outline" disabled={!steps.length || currentStep >= steps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {steps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {steps.length}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={steps.length}
+                      onPlay={handleStart}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onReset={() => { handleReset(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(steps.length - 1)}
+                      disabled={items.length === 0}
+                    />
                   </div>
 
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Visualization</h3>
-                {steps.length === 0 ? (
+                    {items.length === 0 ? (
                       <div className="flex items-center justify-center h-64 text-muted-foreground">
-                    <div className="text-center">
-                      <Package className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                      <p className="text-xl font-semibold">Click Play to start the visualization</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {steps[currentStep].items.map((item) => (
-                            <div key={item.id} className="bg-card rounded-lg shadow-md p-4 border border-border">
-                              <h3 className="font-bold text-lg text-foreground">Item {item.id}</h3>
-                              <p className="text-muted-foreground font-medium">Weight: {item.weight}</p>
-                              <p className="text-muted-foreground font-medium">Value: {item.value}</p>
-                              <p className="text-primary font-semibold">Fraction: {(item.fraction * 100).toFixed(0)}%</p>
-                              <p className="text-foreground font-bold">Value in Knapsack: {(item.value * item.fraction).toFixed(2)}</p>
+                        <div className="text-center">
+                          <Package className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                          <p className="text-xl font-semibold">Generate items to start visualization</p>
                         </div>
-                      ))}
-                    </div>
-                        <div className="text-center p-4 rounded-lg border border-border bg-card">
-                          <p className="text-lg font-semibold text-foreground">{steps[currentStep].message}</p>
+                      </div>
+                    ) : steps.length === 0 ? (
+                      <div className="space-y-4">
+                        <Card className="bg-card border border-border animate-in fade-in">
+                          <CardContent className="p-4">
+                            <p className="text-sm text-foreground">Items ready. Click Run to start the Fractional Knapsack algorithm.</p>
+                          </CardContent>
+                        </Card>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {items.map((item, idx) => {
+                            const ratio = item.value / item.weight;
+                            return (
+                              <Card 
+                                key={item.id} 
+                                className="border-2 border-border hover:scale-105 transition-all duration-300 animate-in zoom-in"
+                                style={{ animationDelay: `${idx * 50}ms` }}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-bold text-lg text-foreground">Item {item.id}</h3>
+                                  </div>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="text-muted-foreground">
+                                      Weight: <span className="font-medium text-foreground">{item.weight}</span>
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                      Value: <span className="font-medium text-foreground">{item.value}</span>
+                                    </p>
+                                    <p className="text-primary font-semibold">
+                                      Ratio: <span className="font-bold">{ratio.toFixed(2)}</span>
+                                    </p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Step-by-step explanation */}
+                        {currentStep >= 0 && currentStep < steps.length && (
+                          <Card className="bg-card border border-border animate-in fade-in duration-300">
+                            <CardContent className="p-4 space-y-2">
+                              <p className="text-sm font-semibold text-foreground">Step {currentStep + 1} Explanation:</p>
+                              <p className="text-sm text-foreground">{steps[currentStep].message}</p>
+                              {steps[currentStep].items.some(item => item.fraction > 0) && (
+                                <div className="mt-2 pt-2 border-t border-border">
+                                  <p className="text-xs text-muted-foreground">Items are sorted by value-to-weight ratio (greedy approach). Higher ratio items are selected first.</p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {steps[currentStep].items.map((item, idx) => {
+                            const ratio = item.value / item.weight;
+                            const isIncluded = item.fraction > 0;
+                            let borderClass = "border-border";
+                            let bgClass = "bg-card";
+                            if (isIncluded) {
+                              if (item.fraction === 1) {
+                                borderClass = "border-green-500 dark:border-green-600";
+                                bgClass = "bg-green-50 dark:bg-green-900/20";
+                              } else {
+                                borderClass = "border-yellow-500 dark:border-yellow-600";
+                                bgClass = "bg-yellow-50 dark:bg-yellow-900/20";
+                              }
+                            }
+                            return (
+                              <Card 
+                                key={item.id} 
+                                className={`border-2 ${borderClass} ${bgClass} transition-all duration-300 ${
+                                  isIncluded ? "animate-in zoom-in shadow-md" : "hover:scale-105"
+                                }`}
+                                style={{ animationDelay: isIncluded ? `${idx * 100}ms` : undefined }}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-bold text-lg text-foreground">Item {item.id}</h3>
+                                    {isIncluded && (
+                                      <span className={`text-xs px-2 py-1 rounded animate-in fade-in ${
+                                        item.fraction === 1 
+                                          ? "bg-green-500 dark:bg-green-600 text-white" 
+                                          : "bg-yellow-500 dark:bg-yellow-600 text-white"
+                                      }`}>
+                                        {item.fraction === 1 ? "Full" : "Partial"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="text-muted-foreground">
+                                      Weight: <span className="font-medium text-foreground">{item.weight}</span>
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                      Value: <span className="font-medium text-foreground">{item.value}</span>
+                                    </p>
+                                    <p className="text-primary font-semibold">
+                                      Ratio: <span className="font-bold">{ratio.toFixed(2)}</span>
+                                    </p>
+                                    {isIncluded && (
+                                      <>
+                                        <p className="text-foreground font-semibold">
+                                          Fraction: <span className="font-bold">{(item.fraction * 100).toFixed(0)}%</span>
+                                        </p>
+                                        <p className="text-foreground font-bold text-lg">
+                                          Value in Knapsack: {(item.value * item.fraction).toFixed(2)}
+                                        </p>
+                                      </>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+
+                        {/* Summary Section */}
+                        {steps[currentStep].items.some(item => item.fraction > 0) && (
+                          <Card className="bg-secondary dark:bg-secondary border border-border animate-in slide-in-from-bottom duration-500">
+                            <CardContent className="p-4">
+                              <h3 className="text-lg font-semibold text-foreground mb-3">Knapsack Summary</h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Capacity Used</p>
+                                  <p className="text-xl font-bold text-foreground">
+                                    {steps[currentStep].knapsackWeight} / {knapsackCapacity}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Total Value</p>
+                                  <p className="text-xl font-bold text-primary">
+                                    {steps[currentStep].items.reduce((acc, item) => acc + item.value * item.fraction, 0).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-border">
+                                <p className="text-xs text-muted-foreground">
+                                  Items included: {steps[currentStep].items.filter(item => item.fraction > 0).length} of {steps[currentStep].items.length}
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
                       </div>
                     )}
                   </div>
@@ -179,17 +287,15 @@ const FractionalKnapsackVisualizer = () => {
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Total Value</p>
-                          <p className="text-xl font-bold text-foreground">
-                            {steps[currentStep].items.reduce((acc, item) => acc + item.value * item.fraction, 0).toFixed(2)}
-                          </p>
+                          <p className="text-sm text-muted-foreground">Step</p>
+                          <p className="text-xl font-bold text-foreground">{currentStep + 1} / {steps.length}</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Capacity Used</p>
+                          <p className="text-sm text-muted-foreground">Total Value</p>
                           <p className="text-xl font-bold text-foreground">
-                            {steps[currentStep].knapsackWeight} / {knapsackCapacity}
+                            {steps[currentStep].items.reduce((acc, item) => acc + item.value * item.fraction, 0).toFixed(2)}
                           </p>
                         </CardContent>
                       </Card>

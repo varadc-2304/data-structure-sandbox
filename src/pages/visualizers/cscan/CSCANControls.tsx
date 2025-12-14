@@ -113,7 +113,7 @@ const CSCANControls = ({
             <Label>Simulation Speed</Label>
             <div className="flex items-center mt-1">
               <input type="range" min={0.5} max={3} step={0.5} value={speed} onChange={(e) => onSpeedChange(Number(e.target.value))} className="w-full accent-green-600" />
-              <span className="ml-2 text-sm text-green-600 font-medium">{speed}x</span>
+              <span className="ml-2 text-sm text-primary font-medium">{speed}x</span>
             </div>
           </div>
 

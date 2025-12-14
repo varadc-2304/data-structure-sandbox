@@ -34,8 +34,8 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
 
   if (!data.length) {
     return (
-      <div className={cn("p-4 border border-dashed border-gray-300 rounded-lg bg-white", className)}>
-        <div className="text-center text-gray-500">No data to display</div>
+      <div className={cn("p-4 border border-dashed border-border rounded-lg bg-card", className)}>
+        <div className="text-center text-muted-foreground">No data to display</div>
       </div>
     );
   }
@@ -43,7 +43,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
   const totalTime = Math.max(...data.map(item => item.endTime));
   
   return (
-    <div className={cn("rounded-lg overflow-hidden bg-white", className)}>
+    <div className={cn("rounded-lg overflow-hidden bg-card border border-border", className)}>
       <div className="overflow-x-auto">
         <div className="min-w-full p-4">
           {/* Gantt Chart */}
@@ -111,9 +111,9 @@ const GanttChart: React.FC<GanttChartProps> = ({ data, currentTime, className })
             </div>
             
             {/* Timeline Markers */}
-            <div className="flex border-t border-gray-200">
+            <div className="flex border-t border-border">
               {Array.from({ length: totalTime + 1 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-10 border-l border-gray-200 h-2" />
+                <div key={i} className="flex-shrink-0 w-10 border-l border-border h-2" />
               ))}
             </div>
           </div>

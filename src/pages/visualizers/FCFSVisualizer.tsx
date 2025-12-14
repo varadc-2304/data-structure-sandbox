@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ProcessInput from "@/components/ProcessInput";
 import GanttChart from "@/components/GanttChart";
@@ -15,17 +17,21 @@ const FCFSVisualizer = () => {
   } = useFCFSVisualizer();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
+          <Link to="/dashboard/cpu-scheduling" className="flex items-center text-primary hover:underline mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to CPU Scheduling
+          </Link>
           <div className="arena-chip mb-2">CPU Scheduling Visualization</div>
-          <h1 className="text-3xl font-bold text-arena-dark mb-2">First Come First Serve (FCFS)</h1>
-          <p className="text-arena-gray text-sm">Visualize the First Come First Serve scheduling algorithm. Processes are executed in the order they arrive.</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">First Come First Serve (FCFS)</h1>
+          <p className="text-muted-foreground text-sm">Visualize the First Come First Serve scheduling algorithm. Processes are executed in the order they arrive.</p>
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -47,7 +53,7 @@ const FCFSVisualizer = () => {
               </div>
 
               <div className="md:col-span-2">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in" style={{ animationDelay: "0.2s" }}>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in border border-border" style={{ animationDelay: "0.2s" }}>
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Button onClick={runSimulation} variant="default" size="sm" disabled={isSimulating}>
                       <Play className="mr-2 h-3 w-3" />
@@ -71,31 +77,31 @@ const FCFSVisualizer = () => {
                     <Button onClick={stepForward} variant="outline" disabled={!ganttChart.length || currentTime >= totalTime} size="sm">
                       <SkipForward className="h-3 w-3" />
                     </Button>
-                    <div className="ml-auto flex items-center bg-arena-light px-2 py-1 rounded-md">
-                      <Timer className="mr-2 h-3 w-3 text-arena-green" />
-                      <span className="text-arena-dark font-medium text-sm">
+                    <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
+                      <Timer className="mr-2 h-3 w-3 text-primary" />
+                      <span className="text-foreground font-medium text-sm">
                         Time: {currentTime}s / {totalTime}s
                       </span>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium mb-2">Gantt Chart</h3>
-                    <GanttChart data={ganttChart} currentTime={currentTime} className="border border-gray-200" />
+                    <h3 className="text-sm font-medium mb-2 text-foreground">Gantt Chart</h3>
+                    <GanttChart data={ganttChart} currentTime={currentTime} className="border border-border" />
                   </div>
 
                   {scheduledProcesses.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Average Waiting Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgWaitingTime.toFixed(2)}s</p>
+                          <p className="text-sm text-muted-foreground">Average Waiting Time</p>
+                          <p className="text-xl font-bold text-foreground">{avgWaitingTime.toFixed(2)}s</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-arena-light">
+                      <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-arena-gray">Average Turnaround Time</p>
-                          <p className="text-xl font-bold text-arena-dark">{avgTurnaroundTime.toFixed(2)}s</p>
+                          <p className="text-sm text-muted-foreground">Average Turnaround Time</p>
+                          <p className="text-xl font-bold text-foreground">{avgTurnaroundTime.toFixed(2)}s</p>
                         </CardContent>
                       </Card>
                     </div>
@@ -103,23 +109,23 @@ const FCFSVisualizer = () => {
 
                   {scheduledProcesses.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Scheduled Processes</h3>
+                      <h3 className="text-sm font-medium mb-2 text-foreground">Scheduled Processes</h3>
                       <div className="overflow-x-auto max-h-[150px]">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-arena-light">
+                        <table className="min-w-full divide-y divide-border text-sm">
+                          <thead className="bg-secondary">
                             <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival (s)</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Burst (s)</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start (s)</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Finish (s)</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waiting (s)</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Turnaround (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">ID</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Arrival (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Burst (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Start (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Finish (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Waiting (s)</th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Turnaround (s)</th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody className="bg-card divide-y divide-border">
                             {scheduledProcesses.map((process) => (
-                              <tr key={process.id} className={currentTime >= process.startTime! ? "bg-green-50" : "bg-white"}>
+                              <tr key={process.id} className={currentTime >= process.startTime! ? "bg-success/20" : "bg-card"}>
                                 <td className="px-3 py-2 whitespace-nowrap">
                                   <div className="flex items-center">
                                     <div className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: process.color }}></div>
@@ -143,28 +149,28 @@ const FCFSVisualizer = () => {
               </div>
 
               <div className="md:col-span-3">
-                <div className="bg-white rounded-2xl shadow-md p-4 animate-scale-in text-sm" style={{ animationDelay: "0.4s" }}>
-                  <h2 className="text-lg font-semibold mb-2">About First Come First Serve</h2>
-                  <p className="text-arena-gray mb-3 text-sm">First Come First Serve (FCFS) is the simplest CPU scheduling algorithm. In this scheme, the process that requests the CPU first is allocated the CPU first.</p>
+                <div className="bg-card rounded-2xl shadow-md p-4 animate-scale-in text-sm border border-border" style={{ animationDelay: "0.4s" }}>
+                  <h2 className="text-lg font-semibold mb-2 text-foreground">About First Come First Serve</h2>
+                  <p className="text-muted-foreground mb-3 text-sm">First Come First Serve (FCFS) is the simplest CPU scheduling algorithm. In this scheme, the process that requests the CPU first is allocated the CPU first.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Characteristics</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Characteristics</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>Non-preemptive scheduling algorithm</li>
                           <li>Easy to understand and implement</li>
                           <li>Processes are executed in the order they arrive</li>
                         </ul>
                       </CardContent>
                     </Card>
-                    <Card className="bg-arena-light">
+                    <Card className="bg-secondary">
                       <CardHeader className="py-2 px-3">
-                        <CardTitle className="text-xs font-medium">Limitations</CardTitle>
+                        <CardTitle className="text-xs font-medium text-foreground">Limitations</CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 px-3">
-                        <ul className="list-disc pl-4 text-arena-gray space-y-1">
+                        <ul className="list-disc pl-4 text-muted-foreground space-y-1">
                           <li>Not optimal for minimizing average waiting time</li>
                           <li>Suffers from "convoy effect": short processes wait for long processes</li>
                           <li>Not suitable for interactive systems</li>
