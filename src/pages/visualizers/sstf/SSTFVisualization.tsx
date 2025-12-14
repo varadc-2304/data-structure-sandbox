@@ -34,9 +34,9 @@ const SSTFVisualization = ({
       </CardHeader>
       <CardContent>
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-drona-gray mb-4">Disk Track Visualization</h3>
-          <div className="relative bg-gradient-to-r from-gray-50 to-white rounded-xl border-2 border-gray-200 p-6 overflow-hidden" style={{ minHeight: "180px" }}>
-            <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full transform -translate-y-1/2 shadow-inner"></div>
+          <h3 className="text-sm font-medium text-foreground mb-4">Disk Track Visualization</h3>
+          <div className="relative bg-gradient-to-r from-secondary to-card rounded-xl border-2 border-border p-6 overflow-hidden" style={{ minHeight: "180px" }}>
+            <div className="absolute top-1/2 left-12 right-12 h-2 bg-gradient-to-r from-muted to-muted/80 rounded-full transform -translate-y-1/2 shadow-inner"></div>
 
             <div className="absolute top-1/2 transform -translate-y-1/2" style={{ left: '3rem', right: '3rem' }}>
               {/* Scale Markers */}
@@ -50,36 +50,36 @@ const SSTFVisualization = ({
                       left: `${positionPercent}%`,
                     }}
                   >
-                    <div className="w-1 h-8 bg-gray-400 rounded-full mb-3"></div>
-                    <span className="text-xs font-bold text-gray-700 bg-white px-2 py-1 rounded-full shadow-sm border">{pos}</span>
+                    <div className="w-1 h-8 bg-secondary rounded-full mb-3"></div>
+                    <span className="text-xs font-bold text-black dark:text-white bg-card px-2 py-1 rounded-full shadow-sm border border-border">{pos}</span>
                   </div>
                 );
               })}
 
               {/* Head */}
               <div
-                className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-green-500 to-green-600 rounded-full z-20 shadow-lg border-2 border-white transition-all duration-1000 ease-in-out"
+                className="absolute top-1/2 w-6 h-16 bg-gradient-to-b from-primary to-primary/90 rounded-full z-20 shadow-lg border-2 border-card transition-all duration-1000 ease-in-out"
                 style={{
                   left: `${calculatePosition(currentHeadPosition)}%`,
                   transform: 'translate(-50%, -50%)',
                 }}
               >
-                <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-green-600 bg-white px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
+                <div className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 text-sm font-bold text-primary bg-card px-3 py-1 rounded-full shadow-md border whitespace-nowrap">
                   Head: {currentHeadPosition}
                 </div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-card rounded-full"></div>
               </div>
 
               {/* Initial Head Position */}
               {initialHeadPosition !== currentHeadPosition && (
                 <div
-                  className="absolute top-1/2 w-2 h-12 bg-gray-400 rounded z-10 opacity-60"
+                  className="absolute top-1/2 w-2 h-12 bg-secondary rounded z-10 opacity-60"
                   style={{
                     left: `${calculatePosition(initialHeadPosition)}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
                 >
-                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap bg-white px-2 py-1 rounded shadow">
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs text-foreground whitespace-nowrap bg-card px-2 py-1 rounded shadow">
                     Start: {initialHeadPosition}
                   </div>
                 </div>
@@ -91,15 +91,15 @@ const SSTFVisualization = ({
                   key={idx}
                   className={cn(
                     "absolute top-1/2 w-5 h-5 rounded-full border-3 transition-all duration-500 z-15",
-                    req.processed ? "bg-blue-500 border-white shadow-lg scale-110" : "bg-white border-blue-400 shadow-md",
-                    req.current && "ring-4 ring-blue-300/50 scale-125 animate-pulse"
+                    req.processed ? "bg-primary border-card shadow-lg scale-110" : "bg-black dark:bg-white border-black dark:border-white shadow-md",
+                    req.current && "ring-4 ring-primary/50 scale-125 animate-pulse"
                   )}
                   style={{
                     left: `${calculatePosition(req.position)}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
                 >
-                  <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-gray-800 text-white px-2 py-1 rounded shadow">
+                  <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-xs font-bold whitespace-nowrap bg-foreground text-background px-2 py-1 rounded shadow">
                     {req.position}
                   </div>
                 </div>
@@ -109,13 +109,13 @@ const SSTFVisualization = ({
         </div>
 
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-drona-gray mb-2">SSTF Order (Shortest Seek Time First)</h3>
+          <h3 className="text-sm font-medium text-foreground mb-2">SSTF Order (Shortest Seek Time First)</h3>
           <div className="flex flex-wrap gap-2 mb-4">
             {sstfOrder.map((requestIndex, orderIndex) => (
               <Badge
                 key={orderIndex}
                 variant={orderIndex === currentStep ? "default" : orderIndex < currentStep ? "secondary" : "outline"}
-                className={cn("text-sm px-3 py-1", orderIndex === currentStep && "bg-blue-500 text-white")}
+                className={cn("text-sm px-3 py-1", orderIndex === currentStep && "bg-primary text-primary-foreground")}
               >
                 {requestQueue[requestIndex]?.position}
               </Badge>
@@ -124,23 +124,23 @@ const SSTFVisualization = ({
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-drona-gray mb-2">Seek Operations</h3>
-          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+          <h3 className="text-sm font-medium text-foreground mb-2">Seek Operations</h3>
+          <div className="max-h-48 overflow-y-auto border border-border rounded-lg">
             {seekHistory.length === 0 ? (
-              <div className="p-4 text-center text-gray-400">No operations yet</div>
+              <div className="p-4 text-center text-foreground">No operations yet</div>
             ) : (
               <table className="w-full">
-                <thead className="bg-drona-light sticky top-0">
+                <thead className="bg-secondary sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Step</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">From</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">To</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-drona-dark">Distance</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-foreground">Step</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-foreground">From</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-foreground">To</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-foreground">Distance</th>
                   </tr>
                 </thead>
                 <tbody>
                   {seekHistory.map((seek, idx) => (
-                    <tr key={idx} className={cn("transition-colors", idx % 2 === 0 ? "bg-white" : "bg-gray-50", idx === currentStep && "bg-blue-50")}>
+                    <tr key={idx} className={cn("transition-colors", idx % 2 === 0 ? "bg-card" : "bg-secondary", idx === currentStep && "bg-primary/10")}>
                       <td className="px-4 py-2 text-sm font-medium">{idx + 1}</td>
                       <td className="px-4 py-2 text-sm">{seek.from}</td>
                       <td className="px-4 py-2 text-sm">{seek.to}</td>

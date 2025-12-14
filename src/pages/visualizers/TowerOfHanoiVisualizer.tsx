@@ -1,15 +1,17 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TowerOfHanoiControls from "./tower-of-hanoi/TowerOfHanoiControls";
 import TowerOfHanoiVisualization from "./tower-of-hanoi/TowerOfHanoiVisualization";
 import { useTowerOfHanoiVisualizer } from "./tower-of-hanoi/useTowerOfHanoiVisualizer";
+import PlaybackControls from "@/components/PlaybackControls";
 
 const TowerOfHanoiVisualizer = () => {
+  const towerNames = ["Source", "Auxiliary", "Destination"];
+  
   const {
     state: {
       numDisks,
@@ -21,6 +23,7 @@ const TowerOfHanoiVisualizer = () => {
       movingDisk,
       fromTower,
       toTower,
+      isInTransit,
       moves,
     },
     actions: {
@@ -33,14 +36,30 @@ const TowerOfHanoiVisualizer = () => {
       prevStep,
       goToStep,
       togglePlayPause,
+      setIsRunning,
     },
   } = useTowerOfHanoiVisualizer();
 
-  const handleStartOrToggle = () => {
-    if (hanoiSteps.length === 0) {
+  const handleStart = () => {
+    if (hanoiSteps.length === 0 && numDisks > 0) {
       startHanoi();
-    } else {
-      togglePlayPause();
+    } else if (hanoiSteps.length > 0) {
+      // Toggle play/pause if steps exist
+      if (isRunning) {
+        setIsRunning(false);
+      } else {
+        setIsRunning(true);
+      }
+    }
+  };
+
+  const handlePause = () => {
+    setIsRunning(false);
+  };
+
+  const handleResume = () => {
+    if (hanoiSteps.length > 0 && currentStep < hanoiSteps.length - 1) {
+      setIsRunning(true);
     }
   };
 
@@ -58,7 +77,7 @@ const TowerOfHanoiVisualizer = () => {
         </div>
 
         <Tabs defaultValue="visualizer" className="w-full">
-          <TabsList className="mb-6 w-full justify-start bg-secondary p-1 h-auto">
+          <TabsList className="mb-6 w-fit justify-start bg-secondary p-1 h-auto">
             <TabsTrigger 
               value="visualizer" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm px-6 py-2.5 text-sm font-medium"
@@ -85,8 +104,7 @@ const TowerOfHanoiVisualizer = () => {
             moves={moves}
             onNumDisksChange={setNumDisks}
             onSpeedChange={setSpeed}
-            onGenerate={generateTowers}
-            onStartOrToggle={handleStartOrToggle}
+            onStartOrToggle={handleStart}
             onPrev={prevStep}
             onNext={nextStep}
             onFirst={() => goToStep(0)}
@@ -98,62 +116,59 @@ const TowerOfHanoiVisualizer = () => {
 
               <div className="md:col-span-2">
                 <div className="bg-card rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Button onClick={handleStartOrToggle} variant="default" size="sm" disabled={isRunning || numDisks === 0}>
-                      <Play className="mr-2 h-3 w-3" />
-                      Run
-                    </Button>
-                    <Button onClick={() => togglePlayPause()} variant="outline" disabled={!hanoiSteps.length || !isRunning} size="sm">
-                      <Pause className="mr-2 h-3 w-3" />
-                      Pause
-                    </Button>
-                    <Button onClick={handleStartOrToggle} variant="outline" disabled={!hanoiSteps.length || isRunning || currentStep >= hanoiSteps.length - 1} size="sm">
-                      <Play className="mr-2 h-3 w-3" />
-                      Resume
-                    </Button>
-                    <Button onClick={resetTowers} variant="outline" disabled={!hanoiSteps.length} size="sm">
-                      <SkipBack className="mr-2 h-3 w-3" />
-                      Reset
-                    </Button>
-                    <Button onClick={prevStep} variant="outline" disabled={!hanoiSteps.length || currentStep <= -1} size="sm">
-                      <SkipBack className="h-3 w-3" />
-                    </Button>
-                    <Button onClick={nextStep} variant="outline" disabled={!hanoiSteps.length || currentStep >= hanoiSteps.length - 1} size="sm">
-                      <SkipForward className="h-3 w-3" />
-                    </Button>
-                    {hanoiSteps.length > 0 && (
-                      <div className="ml-auto flex items-center bg-secondary px-2 py-1 rounded-md">
-                        <Timer className="mr-2 h-3 w-3 text-primary" />
-                        <span className="text-foreground font-medium text-sm">
-                          Step: {currentStep + 1} / {hanoiSteps.length}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    <PlaybackControls
+                      isRunning={isRunning}
+                      currentStep={currentStep}
+                      totalSteps={hanoiSteps.length}
+                      onPlay={handleStart}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onReset={() => { resetTowers(); setIsRunning(false); }}
+                      onPrev={prevStep}
+                      onNext={nextStep}
+                      onFirst={() => goToStep(0)}
+                      onLast={() => goToStep(hanoiSteps.length - 1)}
+                      disabled={numDisks === 0}
+                    />
                   </div>
 
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Visualization</h3>
-            <TowerOfHanoiVisualization
-              towers={towers}
-              movingDisk={movingDisk}
-              fromTower={fromTower}
-              toTower={toTower}
-              numDisks={numDisks}
-            />
+                    {hanoiSteps.length > 0 && currentStep >= 0 && currentStep < hanoiSteps.length && (
+                      <div className="mb-4 bg-card border border-border rounded-lg p-4 animate-in fade-in duration-300">
+                        <p className="text-sm font-semibold text-foreground">
+                          Step {currentStep + 1} / {hanoiSteps.length}
+                          {currentStep === 0 && " - Initial State: All disks on Source tower"}
+                          {movingDisk !== null && fromTower !== null && toTower !== null && currentStep > 0 && (
+                            <span className="ml-2">- Moving disk <span className="font-bold text-primary">{movingDisk}</span> from <span className="font-bold">{towerNames[fromTower]}</span> to <span className="font-bold">{towerNames[toTower]}</span></span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    <TowerOfHanoiVisualization
+                      towers={towers}
+                      movingDisk={movingDisk}
+                      fromTower={fromTower}
+                      toTower={toTower}
+                      isInTransit={isInTransit}
+                      numDisks={numDisks}
+                      speed={speed}
+                    />
                   </div>
 
                   {hanoiSteps.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Moves</p>
-                          <p className="text-xl font-bold text-foreground">{moves}</p>
+                          <p className="text-sm text-muted-foreground">Step</p>
+                          <p className="text-xl font-bold text-foreground">{currentStep + 1} / {hanoiSteps.length}</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-secondary">
                         <CardContent className="p-3 flex flex-col items-center justify-center">
-                          <p className="text-sm text-muted-foreground">Minimum Moves</p>
-                          <p className="text-xl font-bold text-foreground">2^{numDisks} - 1</p>
+                          <p className="text-sm text-muted-foreground">Moves</p>
+                          <p className="text-xl font-bold text-foreground">{moves}</p>
                         </CardContent>
                       </Card>
                     </div>

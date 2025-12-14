@@ -31,21 +31,21 @@ const LinearSearchVisualization = ({
             {array.map((value, index) => {
               const isCurrent = currentIndex === index;
               const isFound = found === true && foundIndex === index;
-              let bgClass = "bg-card border-border";
+              let bgClass = "bg-card dark:bg-card border-border dark:border-border";
               if (isFound) {
-                bgClass = "bg-green-200 border-green-500 scale-110 animate-pulse dark:bg-green-800 dark:border-green-600";
+                bgClass = "bg-green-200 dark:bg-green-800 border-green-500 dark:border-green-600 scale-110 animate-pulse";
               } else if (isCurrent) {
-                bgClass = "bg-yellow-200 border-yellow-400 scale-105 dark:bg-yellow-800 dark:border-yellow-600";
+                bgClass = "bg-yellow-200 dark:bg-yellow-800 border-yellow-400 dark:border-yellow-600 scale-105";
               } else if (currentIndex !== null && index < currentIndex) {
-                bgClass = "bg-secondary border-border opacity-50";
+                bgClass = "bg-secondary dark:bg-secondary/50 border-border dark:border-border/50 opacity-50 dark:opacity-40";
               }
               return (
                 <div
                   key={index}
                   className={`w-16 h-16 flex flex-col items-center justify-center rounded-xl border transition-all duration-300 font-bold text-lg ${bgClass}`}
                 >
-                  <span className="text-foreground">{value}</span>
-                  <span className="text-[10px] text-muted-foreground">idx {index}</span>
+                  <span className="text-foreground dark:text-foreground">{value}</span>
+                  <span className="text-[10px] text-muted-foreground dark:text-muted-foreground">idx {index}</span>
                 </div>
               );
             })}

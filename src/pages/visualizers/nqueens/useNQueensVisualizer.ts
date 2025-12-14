@@ -215,10 +215,9 @@ export const useNQueensVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep > -1) {
-      setCurrentStep((prev) => prev - 1);
-      setSolutionFound(false);
-    }
+    if (currentStep <= -1) return;
+    setCurrentStep((prev) => prev - 1);
+    setSolutionFound(false);
   };
 
   const skipToStart = () => {
@@ -335,6 +334,7 @@ export const useNQueensVisualizer = () => {
       getCurrentSteps,
       getCurrentBoard,
       getCurrentStepInfo,
+      setIsRunning,
     },
   };
 };

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import SpeedControl from "@/components/SpeedControl";
 
 interface LinearSearchControlsProps {
   arraySize: number;
@@ -95,38 +95,13 @@ const LinearSearchControls = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-foreground">Search Value</Label>
-            <Input
-              type="number"
-              value={searchValue ?? ""}
-              onChange={(e) => onSearchValueChange(e.target.value)}
-              placeholder="Enter value to find"
-            />
-            <Button onClick={onStartSearch} className="w-full">
-              Start Linear Search
-            </Button>
-            <p className="text-sm text-muted-foreground">Status: {statusText}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-foreground">Animation Speed: {speed}x</Label>
-            <Slider
-              value={[speed]}
-              min={0.5}
-              max={3}
-              step={0.5}
-              onValueChange={([value]) => onSpeedChange(value)}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0.5x</span>
-              <span>1x</span>
-              <span>1.5x</span>
-              <span>2.0x</span>
-              <span>2.5x</span>
-              <span>3x</span>
-            </div>
-          </div>
+          <SpeedControl
+            speed={speed}
+            onSpeedChange={onSpeedChange}
+            min={0.5}
+            max={3}
+            step={0.5}
+          />
         </CardContent>
       </Card>
 

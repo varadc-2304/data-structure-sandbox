@@ -125,10 +125,14 @@ export const useBubbleSortVisualizer = () => {
     resetSort();
     const steps = calculateSortSteps(array);
     setSortSteps(steps);
+    if (steps.length > 0) {
+      applyStep(0);
+    }
     setIsRunning(true);
   };
 
   const applyStep = (stepIndex: number) => {
+    if (stepIndex < 0 || stepIndex >= sortSteps.length) return;
     const step = sortSteps[stepIndex];
     setArray(step.array);
     setCurrentSwapIndices(step.currentSwapIndices);
@@ -146,7 +150,7 @@ export const useBubbleSortVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
     const prevIndex = currentStep - 1;
     applyStep(prevIndex);
   };
@@ -182,6 +186,7 @@ export const useBubbleSortVisualizer = () => {
       setArraySize,
       setCustomArrayInput,
       setSpeed,
+      setIsRunning,
       generateRandomArray,
       generateCustomArray,
       resetSort,

@@ -14,7 +14,7 @@ interface SortStep {
 
 export const useMergeSortVisualizer = () => {
   const [array, setArray] = useState<number[]>([]);
-  const [arraySize, setArraySize] = useState<number>(8);
+  const [arraySize, setArraySize] = useState<number>(10);
   const [customArrayInput, setCustomArrayInput] = useState<string>("");
   const [leftArray, setLeftArray] = useState<number[]>([]);
   const [rightArray, setRightArray] = useState<number[]>([]);
@@ -246,10 +246,16 @@ export const useMergeSortVisualizer = () => {
     resetSort();
     const { steps } = calculateSortSteps(array);
     setSortSteps(steps);
+    if (steps.length > 0) {
+      setCurrentStep(0);
+      const step = steps[0];
+      setStepState(step, 0);
+    }
     setIsRunning(true);
   };
 
   const setStepState = (step: SortStep, stepIndex: number) => {
+    if (stepIndex < 0) return;
     setArray(step.array);
     setLeftArray(step.leftArray);
     setRightArray(step.rightArray);
@@ -273,7 +279,7 @@ export const useMergeSortVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
     const prevStepIndex = currentStep - 1;
     setCurrentStep(prevStepIndex);
     const step = sortSteps[prevStepIndex];
@@ -297,6 +303,7 @@ export const useMergeSortVisualizer = () => {
   };
 
   const getBarHeight = (value: number) => {
+    if (array.length === 0) return 40;
     const maxHeight = 150;
     const maxValue = Math.max(...array, 1);
     return (value / maxValue) * maxHeight;

@@ -178,25 +178,25 @@ const Landing = () => {
                   </div>
                   <h4 className="font-semibold text-foreground mb-2">Interactive Learning</h4>
                   <p className="text-sm text-muted-foreground">
-                    Hands-on visualizations that make complex concepts accessible to learners at all levels
+                  Clear, step-by-step visualizations that help educators explain complex CS concepts with ease
                   </p>
                 </div>
                 <div className="text-center p-4 rounded-lg hover:bg-primary/5 transition-colors duration-200">
                   <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-4 section-shadow">
                     <Award className="h-8 w-8 text-primary" />
                   </div>
-                  <h4 className="font-semibold text-foreground mb-2">Educational Excellence</h4>
+                  <h4 className="font-semibold text-foreground mb-2">Proven for Learning</h4>
                   <p className="text-sm text-muted-foreground">
-                    Designed by educators for educators, following best practices in computer science pedagogy
+                  Interactive simulations that enable students to truly understand algorithms and data structures
                   </p>
                 </div>
                 <div className="text-center p-4 rounded-lg hover:bg-primary/5 transition-colors duration-200">
                   <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-4 section-shadow">
                     <BookOpen className="h-8 w-8 text-primary" />
                   </div>
-                  <h4 className="font-semibold text-foreground mb-2">Comprehensive Coverage</h4>
+                  <h4 className="font-semibold text-foreground mb-2">Open & Reliable</h4>
                   <p className="text-sm text-muted-foreground">
-                    From basic data structures to advanced algorithms, covering all essential CS concepts
+                  Free, ad-free, and privacy-focused platform trusted in classrooms and self-study
                   </p>
                 </div>
               </div>

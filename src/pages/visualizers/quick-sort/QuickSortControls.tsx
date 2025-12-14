@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import SpeedControl from "@/components/SpeedControl";
 
 interface QuickSortControlsProps {
   arraySize: number;
@@ -49,65 +49,53 @@ const QuickSortControls = ({
 }: QuickSortControlsProps) => {
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg border-2 border-drona-green/20">
-        <CardHeader className="bg-gradient-to-r from-drona-green/5 to-drona-green/10">
-          <CardTitle className="text-xl font-bold text-drona-dark">Array Configuration</CardTitle>
+      <Card className="bg-card border border-border">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground">Array Configuration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-6">
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-drona-dark">Array Size</Label>
+              <Label className="text-sm font-semibold text-foreground">Array Size</Label>
               <Input
                 type="number"
                 value={arraySize}
                 min={5}
-                max={15}
-                onChange={(e) => onArraySizeChange(Math.max(5, Math.min(15, parseInt(e.target.value, 10) || 10)))}
-                className="border-2 focus:border-drona-green"
+                max={30}
+                onChange={(e) => onArraySizeChange(Math.max(5, Math.min(30, parseInt(e.target.value, 10) || 10)))}
               />
             </div>
             <Button
               onClick={onGenerateRandom}
               variant="outline"
-              className="w-full font-semibold border-2 hover:border-drona-green/50"
+              className="w-full font-semibold"
             >
               Generate Random Array
             </Button>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-drona-dark">Custom Array (comma-separated)</Label>
+              <Label className="text-sm font-semibold text-foreground">Custom Array (comma-separated)</Label>
               <div className="flex gap-2">
                 <Input
                   placeholder="e.g., 64, 34, 25, 12"
                   value={customArrayInput}
                   onChange={(e) => onCustomArrayChange(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && onGenerateCustom()}
-                  className="flex-1 border-2 focus:border-drona-green"
+                  className="flex-1"
                 />
-                <Button onClick={onGenerateCustom} className="bg-drona-green hover:bg-drona-green/90 font-semibold">
+                <Button onClick={onGenerateCustom}>
                   Set
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-drona-dark">Animation Speed: {speed}x</Label>
-            <Slider
-              value={[speed]}
-              min={0.5}
-              max={3}
-              step={0.5}
-              onValueChange={([value]) => onSpeedChange(value)}
-            />
-            <div className="flex justify-between text-xs text-drona-gray">
-              <span>0.5x</span>
-              <span>1x</span>
-              <span>1.5x</span>
-              <span>2.0x</span>
-              <span>2.5x</span>
-              <span>3x</span>
-            </div>
-          </div>
+          <SpeedControl
+            speed={speed}
+            onSpeedChange={onSpeedChange}
+            min={0.5}
+            max={3}
+            step={0.5}
+          />
         </CardContent>
       </Card>
 

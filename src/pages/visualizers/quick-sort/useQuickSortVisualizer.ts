@@ -187,10 +187,15 @@ export const useQuickSortVisualizer = () => {
     resetSort();
     const steps = calculateSortSteps(array);
     setSortSteps(steps);
+    if (steps.length > 0) {
+      setCurrentStep(0);
+      applyStep(0);
+    }
     setIsRunning(true);
   };
 
   const applyStep = (stepIndex: number) => {
+    if (stepIndex < 0 || stepIndex >= sortSteps.length) return;
     const step = sortSteps[stepIndex];
     setArray(step.array);
     setPivotIndex(step.pivotIndex);
@@ -211,7 +216,7 @@ export const useQuickSortVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
     applyStep(currentStep - 1);
   };
 
@@ -230,6 +235,7 @@ export const useQuickSortVisualizer = () => {
   };
 
   const getBarHeight = (value: number) => {
+    if (array.length === 0) return 40;
     const maxHeight = 200;
     const maxValue = Math.max(...array, 1);
     return (value / maxValue) * maxHeight;
@@ -273,6 +279,7 @@ export const useQuickSortVisualizer = () => {
       goToStep,
       togglePlayPause,
       getBarHeight,
+      setIsRunning,
     },
   };
 };

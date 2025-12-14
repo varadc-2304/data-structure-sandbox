@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Github, Linkedin, Heart, BookOpen, Code, Cpu, Brain } from 'lucide-react';
+import { Mail, Instagram, Heart, BookOpen, Code, Cpu, Brain } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -93,31 +93,23 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <a 
-                  href="mailto:support@drona.com" 
+                  href="mailto:ikshvaku.innovations@gmail.com" 
                   className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
-                  support@drona.com
+                  ikshvaku.innovations@gmail.com
                 </a>
               </li>
-              <li className="flex items-center gap-4 mt-4">
+              <li className="mt-4">
                 <a 
-                  href="https://github.com" 
+                  href="https://www.instagram.com/ikshvaku.innovations?igsh=MTZiZHlkdGtoamRtaA==" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="GitHub"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                  aria-label="Instagram"
                 >
-                  <Github className="h-5 w-5" />
-                </a>
-                <a 
-                  href="https://linkedin.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="h-5 w-5" />
+                  <Instagram className="h-4 w-4" />
+                  ikshvaku.innovations
                 </a>
               </li>
             </ul>

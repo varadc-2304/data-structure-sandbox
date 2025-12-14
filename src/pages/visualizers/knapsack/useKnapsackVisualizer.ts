@@ -131,7 +131,13 @@ export const useKnapsackVisualizer = () => {
       }
     }
 
-    steps.forEach((step) => (step.selectedItems = [...selected]));
+    // Add final step showing the selected items
+    steps.push({
+      dpTable: dpTable.map((row) => [...row]),
+      currentItem: -1,
+      currentWeight: -1,
+      selectedItems: [...selected],
+    });
 
     return { steps, totalComparisons: compCount };
   };
@@ -142,6 +148,15 @@ export const useKnapsackVisualizer = () => {
     resetKnapsack();
     const { steps } = calculateKnapsackSteps(items, capacity);
     setKnapsackSteps(steps);
+    if (steps.length > 0) {
+      setCurrentStep(0);
+      const step = steps[0];
+      setDpTable(step.dpTable);
+      setCurrentItem(step.currentItem);
+      setCurrentWeight(step.currentWeight);
+      setSelectedItems(step.selectedItems);
+      setComparisons(0);
+    }
     setIsRunning(true);
   };
 
@@ -163,7 +178,7 @@ export const useKnapsackVisualizer = () => {
   };
 
   const prevStep = () => {
-    if (currentStep <= 0) return;
+    if (currentStep <= -1) return;
 
     const prevStepIndex = currentStep - 1;
     setCurrentStep(prevStepIndex);
@@ -240,6 +255,7 @@ export const useKnapsackVisualizer = () => {
       prevStep,
       togglePlayPause,
       goToStep,
+      setIsRunning,
     },
   };
 };

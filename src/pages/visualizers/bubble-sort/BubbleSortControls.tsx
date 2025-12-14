@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
+import SpeedControl from "@/components/SpeedControl";
 
 interface BubbleSortControlsProps {
   arraySize: number;
@@ -90,24 +90,13 @@ const BubbleSortControls = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-drona-dark">Animation Speed: {speed}x</Label>
-            <Slider
-              value={[speed]}
-              min={0.5}
-              max={3}
-              step={0.5}
-              onValueChange={([value]) => onSpeedChange(value)}
-            />
-            <div className="flex justify-between text-xs text-drona-gray">
-              <span>0.5x</span>
-              <span>1x</span>
-              <span>1.5x</span>
-              <span>2.0x</span>
-              <span>2.5x</span>
-              <span>3x</span>
-            </div>
-          </div>
+          <SpeedControl
+            speed={speed}
+            onSpeedChange={onSpeedChange}
+            min={0.5}
+            max={3}
+            step={0.5}
+          />
         </CardContent>
       </Card>
 
