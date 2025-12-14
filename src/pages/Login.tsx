@@ -83,9 +83,9 @@ const Login = () => {
           <div className="flex justify-center">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <img 
-                src="/lovable-uploads/6f3dd66f-503a-45c3-9ff8-6a169b14f030.png" 
+                src="/DronaLogo.png" 
                 alt="Drona Logo" 
-                className="w-12 h-12"
+                className="w-12 h-12 object-contain"
               />
             </div>
           </div>

@@ -19,6 +19,7 @@ import Landing from "./pages/Landing";
 import { useIframe } from "./hooks/useIframe";
 import { useEffect } from "react";
 import ScrollToTop from "./components/ScrollToTop";
+import GoogleAnalytics from "./components/GoogleAnalytics";
 
 // Main category pages
 import DataStructures from "./pages/DataStructures";
@@ -120,6 +121,7 @@ const AppContent = () => {
   return (
     <BrowserRouter>
         <ScrollToTop />
+        <GoogleAnalytics />
         <Routes>
           {/* Redirect root to dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
