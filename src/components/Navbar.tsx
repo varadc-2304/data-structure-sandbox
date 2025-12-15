@@ -210,11 +210,6 @@ const Navbar = () => {
           <div className="flex justify-between items-center h-12">
             <div className="flex items-center min-w-0 flex-1">
               <Link to="/dashboard" className="flex items-center gap-2">
-                <img 
-                  src="/DronaLogo.png" 
-                  alt="Drona Logo" 
-                  className="h-6 w-6 object-contain"
-                />
                 <span className="text-lg font-bold text-primary">Drona</span>
               </Link>
             </div>
@@ -460,16 +455,16 @@ const Navbar = () => {
                 </>
               )}
             </Button>
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-              <div className="flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                <span>Secure</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-primary" />
-                <span>Encrypted</span>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              By signing in, you agree to our{" "}
+              <Link to="/terms-and-conditions" className="text-primary underline-offset-2 hover:underline">
+                Terms and Conditions
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy-policy" className="text-primary underline-offset-2 hover:underline">
+                Privacy Policy
+              </Link>.
+            </p>
           </div>
         </DialogContent>
       </Dialog>
