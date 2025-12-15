@@ -17,9 +17,9 @@ const OptimalVisualizer = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <Link to="/dashboard/memory-management" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
+          <Link to="/dashboard/page-replacement" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Memory Management
+            Back to Page Replacement
           </Link>
           <h1 className="text-4xl font-bold text-foreground mb-2">Optimal Page Replacement</h1>
           <p className="text-muted-foreground">Visualize the Optimal page replacement algorithm</p>
