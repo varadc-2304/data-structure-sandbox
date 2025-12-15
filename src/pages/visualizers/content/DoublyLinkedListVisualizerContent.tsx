@@ -594,9 +594,7 @@ const DoublyLinkedListVisualizerContent = () => {
                                 "border-primary bg-primary/10 shadow-md scale-110 animate-bounce": 
                                   operationTarget === index && lastOperation === 'search',
                                 "border-primary bg-primary/10 shadow-md scale-110": 
-                                  operationTarget === index && lastOperation !== 'search' && lastOperation !== 'traverse',
-                                "border-primary bg-primary/10 shadow-md scale-110": 
-                                  operationTarget === index && lastOperation === 'traverse',
+                                  operationTarget === index && lastOperation !== 'search',
                                 "border-success bg-success/20 shadow-lg": 
                                   operationTarget === index && lastOperation === 'search',
                                 "border-border bg-card": operationTarget !== index,
