@@ -101,7 +101,7 @@ const Landing = () => {
         </section>
 
         {/* Categories Section */}
-        <section className="py-12 md:py-16 bg-background">
+        <section id="explore-section" className="py-12 md:py-16 bg-background">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
             <div className="text-center mb-12 md:mb-16">
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl mb-4">
@@ -109,7 +109,7 @@ const Landing = () => {
               </h2>
               <p className="text-base text-muted-foreground sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
                 Interactive visualizations to help you understand algorithms, data structures, 
-                and system concepts through engaging animations and step-by-step explanations.
+                and OS concepts through engaging animations and step-by-step explanations.
               </p>
             </div>
             

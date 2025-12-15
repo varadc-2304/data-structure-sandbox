@@ -20,7 +20,7 @@ const SEO = ({
   title = "Drona - Interactive Computer Science Visualization Platform",
   description = "Master computer science concepts through interactive visualizations. Learn data structures, algorithms, CPU scheduling, memory management, and AI algorithms with hands-on simulations.",
   keywords = "computer science visualization, algorithm visualizer, data structure visualizer, learn algorithms, interactive CS education",
-  image = "https://drona.ikshvaku-innovations.in/og-image.png",
+  image = "https://drona.ikshvaku-innovations.in/DronaLogo.png",
   type = "website",
   breadcrumbs,
   courseSchema

@@ -13,7 +13,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-foreground mb-4">Drona</h3>
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
               An interactive visualization platform for computer science education. Master data structures, algorithms, 
-              and system concepts through hands-on visualizations and real-time simulations.
+              and OS concepts through hands-on visualizations and real-time simulations.
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

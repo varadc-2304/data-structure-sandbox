@@ -2,8 +2,9 @@ import React from "react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Timer, ArrowLeft } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import FIFOControls from "./fifo/FIFOControls";
 import FIFOVisualization from "./fifo/FIFOVisualization";
 import FIFOStats from "./fifo/FIFOStats";
@@ -75,6 +76,10 @@ const FIFOVisualizer = () => {
       <Navbar />
       <div className="page-container pt-20">
         <div className="mb-6 animate-slide-in">
+          <Link to="/dashboard/page-replacement" className="flex items-center text-primary hover:underline mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Page Replacement
+          </Link>
           <div className="arena-chip mb-2 text-foreground">Page Replacement Visualization</div>
           <h1 className="text-3xl font-bold text-foreground mb-2">First In First Out (FIFO)</h1>
           <p className="text-muted-foreground text-sm">Visualize the FIFO page replacement algorithm. The oldest page in memory is replaced when a new page is needed.</p>

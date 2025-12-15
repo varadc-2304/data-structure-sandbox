@@ -295,15 +295,14 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setIsLoginDialogOpen(true)}
-                  className="h-9"
+                  className="flex items-center text-sm font-medium text-foreground hover:text-primary transition-colors whitespace-nowrap flex-shrink-0 px-1"
                 >
                   <GoogleIcon />
                   <span className="hidden sm:inline ml-2">Sign In</span>
-                </Button>
+                </button>
               )}
             </div>
 
