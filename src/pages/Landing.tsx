@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Shield, Lock, CheckCircle2, Database, Cpu, MemoryStick, HardDrive, Calculator, Users, Award, BookOpen } from 'lucide-react';
+import { Shield, CheckCircle2, Database, Cpu, MemoryStick, HardDrive, Calculator, Users, Award, BookOpen } from 'lucide-react';
 import { Chrome } from 'lucide-react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
@@ -235,16 +235,6 @@ const Landing = () => {
               <p className="text-sm text-muted-foreground text-center">
                 Sign in to access interactive computer science visualizations
               </p>
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Shield className="h-3 w-3 text-primary" />
-                  <span>Secure</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Lock className="h-3 w-3 text-primary" />
-                  <span>Encrypted</span>
-                </div>
-              </div>
               <Button 
                 onClick={handleGoogleSignIn}
                 className="w-full h-12 text-base flex items-center justify-center gap-3"
@@ -263,16 +253,16 @@ const Landing = () => {
                   </>
                 )}
               </Button>
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-                <div className="flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5 text-primary" />
-                  <span>Secure Login</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-primary" />
-                  <span>Encrypted</span>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                By signing in, you agree to our{" "}
+                <Link to="/terms-and-conditions" className="text-primary underline-offset-2 hover:underline">
+                  Terms and Conditions
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy-policy" className="text-primary underline-offset-2 hover:underline">
+                  Privacy Policy
+                </Link>.
+              </p>
             </div>
           </DialogContent>
         </Dialog>
