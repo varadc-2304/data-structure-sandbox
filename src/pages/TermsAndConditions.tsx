@@ -18,9 +18,9 @@ const TermsAndConditions = () => {
   return (
     <>
       <SEO 
-        title="Terms and Conditions - Drona | Ikshvaku Innovations"
+        title="Terms and Conditions - Drona"
         description="Terms and Conditions for Drona - Interactive Computer Science Visualization Platform. Learn about permitted use, user accounts, intellectual property, and platform policies."
-        keywords="terms and conditions, Drona terms, Ikshvaku Innovations, platform terms, user agreement, legal"
+        keywords="terms and conditions, Drona terms, platform terms, user agreement, legal"
       />
       <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
         <Navbar />

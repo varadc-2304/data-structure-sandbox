@@ -10,7 +10,7 @@ This document outlines all SEO optimizations implemented for the Drona platform 
 - **Title**: Optimized with primary keywords and brand name
 - **Description**: Compelling 150-160 character description with key terms
 - **Keywords**: Comprehensive keyword list covering all topics
-- **Author**: Ikshvaku Innovations
+- **Author**: Drona Team
 - **Robots**: Index, follow with max preview settings
 - **Language**: English (en-US)
 - **Canonical URL**: Prevents duplicate content issues
@@ -58,7 +58,7 @@ Multiple Schema.org structured data blocks for LLM recognition:
 - Publisher details
 
 #### Organization Schema
-- Ikshvaku Innovations details
+- Drona organization details
 - Contact information
 - Social media links
 
@@ -284,5 +284,5 @@ The structured data and comprehensive meta tags ensure that:
 ---
 
 **Last Updated**: January 2025
-**Maintained by**: Ikshvaku Innovations
+**Maintained by**: Drona Team
 

@@ -18,9 +18,9 @@ const PrivacyPolicy = () => {
   return (
     <>
       <SEO 
-        title="Privacy Policy - Drona | Ikshvaku Innovations"
+        title="Privacy Policy - Drona"
         description="Learn how Drona collects, protects, and uses your information while delivering interactive computer science visualizations. Understand our data practices and your privacy rights."
-        keywords="privacy policy, Drona privacy, data protection, user privacy, Ikshvaku Innovations, GDPR, data security, user data"
+        keywords="privacy policy, Drona privacy, data protection, user privacy, GDPR, data security, user data"
       />
       <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
         <Navbar />

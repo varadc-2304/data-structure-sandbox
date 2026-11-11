@@ -1,46 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Shield, CheckCircle2, Database, Cpu, MemoryStick, HardDrive, Calculator, Users, Award, BookOpen } from 'lucide-react';
-import { Chrome } from 'lucide-react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
+import { CheckCircle2, Database, Cpu, MemoryStick, HardDrive, Calculator, Users, Award, BookOpen } from 'lucide-react';
 import SEO from '@/components/SEO';
 import Footer from '@/components/Footer';
 
 const Landing = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useAuth();
 
   const handleGetStarted = () => {
-    setIsDialogOpen(true);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      // Set user in auth context
-      setUser({
-        id: user.uid,
-        email: user.email || '',
-        name: user.displayName || user.email?.split('@')[0] || 'User',
-      });
-
-      // Close dialog and navigate to dashboard
-      setIsDialogOpen(false);
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      setIsLoading(false);
-      // Error handling - you might want to show a toast here
-    }
+    navigate('/dashboard');
   };
 
   return (
@@ -57,11 +26,6 @@ const Landing = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative">
             <div className="pt-20 pb-12 md:pt-28 md:pb-16">
               <div className="text-center max-w-4xl mx-auto">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Secure & Trusted Platform</span>
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                </div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
                   Visualize &amp; Learn
                   <span className="block text-primary mt-2">Computer Science</span>
@@ -81,11 +45,11 @@ const Landing = () => {
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Open Source</span>
+                    <span>No Sign-up Required</span>
                   </div>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Privacy Focused</span>
+                    <span>Open Source</span>
                   </div>
                 </div>
                 <Button 
@@ -222,50 +186,6 @@ const Landing = () => {
         </section>
 
         <Footer />
-
-        {/* Sign In Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-foreground text-center">
-                Welcome to Drona
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <p className="text-sm text-muted-foreground text-center">
-                Sign in to access interactive computer science visualizations
-              </p>
-              <Button 
-                onClick={handleGoogleSignIn}
-                className="w-full h-12 text-base flex items-center justify-center gap-3"
-                disabled={isLoading}
-                variant="outline"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <span>Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Chrome className="h-5 w-5" />
-                    <span>Sign in with Google</span>
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center pt-2">
-                By signing in, you agree to our{" "}
-                <Link to="/terms-and-conditions" className="text-primary underline-offset-2 hover:underline">
-                  Terms and Conditions
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy-policy" className="text-primary underline-offset-2 hover:underline">
-                  Privacy Policy
-                </Link>.
-              </p>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </>
   );

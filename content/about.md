@@ -1,14 +1,14 @@
-# About Ikshvaku Innovations
+# About Drona
 
-Ikshvaku Innovations was founded with a simple but powerful belief: **students don't fail because they lack talent—they struggle because they lack clarity, structure, and real-world alignment.**
+Drona was founded with a simple but powerful belief: **students don't fail because they lack talent—they struggle because they lack clarity, structure, and real-world alignment.**
 
-In today's fast-evolving and competitive environment, students often find it difficult to navigate their academic journey and prepare effectively for professional opportunities. Ikshvaku Innovations was created to bridge this gap by building technology-enabled platforms that bring structure, visibility, and relevance to learning and career preparation.
+In today's fast-evolving and competitive environment, students often find it difficult to navigate their academic journey and prepare effectively for professional opportunities. Drona was created to bridge this gap by building technology-enabled platforms that bring structure, visibility, and relevance to learning and career preparation.
 
 Rather than operating as a traditional coaching or content provider, we work as an academic and career-readiness companion, partnering with institutions to support students throughout their learning journey.
 
 ## What We Do
 
-Ikshvaku Innovations designs and delivers education and career-preparation platforms powered by modern technology.
+Drona designs and delivers education and career-preparation platforms powered by modern technology.
 
 **Our solutions include:**
 
@@ -33,11 +33,11 @@ This philosophy guides how we design products and collaborate with institutions.
 
 ## The Founders
 
-Ikshvaku Innovations was co-founded by **Varad Charholikar** and **Manas Jain**, who share a strong commitment to enhancing education through technology and fostering innovation.
+Drona was co-founded by **Varad Charholikar** and **Manas Jain**, who share a strong commitment to enhancing education through technology and fostering innovation.
 
 Beyond improving learning outcomes, the founders are deeply interested in innovation as a means to solve real-world problems. Their work reflects a mindset of experimentation, continuous improvement, and responsible use of emerging technologies to create solutions that are practical, scalable, and impactful.
 
-By combining an understanding of academic systems with a passion for innovation, they lead Ikshvaku Innovations with a focus on building forward-looking platforms that evolve alongside student and institutional needs.
+By combining an understanding of academic systems with a passion for innovation, they lead Drona with a focus on building forward-looking platforms that evolve alongside student and institutional needs.
 
 ## Our Vision
 
@@ -50,5 +50,4 @@ Our vision is to build an ecosystem where students can:
 
 At the same time, we aim to support institutions in modernizing education delivery through reliable, innovation-driven platforms.
 
-**Ikshvaku Innovations exists to ensure that talent is supported by clarity, structure, and opportunity—using technology and innovation as enablers of better education.**
-
+**Drona exists to ensure that talent is supported by clarity, structure, and opportunity—using technology and innovation as enablers of better education.**

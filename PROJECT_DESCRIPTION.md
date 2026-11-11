@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Drona** is a comprehensive, interactive visualization platform designed to revolutionize computer science education. Built by **Ikshvaku Innovations**, Drona transforms abstract theoretical concepts into tangible, hands-on learning experiences through real-time visualizations, step-by-step animations, and interactive simulations.
+**Drona** is a comprehensive, interactive visualization platform designed to revolutionize computer science education. Drona transforms abstract theoretical concepts into tangible, hands-on learning experiences through real-time visualizations, step-by-step animations, and interactive simulations.
 
 ## Mission
 
@@ -229,11 +229,11 @@ Open source - See LICENSE file for details
 
 - **Email**: support@drona.com
 - **GitHub**: [Drona Repository]
-- **Organization**: Ikshvaku Innovations
+- **Organization**: Drona Team
 
 ## Acknowledgments
 
-Built with ❤️ in India by Ikshvaku Innovations. Drona aims to democratize computer science education and make learning algorithms and data structures accessible to students and educators worldwide.
+Built with ❤️ in India. Drona aims to democratize computer science education and make learning algorithms and data structures accessible to students and educators worldwide.
 
 ---
 

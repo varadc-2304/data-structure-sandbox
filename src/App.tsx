@@ -8,9 +8,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Login from "./pages/Login";
-import ExternalAuth from "./pages/ExternalAuth";
 import NotFound from "./pages/NotFound";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -123,13 +120,13 @@ const AppContent = () => {
         <ScrollToTop />
         <GoogleAnalytics />
         <Routes>
-          {/* Redirect root to dashboard */}
+          {/* Redirect root and auth routes to dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/auth" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/external-auth" element={<Navigate to="/dashboard" replace />} />
           
           {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/external-auth" element={<ExternalAuth />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about" element={<About />} />

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Instagram, Heart, BookOpen, Code, Cpu, Brain } from 'lucide-react';
+import { Mail, Heart, BookOpen, Code, Cpu, Brain } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -93,23 +93,11 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <a 
-                  href="mailto:ikshvaku.innovations@gmail.com" 
+                  href="mailto:support@drona.app" 
                   className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
-                  ikshvaku.innovations@gmail.com
-                </a>
-              </li>
-              <li className="mt-4">
-                <a 
-                  href="https://www.instagram.com/ikshvaku.innovations?igsh=MTZiZHlkdGtoamRtaA==" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="h-4 w-4" />
-                  ikshvaku.innovations
+                  support@drona.app
                 </a>
               </li>
             </ul>
@@ -121,7 +109,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col items-center md:items-start gap-2">
               <p className="text-xs text-muted-foreground text-center md:text-left">
-                © 2025 Ikshvaku Innovations. All rights reserved.
+                © 2025 Drona. All rights reserved.
               </p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Made with</span>

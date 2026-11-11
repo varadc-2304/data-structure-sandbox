@@ -18,9 +18,9 @@ const About = () => {
   return (
     <>
       <SEO 
-        title="About Ikshvaku Innovations - Drona | Education Technology Platform"
-        description="Learn about Ikshvaku Innovations - building technology-enabled platforms that bring structure, visibility, and relevance to learning and career preparation. Founded by Varad Charholikar and Manas Jain."
-        keywords="Ikshvaku Innovations, about us, education technology, learning platforms, career preparation, Varad Charholikar, Manas Jain, educational innovation"
+        title="About Drona - Education Technology Platform"
+        description="Learn about Drona - an interactive visualization platform for computer science education. Founded by Varad Charholikar and Manas Jain."
+        keywords="Drona, about us, education technology, learning platforms, career preparation, Varad Charholikar, Manas Jain, educational innovation"
       />
       <div className="min-h-screen bg-background overflow-x-hidden flex flex-col">
         <Navbar />
